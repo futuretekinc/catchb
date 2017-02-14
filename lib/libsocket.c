@@ -4,9 +4,6 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <string.h>
 #include <sys/un.h>
 #include <fcntl.h>
 #include <common.h>
