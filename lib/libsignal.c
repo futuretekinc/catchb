@@ -16,7 +16,7 @@
 #include <errno.h>
 #include <poll.h>
 #include <libsignal.h>
-#include "trace.h"
+#include "catchb_trace.h"
 
 int ck_signal(char *path, CK_SIGNAL_INFO *info)
 {

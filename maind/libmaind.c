@@ -1,8 +1,10 @@
 #include <cctv_maind.h>
 #include <common_libssh.h>
+#include "catchb_trace.h"
 
 int db_cctv_log_check_delete()
 {
+#if 0
         MYSQL       *connection=NULL, conn;
 
         int query_stat;
@@ -48,7 +50,8 @@ int db_cctv_log_check_delete()
         }
 
         mysql_close(connection);
-
+#endif
+	return	0;
 }
 
 
@@ -58,6 +61,7 @@ int check_process(char *process_name)
     struct dirent *pinfo;
     int is_live = 0;
 
+	TRACE("check_process(%s) entry\n", process_name);
     pdir = opendir("/proc");
     if(pdir == NULL)
     {
@@ -70,11 +74,15 @@ int check_process(char *process_name)
     {
         pinfo = readdir(pdir);
         if(pinfo == NULL)
+		{
             break;
+		}
 
         /** 파일이거나 ".", "..", 프로세스 디렉토리는 숫자로 시작하기 때문에 아스키코드 57(9)가 넘을 경우 건너뜀 */
         if(pinfo->d_type != 4 || pinfo->d_name[0] == '.' || pinfo->d_name[0] > 57)
+		{
             continue;
+		}
 
         FILE* fp;
         char buff[512];
@@ -103,6 +111,7 @@ int check_process(char *process_name)
 
     closedir(pdir);
 
+	TRACE("check_process(%s) exit\n", process_name);
     return is_live;
 }
 

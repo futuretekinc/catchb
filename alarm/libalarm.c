@@ -19,11 +19,7 @@ int db_cctv_info_select(CK_SIGNAL_INFO *signal_info)
 
     mysql_init(&conn);
 
-    connection = mysql_real_connect(&conn, DB_HOST,
-            DB_USER, DB_PASS,
-            DB_NAME, 3306,
-            (char *)NULL, 0);
-
+    connection = mysql_real_connect(&conn, DB_HOST, DB_USER, DB_PASS, DB_NAME, 3306, (char *)NULL, 0); 
     if (connection == NULL)
     {
         cctv_system_error("cctv_alarmn/db_cctv_info_select() - Mysql connection error : %s",strerror(errno));

@@ -11,16 +11,16 @@ export MODEL TOPDIR
 CFLAGS:= -fPIC -c -g -Wall \
 				-I.\
 				-I$(TOPDIR)/include\
-				-I/home/xtra/ftm/build/ftm-50s/_root/usr/include
+				-I$(TOPDIR)/lib
 
 LDFLAGS:= -Wl,--no-as-needed\
 				-L.\
-				-L$(TOPDIR)/lib\
-				-L/home/xtra/ftm/build/ftm-50s/_root/usr/lib
+				-L$(TOPDIR)/lib
 
-#CC=gcc
-CC=armv5-linux-gcc
+CC=gcc
+#CC=armv5-linux-gcc
 #CC=arm-openwrt-linux-uclibcgnueabi-gcc
+
 CFLAGS:= -fPIC \
 	$(CFLAGS) \
 		-I/usr/local/include \

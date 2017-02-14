@@ -10,7 +10,9 @@
 #include <syslog.h>
 #include <semaphore.h>
 #include <signal.h>
+#include "trace.h"
 
+extern char *program_invocation_short_name;
 struct list_head check_ip_list_head;  //ip link list head
 
 char source_ip[ADDR_LENG];
@@ -59,24 +61,27 @@ int main(int argc, char ** argv)
 
         break;
     }
-    if (check_pid(CK_NAME_CCTV_SCHEDULER) != 0) {
+    if (check_pid(CK_NAME_CCTV_SCHEDULER) != 0) 
+	{
         return -1;
     }
 
     if (!debug_mode)
+	{
         daemon(0, 0);
+	}
 
     write_pid(CK_NAME_CCTV_SCHEDULER);
 
     if (access(SV_SOCK_CCTV_SCHEDULER_PATH, F_OK) == 0)
+	{
         unlink(SV_SOCK_CCTV_SCHEDULER_PATH);
-
+	}
 
     INIT_LIST_HEAD(&check_ip_list_head);
 
-
-
-    if(server_socket_create(&sockfd,(char*)SV_SOCK_CCTV_SCHEDULER_PATH)){
+    if(server_socket_create(&sockfd,(char*)SV_SOCK_CCTV_SCHEDULER_PATH))
+	{
         cctv_system_error("cctv_scheduler/main() - server_socket_create : %s",strerror(errno));
         return 0;
     }
@@ -94,7 +99,8 @@ int main(int argc, char ** argv)
     db_cctv_info_select(&t_num);
 
     memset(app, 0x00, sizeof(app));
-    if(t_num){
+    if(t_num)
+	{
         pthread_create(&thread[0], NULL, thread_packet_send_operation, (void*)NULL);
         nanosleep(&reqtime, NULL);
 
@@ -106,8 +112,7 @@ int main(int argc, char ** argv)
             pthread_join(thread[i], NULL);
         }
 
-
-        sprintf(app, "%s/%s", "/root/cctv_check/bin", "cctv_analysis");
+        sprintf(app, "%s/%s", "/home/xtra/catchb/analysis", "analysis");
         system(app);
     }
 
@@ -117,51 +122,54 @@ int main(int argc, char ** argv)
         FD_ZERO(&rfds);
         FD_SET(sockfd,&rfds);
 
-        if ((n = select(sockfd+1, &rfds, NULL, NULL, NULL)) < 0) {
+        if ((n = select(sockfd+1, &rfds, NULL, NULL, NULL)) < 0) 
+		{
             sleep(1);
             continue;
-
         }
 
 
-        if (FD_ISSET(sockfd, &rfds)) {
+        if (FD_ISSET(sockfd, &rfds)) 
+		{
             client_socket= accept(sockfd, NULL, 0);
-            if (client_socket == -1){
+            if (client_socket == -1)
+			{
                 cctv_system_error("cctv_operation/main() -clinet not accept :%s",strerror(errno));
                 return 0;
             }
+
             while ((num_read = read(client_socket, &signal_info, sizeof(CK_SIGNAL_INFO))) > 0){
-                if (num_read == -1){
+                if (num_read == -1)
+				{
                     cctv_system_error("cctv_operation/main() - not read : %s",strerror(errno));
-                }else{
+                }else
+				{
 
-                    switch (signal_info.ck_event_division){
+                    switch (signal_info.ck_event_division)
+					{
+                    case 0:
 
-                        case 0:
+						sleep(3);
 
-                            sleep(3);
+						system("pkill cctv_ana");
 
-                            system("pkill cctv_ana");
+						memset(app, 0x00, sizeof(app));
 
-                            memset(app, 0x00, sizeof(app));
+						sleep(1);
 
-                            sleep(1);
+        				sprintf(app, "%s/%s", "/home/xtra/catchb/analysis", "analysis");
 
+						system(app);
 
+						break;
 
-                            sprintf(app, "%s/%s", "/root/cctv_check/bin", "cctv_analysis");
-
-                            system(app);
-
-                            break;
-
-                        case 1:
-                            break;
-                        case 2:
-                            break;
-                        default:
-                            break;
-                    }
+					case 1:
+						break;
+					case 2:
+                    	break;
+					default:
+						break;
+					}
 
                 }
             }

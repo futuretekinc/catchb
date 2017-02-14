@@ -161,6 +161,16 @@ int db_cctv_info_select(int * t_num)
     }
 
     mysql_close(connection);
+#else
+	CK_IP_INFO *check_ip_info = (CK_IP_INFO*)malloc(sizeof(CK_IP_INFO));
+	
+	check_ip_info->ck_cctv_idx = 1;
+	strcpy(check_ip_info->ck_cctv_id, "cctv1");
+	strcpy(check_ip_info->ck_ip, "10.0.1.1");
+
+	(*t_num)++;
+
+	list_add_tail(&check_ip_info->list, &check_ip_list_head);
 #endif
 	return	0;
 }
@@ -249,6 +259,8 @@ void send_http_request(int port_number, char *analysis_cctv_ip)
 {
     int sockfd, n;
     struct sockaddr_in serv_addr;
+
+	TRACE("HTTP request [%s:%d]\n", analysis_cctv_ip, port_number);
 
     inet_aton(analysis_cctv_ip, &http_remote_ip);
 
@@ -349,36 +361,40 @@ void* thread_packet_send_operation(void *id)
 {
 
     struct list_head *pos;
-    CK_IP_INFO * entry;
-    int port_number = 80;
+	CK_IP_INFO * entry;
+	int port_number = 80;
 
 
-    list_for_each(pos, &check_ip_list_head){
-        entry = list_entry(pos, CK_IP_INFO, list);
-        if(strlen(entry->ck_ip)){
-            sem_wait(&sendthread);
-            send_http_request(port_number, entry->ck_ip);
+	list_for_each(pos, &check_ip_list_head)
+	{
+		entry = list_entry(pos, CK_IP_INFO, list);
+		if(strlen(entry->ck_ip))
+		{
+			sem_wait(&sendthread);
 
-            sem_post(&mainthread);
+			send_http_request(port_number, entry->ck_ip);
 
-            send_http_request(port_number, entry->ck_ip);
-            if(score_info.descr){
+			sem_post(&mainthread);
 
-                sleep(4);
-                printf("[%s][%d] pack_loop break\n",__func__,__LINE__);
-                pcap_breakloop(score_info.descr);
-            }
-        }
-    }
+			send_http_request(port_number, entry->ck_ip);
+
+			if(score_info.descr)
+			{
+				sleep(4);
+				printf("[%s][%d] pack_loop break\n",__func__,__LINE__);
+				pcap_breakloop(score_info.descr);
+			}
+		}
+	}
 
 	return	0;
 }
 
 void* thread_main_operation(void *id)
 {
-    char hash_string[1024];
-    char hash_value[64];
-    int port[PORT_NUM] = {80, 135, 139, 443, 445, 554, 4520, 49152};
+	char hash_string[1024];
+	char hash_value[64];
+	int port[PORT_NUM] = {80, 135, 139, 443, 445, 554, 4520, 49152};
     //int port[PORT_NUM] = {22, 21, 20, 443, 445, 554, 4520, 49152};
     int i;
     int result_ttl = 0;
@@ -401,8 +417,8 @@ void* thread_main_operation(void *id)
 
 
     sleep(2);
-    list_for_each(pos, &check_ip_list_head){
-
+    list_for_each(pos, &check_ip_list_head)
+	{
         entry = list_entry(pos, CK_IP_INFO, list);
         memcpy(score_info.analysis_cctv_ip, entry->ck_ip,sizeof(score_info.analysis_cctv_ip));
 
@@ -436,19 +452,15 @@ void* thread_main_operation(void *id)
         memcpy(signal_info.ck_cctv_id, entry->ck_cctv_id, sizeof(signal_info.ck_cctv_id));
 
         //log_message(CK_CCTV_SCHEDULER_LOG_FILE_PATH,"analysis setting ip :%s ttl :%d",score_info.analysis_cctv_ip, result_ttl);
-        if(result_ttl <= 0){
-
+        if(result_ttl <= 0)
+		{
             db_cctv_info_insert(cctv_idx , cctv_id, score_info.analysis_cctv_ip, NULL,code);
-
 
             sem_post(&sendthread);
             sem_wait(&mainthread);
             sleep(5);
-
         }
         else
-
-            
         {
             sprintf(hash_string,"[ip : %s , ", score_info.analysis_cctv_ip);
             //맥주소 넣는곳(안쓰면 막아주면된다)
@@ -473,20 +485,22 @@ void* thread_main_operation(void *id)
             
                 continue;
             }
+
             score_info.descr = pcap_open_live(dev, BUFSIZ, 0, -1, errbuf);
             if(score_info.descr == NULL)
             {
                 cctv_system_error("cctv_scheduler/thread_main_operation() - Error opening the selected device for reading");
                 log_message(CK_CCTV_SCHEDULER_LOG_FILE_PATH, "cctv_scheduler/thread_main_operation() - error pcap_open_live :%s",score_info.analysis_cctv_ip);
                 sem_post(&sendthread);
-            sem_wait(&mainthread);
+            	sem_wait(&mainthread);
                 sleep(5);
             
                 continue;
             }
 
             snap_leng = pcap_snapshot(score_info.descr);
-            if(BUFSIZ < snap_leng){
+            if(BUFSIZ < snap_leng)
+			{
                 sem_post(&sendthread);
                 sem_wait(&mainthread);
                 sleep(6);
@@ -496,7 +510,8 @@ void* thread_main_operation(void *id)
                 continue;
             }
            
-            if(pcap_lookupnet(dev, &net, &mask, errbuf) < 0){
+            if(pcap_lookupnet(dev, &net, &mask, errbuf) < 0)
+			{
                 sem_post(&sendthread);
                 sem_wait(&mainthread);
                 sleep(6);
@@ -513,7 +528,8 @@ void* thread_main_operation(void *id)
 
             sprintf(filter_rule,"src %s and dst %s and tcp",score_info.analysis_cctv_ip, source_ip);
 
-            if(pcap_compile(score_info.descr, &fcode, filter_rule, 0, mask) < 0){
+            if(pcap_compile(score_info.descr, &fcode, filter_rule, 0, mask) < 0)
+			{
                 sem_post(&sendthread);
                 sem_wait(&mainthread);
                 sleep(6);
@@ -525,7 +541,8 @@ void* thread_main_operation(void *id)
 
             }
 
-            if(pcap_setfilter(score_info.descr, &fcode) < 0 ){
+            if(pcap_setfilter(score_info.descr, &fcode) < 0 )
+			{
                 sem_post(&sendthread);
                 sem_wait(&mainthread);
                 sleep(6);

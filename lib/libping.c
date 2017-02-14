@@ -28,7 +28,7 @@ char pkg[] = "netkit-base-0.10";
 #include <ctype.h>
 #include <errno.h>
 #include <common.h>
-#include "trace.h"
+#include "catchb_trace.h"
 
 #ifdef __linux__
 #define SAFE_TO_DROP_ROOT

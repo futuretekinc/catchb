@@ -10,5 +10,5 @@ include $(TOPDIR)/IncludePre.mk
 
 BIN_TARGET=maind
 BIN_OBJS=$(patsubst %.c,%.o,$(wildcard *.c))
-BIN_LDFLAGS=$(LDFLAGS) -L$(TOPDIR)/lib -lcatchb -pthread -ldl
+BIN_LDFLAGS=$(LDFLAGS) -L$(TOPDIR)/lib -lcatchb -lcjson -pthread -lm -ldl
 include $(TOPDIR)/IncludePost.mk

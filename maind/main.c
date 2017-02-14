@@ -1,13 +1,19 @@
 #include <cctv_maind.h>
 #include <common_libssh.h>
+#include "libutil.h"
+#include "liblogs.h"
+#include "catchb_trace.h"
+#include "catchb_config.h"
+
+extern	CATCHB_CHAR_PTR	program_invocation_short_name;
 
 int main(int argc, char *argv[])
 {
+	CATCHB_RET	xRet;
     int rt;
     int i;
     time_t  timer;
     struct tm *t;
-    char buffer[255];
     char app[255];
     int debug_mode = 0;
     char ch;
@@ -23,45 +29,66 @@ int main(int argc, char *argv[])
     {
         switch (ch)
         {
-            case 'a':
-                break;
+        case 'a':
+			break;
 
-            case 'd':
-                debug_mode = 1;
-                break;
+		case 'd':
+			debug_mode = 1;
+			break;
 
-            case 'h':
-                break;
+		case 'h':
+			break;
 
-            default:
-                break;
+		default:
+            break;
         }
 
      break;
     }
 
+	CATCHB_CONFIG_PTR	pConfig;
 
-    if (check_pid(CK_NAME_CCTV_MAIND) != 0) {
-        printf("%s is already running!!\n", CK_NAME_CCTV_MAIND);
-        return -1;
+	TRACE_ENTRY();
+	xRet = CATCHB_CONFIG_create(&pConfig);
+	if (xRet != CATCHB_RET_OK)
+	{
+		ERROR(xRet, "Failed to create config!\n");
+		return	0;	
+	}
+
+	TRACE_ENTRY();
+	xRet = CATCHB_CONFIG_load(pConfig, "./catchb.conf");
+	if (xRet != CATCHB_RET_OK)
+	{
+		ERROR(xRet, "Failed to load config!\n");
+		return	0;
+	}
+
+	TRACE_ENTRY();
+	CATCHB_CONFIG_show(pConfig);
+
+	TRACE_ENTRY();
+
+    if (check_pid(program_invocation_short_name) != 0) 
+	{
+		xRet = CATCHB_RET_ALREADY_RUNNING;
+        ERROR(xRet ,"%s is already running!!\n", program_invocation_short_name);
+		goto finished;
     }
+
+    write_pid(program_invocation_short_name);
 
 
     if (!debug_mode)
+	{
         daemon(0, 0);
+	}
 
-
-    write_pid(CK_NAME_CCTV_MAIND);
-
-    
-
-    log_message(CK_CCTV_MAIND_LOG_FILE_PATH, "cctv_maind daemon start");
+    LOG("cctv_maind daemon start");
 
     create_db();
 
     initdb();
-
-
 
     while(1)
     {
@@ -70,7 +97,6 @@ int main(int argc, char *argv[])
 
         t = localtime(&timer);
 
-
         current_day = t->tm_mday;
 
         current_hour = t->tm_hour;
@@ -78,24 +104,20 @@ int main(int argc, char *argv[])
         current_min = t->tm_min;
 
         
-        if(current_day == 1){
-
-            if (current_hour == 1){
-
-                if(current_min == 1){
-
-                    log_message(CK_CCTV_MAIND_LOG_FILE_PATH, "cctv_maind db 2 months ago delete");
+        if(current_day == 1)
+		{
+            if (current_hour == 1)
+			{
+                if(current_min == 1)
+				{
+                    LOG("cctv_maind db 2 months ago delete");
                     db_cctv_log_check_delete();
-                    
-                    
                 }
             }
         }
 
-
         for(i =0; i< 6; i++)
         {
-
             memset(app, 0x00, sizeof(app));
             sprintf(app, "%s/%s", APP_PATH, s_process_name[i]);
             rt = check_process(check_process_name[i]);
@@ -106,14 +128,18 @@ int main(int argc, char *argv[])
                 log_message(CK_CCTV_MAIND_LOG_FILE_PATH, "cctv_maind process restart :%s",app);
                 system(app);
             }
-
-
         }
         system("rm -rf /var/log/*.1");
         // 검사 후, process sleep 
         sleep(CHECK_SECOND);    
     }
 
+finished:
+	if (pConfig != NULL)
+	{
+		CATCHB_CONFIG_destroy(&pConfig);
+	}
+	
     return 0;
 }
 

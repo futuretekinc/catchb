@@ -7,7 +7,7 @@
 #include <sys/un.h>
 #include <fcntl.h>
 #include <common.h>
-#include "trace.h"
+#include "catchb_trace.h"
 #include "libsocket.h"
 
 int server_socket_create(int *sock ,char *file_path)

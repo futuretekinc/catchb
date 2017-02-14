@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <libsha1.h>
-#include "trace.h"
+#include "catchb_trace.h"
 
 #define DOTDOT ".."
 #define DOT "."

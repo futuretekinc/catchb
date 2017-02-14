@@ -15,7 +15,7 @@
 #include<net/if.h>
 #include<sys/ioctl.h>
 #include<arpa/inet.h>
-
+#include"trace.h"
 
 extern sem_t sendthread, mainthread;
 
@@ -270,22 +270,29 @@ void* thread_packet_send_operation(void *id)
     CK_IP_INFO * entry;
     int port_number = 80;
 
-    list_for_each(pos, &check_ip_list_head){
+	TRACE_ENTRY();
+    list_for_each(pos, &check_ip_list_head)
+	{
         entry = list_entry(pos, CK_IP_INFO, list);
-        if(strlen(entry->ck_ip)){
+        if(strlen(entry->ck_ip))
+		{
             sem_wait(&sendthread);
+			TRACE("send_http_request[%s]\n", entry->ck_ip);
             send_http_request(port_number, entry->ck_ip);
             sem_post(&mainthread);
 
+			TRACE("send_http_request[%s]\n", entry->ck_ip);
             send_http_request(port_number, entry->ck_ip);
 
-            if(score_info.descr){
+            if(score_info.descr)
+			{
                 sleep(4);
                 printf("[%s][%d] pack_loop break\n",__func__,__LINE__);
                 pcap_breakloop(score_info.descr);
             }
         }
     }
+	TRACE_EXIT();
 
 	return	0;
 }
@@ -315,9 +322,12 @@ void* thread_main_operation(void *id)
     CK_IP_INFO * entry;
     CK_SIGNAL_INFO signal_info;
 
+	TRACE_ENTRY();
+
     sleep(2);
 
-    list_for_each(pos, &check_ip_list_head){
+    list_for_each(pos, &check_ip_list_head)
+	{
 
 	    entry = list_entry(pos, CK_IP_INFO, list);
 	    memcpy(score_info.analysis_cctv_ip, entry->ck_ip,sizeof(score_info.analysis_cctv_ip));
@@ -341,7 +351,8 @@ void* thread_main_operation(void *id)
         //log_message(CK_CCTV_ANALYSIS_LOG_FILE_PATH, "analysis setting ip :%s start",score_info.analysis_cctv_ip);
 
 
-        for( i = 0; i< 3; i++){
+        for( i = 0; i< 3; i++)
+		{
             cctv_ping_check(score_info.analysis_cctv_ip, &result_ttl);
 
             usleep( 1000 * 700 );
@@ -477,13 +488,12 @@ void* thread_main_operation(void *id)
             pcap_close(score_info.descr);
          
             sprintf(hash_string,"%s, score : %f", hash_string, score_info.score);
-            printf(hash_string,"%s, score : %f", hash_string, score_info.score);
 
 
             //log_message(CK_CCTV_ANALYSIS_LOG_FILE_PATH, "ip:%s, string%s",score_info.analysis_cctv_ip, hash_string);
             cctv_hash_sha1(hash_string, hash_value, strlen(hash_string));
 
-        printf("[%s][%d] ip:%s, score:%f\n",__func__,__LINE__,score_info.analysis_cctv_ip, score_info.score);
+        	TRACE("ip:%s, score:%f\n",score_info.analysis_cctv_ip, score_info.score);
 
 		    if(!strncmp(entry->ck_signature,hash_value, sizeof(hash_value)))
 		    {
@@ -513,6 +523,8 @@ void* thread_main_operation(void *id)
 
 	    }
     }
+
+	TRACE_EXIT();
 
 	return	0;
 }
@@ -1111,12 +1123,13 @@ void processing_ip(uint8_t * packet, int length)
 }//end Process_IP
 
 
-void get_local_ip() {
-
-
+void get_local_ip() 
+{
     char output[100];
     FILE *p = popen("ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'", "r");
-    if(p != NULL) {
+
+    if(p != NULL) 
+	{
         while(fgets(output, sizeof(output), p) != NULL);
         memcpy(source_ip, output, 24);
 
