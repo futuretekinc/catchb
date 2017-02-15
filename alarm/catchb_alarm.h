@@ -1,0 +1,21 @@
+#ifndef	CATCHB_ALARAM_H_
+#define	CATCHB_ALARAM_H_
+
+#include "catchb_types.h"
+#include "catchb_server.h"
+
+typedef	struct	CATCHB_ALARM_STRUCT
+{
+	CATCHB_BOOL			bStop;
+	CATCHB_SERVER_PTR	pServer;
+}	CATCHB_ALARM, _PTR_ CATCHB_ALARM_PTR;
+
+CATCHB_RET	CATCHB_ALARM_create(CATCHB_ALARM_PTR _PTR_ ppAlarm);
+CATCHB_RET	CATCHB_ALARM_destroy(CATCHB_ALARM_PTR _PTR_ ppAlarm);
+
+CATCHB_RET	CATCHB_ALARM_run(CATCHB_ALARM_PTR pAlarm);
+
+CATCHB_RET	CATCHB_ALARM_start(CATCHB_ALARM_PTR pAlarm);
+CATCHB_RET	CATCHB_ALARM_stop(CATCHB_ALARM_PTR pAlarm);
+
+#endif

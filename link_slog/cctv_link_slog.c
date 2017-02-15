@@ -13,20 +13,25 @@
 #include <libsocket.h>
 #include <libutil.h>
 #include <syslog.h>
+#include "catchb_trace.h"
+#include "catchb_server.h"
 
-int main(int argc, char *argv[])
+extern	CATCHB_CHAR_PTR program_invocation_short_name;
+
+int main
+(
+	CATCHB_INT		nArgc, 
+	CATCHB_CHAR_PTR	ppArgv[]
+)
 {
+	CATCHB_RET	xRet;
+	CATCHB_SERVER_PTR	pServer = NULL;
 
-    int sockfd = 0, client_socket = 0;
     char ch;
-    int debug_mode = 0;
-    int n, num_read = 0;
-    CK_SIGNAL_INFO signal_info;
+    CATCHB_BOOL	bDebugMode = CATCHB_FALSE;
+    CK_SIGNAL_INFO xSignalInfo;
 
-    fd_set rfds;
-
-
-    while ((ch = getopt(argc, argv, "adh")) != -1)
+    while ((ch = getopt(nArgc, ppArgv, "adh")) != -1)
     {
         switch (ch)
         {
@@ -34,7 +39,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'd':
-                debug_mode = 1;
+                bDebugMode = 1;
                 break;
 
             case 'h':
@@ -47,68 +52,101 @@ int main(int argc, char *argv[])
     }
 
 
-    if (check_pid(CK_NAME_CCTV_LINK_SLOG) != 0) {
+    if (check_pid(CK_NAME_CCTV_LINK_SLOG) != 0) 
+	{
         return -1;
     }
 
-    if (!debug_mode)
-        daemon(0, 0);
-
     write_pid(CK_NAME_CCTV_LINK_SLOG);
 
-    if (access(SV_SOCK_CCTV_LINK_SLOG_PATH, F_OK) == 0)
-        unlink(SV_SOCK_CCTV_LINK_SLOG_PATH);
+    if (!bDebugMode)
+	{
+        daemon(0, 0);
+	}
 
+	xRet = CATCHB_SERVER_create(&pServer);
+	if (xRet != CATCHB_RET_OK)
+	{
+		ERROR(xRet, "Failed to create server!\n");
+		goto finished;
+	}
 
-    if(server_socket_create(&sockfd,(char*)SV_SOCK_CCTV_LINK_SLOG_PATH)){
-        //에러 부분 확인
-        return 0;
+	xRet = CATCHB_SERVER_open(pServer, SV_SOCK_CCTV_LINK_SLOG_PATH);
+	if (xRet != CATCHB_RET_OK)
+	{
+		ERROR(xRet, "Failed to open server!\n");
+        goto finished;
     }
 
 
-    log_message(CK_CCTV_LINK_SLOG_LOG_FILE_PATH,"cctv_link_slog daemon start");
+    LOG("%s started.", program_invocation_short_name);
 
     syslog_init();
 
-    while(1)
+    while(CATCHB_TRUE)
     {
+		CATCHB_INT	nFD;
+		fd_set	xRFDS;
 
-        FD_ZERO(&rfds);
-        FD_SET(sockfd,&rfds);
-        if ((n = select(sockfd+1, &rfds, NULL, NULL, NULL)) < 0) {
-            if (errno == EINTR) continue;
-            sleep(1);
-            continue;
-        }
-        if (FD_ISSET(sockfd, &rfds)) {
-            client_socket= accept(sockfd, NULL, 0);
-            if (client_socket == -1){
-                cctv_system_error("cctv_link_slog/main() -clinet not accept :%s", strerror(errno));
-                return 0;
-            }
-            while ((num_read = read(client_socket, &signal_info, sizeof(CK_SIGNAL_INFO))) > 0){
-                if (num_read == -1){
-                    cctv_system_error("cctv_link_slog/main() - not read : %s",    strerror(errno));
-                }else{
+        FD_ZERO(&xRFDS);
+        FD_SET(pServer->xSocket, &xRFDS);
 
-                    switch(signal_info.ck_event_division){
-                        case 0:
-                            break;
-                        case 1:
-                        log_message(CK_CCTV_LINK_SLOG_LOG_FILE_PATH, "signal syslog server ip change");
-                            syslog_init(); 
-                            break;
-                        case 2:
-                            break;
-                        default:
-                            break;
-                    }
+        nFD = select(pServer->xSocket+1, &xRFDS, NULL, NULL, NULL);
+		if (nFD > 0)
+		{
+			if (FD_ISSET(pServer->xSocket, &xRFDS)) 
+			{
+				CATCHB_SOCKET	xClientSocket= accept(pServer->xSocket, NULL, 0);
+				if (xClientSocket < 0)
+				{
+					xRet = CATCHB_RET_SOCKET_ACCEPT_FAILED;
+					ERROR(xRet, "Failed to accept socket!");
+					goto finished;
+				}
 
-                }
-            }
-            close(client_socket);
-        }
-    }
+				while (CATCHB_TRUE)
+				{
+					CATCHB_INT	nRead;
+
+					nRead = read(xClientSocket, &xSignalInfo, sizeof(CK_SIGNAL_INFO));
+					if (nRead < 0)
+					{
+						xRet = CATCHB_RET_SOCKET_ABNORMAL_DISCONNECTED;
+						ERROR(xRet, "Socket is abnormal disconnected.");
+						break;
+					}
+					if (nRead == 0)
+					{
+						xRet = CATCHB_RET_OK;
+						TRACE("Socket is disconnected.");
+						break;
+					}
+					else
+					{
+
+						if (xSignalInfo.ck_event_division == 1)
+						{
+							LOG("signal syslog server ip changed.");
+							syslog_init(); 
+						}
+					}
+				}
+
+				close(xClientSocket);
+			}
+		}
+		else if (nFD < 0)
+		{
+			sleep(1);
+		}
+	}
+
+finished:
+	if (pServer != NULL)
+	{
+		CATCHB_SERVER_destroy(&pServer);	
+	}
+
     return 0;
 }
 

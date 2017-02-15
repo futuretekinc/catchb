@@ -9,44 +9,47 @@
 #include <syslog.h>
 #include <semaphore.h>
 #include <signal.h>
+#include "catchb_trace.h"
+#include "catchb_server.h"
 
-
-int main(int argc, char ** argv)
+int main
+(
+	CATCHB_INT	nArgc, 
+	CATCHB_CHAR_PTR	_PTR_ ppArgv
+)
 {
+	CATCHB_RET		xRet;
+	CATCHB_SERVER_PTR	pServer = NULL;
+
     char ch;
-    int n, num_read = 0;
     int debug_mode = 0;
-    int sockfd = 0, client_socket = 0;
 
-    struct timeval tv;
-
-    fd_set rfds;
     char app[255];
 
     CK_SIGNAL_INFO signal_info;
 
 
-    while ((ch = getopt(argc, argv, "adh")) != -1)
+    while ((ch = getopt(nArgc, ppArgv, "adh")) != -1)
     {
-        switch (ch)
-        {
-            case 'a':
-                break;
+		switch (ch)
+		{
+		case 'a':
+			break;
 
-            case 'd':
-                debug_mode = 1;
-                break;
+		case 'd':
+			debug_mode = 1;
+			break;
 
-            case 'h':
-                break;
+		case 'h':
+			break;
 
-            default:
-                break;
+		default:
+			break;
         }
-
-        break;
     }
-    if (check_pid(CK_NAME_CCTV_OPERATION) != 0) {
+
+    if (check_pid(CK_NAME_CCTV_OPERATION) != 0) 
+	{
         return -1;
     }
 
@@ -55,16 +58,23 @@ int main(int argc, char ** argv)
 
     write_pid(CK_NAME_CCTV_OPERATION);
 
-    if (access(SV_SOCK_CCTV_OPERATION_PATH, F_OK) == 0)
-        unlink(SV_SOCK_CCTV_OPERATION_PATH);
 
+	xRet = CATCHB_SERVER_create(&pServer);
+	if (xRet != CATCHB_RET_OK)
+	{
+		ERROR(xRet, "Failed to create server!\n");
+		goto finished;
+	}
 
-    if(server_socket_create(&sockfd,(char*)SV_SOCK_CCTV_OPERATION_PATH)){
-        cctv_system_error("cctv_operation/main() - server_socket_create : %s",strerror(errno));
-        return 0;
+	xRet = CATCHB_SERVER_open(pServer, SV_SOCK_CCTV_OPERATION_PATH);
+    if(xRet != CATCHB_RET_OK)
+	{
+		CATCHB_SERVER_destroy(&pServer);
+        ERROR(xRet, "Failed to open server!");
+		goto finished;
     }
 
-    log_message(CK_CCTV_OPERATION_LOG_FILE_PATH, "cctv_operation process start");
+    LOG("cctv_operation process start");
 
 
     memset(app, 0x00, sizeof(app));
@@ -72,22 +82,25 @@ int main(int argc, char ** argv)
     sprintf(app, "%s/%s", "/root/cctv_check/bin", "cctv_scheduler");
     system(app);
 
-    while(1) 
+    while(CATCHB_TRUE) 
     {
+		CATCHB_INT	n;
+		fd_set	xRFDS;
+    	struct timeval xTimeVal;
 
-        FD_ZERO(&rfds);
-        FD_SET(sockfd,&rfds);
+        FD_ZERO(&xRFDS);
+        FD_SET(pServer->xSocket,&xRFDS);
 
-        tv.tv_sec = 500;
-        tv.tv_usec =0;
+        xTimeVal.tv_sec = 500;
+        xTimeVal.tv_usec =0;
 
-        if ((n = select(sockfd+1, &rfds, (fd_set*)0, (fd_set *)0, &tv)) < 0) {
+        n = select(pServer->xSocket+1, &xRFDS, (fd_set*)0, (fd_set *)0, &xTimeVal);
+        if (n < 0) 
+		{
             sleep(1);
             continue;
-
         }
-
-        if ( n == 0)
+		else if ( n == 0)
         {
             memset(app, 0x00, sizeof(app));
             sleep(3);
@@ -103,48 +116,64 @@ int main(int argc, char ** argv)
 
 
         }
-        else{
-            if (FD_ISSET(sockfd, &rfds)) {
-                client_socket= accept(sockfd, NULL, 0);
-                if (client_socket == -1){
+        else
+		{
+            if (FD_ISSET(pServer->xSocket, &xRFDS)) 
+			{
+				CATCHB_INT		nRead;
+				CATCHB_SOCKET	xClientSocket;
+                xClientSocket= accept(pServer->xSocket, NULL, 0);
+                if (xClientSocket == -1)
+				{
                     cctv_system_error("cctv_operation/main() -clinet not accept :%s",strerror(errno));
                     return 0;
                 }
-                while ((num_read = read(client_socket, &signal_info, sizeof(CK_SIGNAL_INFO))) > 0){
-                    if (num_read == -1){
-                        cctv_system_error("cctv_operation/main() - not read : %s",strerror(errno));
-                    }else{
 
-                        switch (signal_info.ck_event_division){
+                while (CATCHB_TRUE)
+				{
+                	nRead = read(xClientSocket, &signal_info, sizeof(CK_SIGNAL_INFO));
+					if (nRead < 0)
+					{
+						xRet = CATCHB_RET_SOCKET_ABNORMAL_DISCONNECTED;
+						ERROR(xRet, "Socket is abnormal disconnected!");
+						break;
+					}
+					else if (nRead == 0)
+					{
+						xRet = CATCHB_RET_OK;
+						ERROR(xRet, "Socket is disconnected!");
+						break;
+					}
+					else
+					{
+						if (signal_info.ck_event_division == 1)
+						{
+							log_message(CK_CCTV_OPERATION_LOG_FILE_PATH, "signal main engine");
+							memset(app, 0x00, sizeof(app));
 
-                            case 0:
-                                break;
-
-                            case 1:
-                                log_message(CK_CCTV_OPERATION_LOG_FILE_PATH, "signal main engine");
-                                memset(app, 0x00, sizeof(app));
-
-                                system("pkill cctv_schedu");
-                                sleep(1);
-                                system("pkill cctv_ana");
+							system("pkill cctv_schedu");
+							sleep(1);
+							system("pkill cctv_ana");
 
 
-                                sprintf(app, "%s/%s", "/root/cctv_check/bin", "cctv_scheduler");
+							sprintf(app, "%s/%s", "/root/cctv_check/bin", "cctv_scheduler");
 
-                                system(app);
-                                break;
-                            case 2:
-                                break;
-                            default:
-                                break;
-                        }
+							system(app);
+						}
+					}
+				}
 
-                    }
-                }
-                close(client_socket);
-            }
-        }
+				close(xClientSocket);
+			}
+		}
     }
+
+finished:
+	if (pServer != NULL)
+	{
+		CATCHB_SERVER_destroy(&pServer);
+	}
+
     return 0;
 }
 

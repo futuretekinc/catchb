@@ -15,7 +15,7 @@
 #include<net/if.h>
 #include<sys/ioctl.h>
 #include<arpa/inet.h>
-#include"trace.h"
+#include"catchb_trace.h"
 
 extern sem_t sendthread, mainthread;
 

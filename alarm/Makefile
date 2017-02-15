@@ -10,5 +10,5 @@ include $(TOPDIR)/IncludePre.mk
 
 BIN_TARGET=alarm
 BIN_OBJS=$(patsubst %.c,%.o,$(wildcard *.c))
-BIN_LDFLAGS=$(LDFLAGS) -L$(TOPDIR)/lib -lcatchb -pthread -ldl
+BIN_LDFLAGS=$(LDFLAGS) -L$(TOPDIR)/lib -lcatchb -lsqlite3 -pthread -ldl
 include $(TOPDIR)/IncludePost.mk

@@ -10,7 +10,8 @@
 #include <syslog.h>
 #include <semaphore.h>
 #include <signal.h>
-#include "trace.h"
+#include "catchb_trace.h"
+#include "catchb_server.h"
 
 extern char *program_invocation_short_name;
 struct list_head check_ip_list_head;  //ip link list head
@@ -24,6 +25,9 @@ sem_t sendthread, mainthread;
 
 int main(int argc, char ** argv)
 {
+	CATCHB_RET	xRet;
+	CATCHB_SERVER_PTR	pServer = NULL;
+
     char ch;
 	int	i, n, num_read;
     int debug_mode = 0;
@@ -80,9 +84,18 @@ int main(int argc, char ** argv)
 
     INIT_LIST_HEAD(&check_ip_list_head);
 
-    if(server_socket_create(&sockfd,(char*)SV_SOCK_CCTV_SCHEDULER_PATH))
+	xRet = CATCHB_SERVER_create(&pServer);
+	if (xRet != CATCHB_RET_OK)
 	{
-        cctv_system_error("cctv_scheduler/main() - server_socket_create : %s",strerror(errno));
+		ERROR(xRet, "Failed to create server!\n");
+		return	0;
+	}
+
+	xRet = CATCHB_SERVER_open(pServer, SV_SOCK_CCTV_SCHEDULER_PATH);
+    if(xRet != CATCHB_RET_OK)
+	{
+		CATCHB_SERVER_destroy(&pServer);
+        ERROR(xRet, "Failed to open server!\n");
         return 0;
     }
 
@@ -92,7 +105,7 @@ int main(int argc, char ** argv)
 
     db_cctv_info_delete(); 
 
-    log_message(CK_CCTV_SCHEDULER_LOG_FILE_PATH, "cctv_scheduler process start");
+    LOG("%s started.", program_invocation_short_name);
 
     get_local_ip();
 
