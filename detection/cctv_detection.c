@@ -1,7 +1,10 @@
 #include <common.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #include <libalarm.h>
 #include <libsmtpc.h>
-#include <cctv_alarm.h>
 #include <liblogs.h>
 #include <libutil.h>
 #include <libsignal.h>

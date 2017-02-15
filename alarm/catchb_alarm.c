@@ -1,6 +1,8 @@
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <common.h>
-#include <libalarm.h>
-#include <cctv_alarm.h>
 #include <libalarm.h>
 #include <liblogs.h>
 #include <libsignal.h>

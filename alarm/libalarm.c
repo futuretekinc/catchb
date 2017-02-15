@@ -1,5 +1,4 @@
 #include <common.h>
-#include <cctv_alarm.h>
 #include <libalarm.h>
 #include <liblogs.h>
 //#include <libsmtpc.h>
