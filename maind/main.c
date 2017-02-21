@@ -1,145 +1,168 @@
-#include <cctv_maind.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <common_libssh.h>
 #include "libutil.h"
 #include "liblogs.h"
-#include "catchb_trace.h"
-#include "catchb_config.h"
+#include "ftm_trace.h"
+#include "ftm_config.h"
+#include "ftm_utils.h"
+#include "ftm_catchb.h"
+#include "ftm_shell.h"
 
-extern	CATCHB_CHAR_PTR	program_invocation_short_name;
+extern	
+FTM_CHAR_PTR	program_invocation_short_name;
+extern	
+FTM_SHELL_CMD	pCatchBShellCmdList[];
+extern	
+FTM_UINT32	ulCatchBShellCmdCount;
 
-int main(int argc, char *argv[])
+static	FTM_BOOL	bDebugMode = FTM_TRUE;
+static	FTM_CHAR	pConfigFileName[FTM_PATH_LEN + FTM_FILE_NAME_LEN] = "";
+
+FTM_RET	FTM_showUsage();
+
+FTM_RET	FTM_setOptions
+(
+	FTM_INT			nArgc,
+	FTM_CHAR_PTR	ppArgv[]
+);
+
+FTM_INT	main
+(
+	FTM_INT			nArgc, 
+	FTM_CHAR_PTR	ppArgv[]
+)
 {
-	CATCHB_RET	xRet;
-    int rt;
-    int i;
-    time_t  timer;
-    struct tm *t;
-    char app[255];
-    int debug_mode = 0;
-    char ch;
-    int current_day = 0;
-    int current_hour = 0;
-    int current_min = 0;
-    char check_process_name[5][256] ={CK_NAME_CCTV_ALARM,CK_NAME_CCTV_LINK_SLOG, CK_NAME_CCTV_DETECTION,CK_NAME_CCTV_SCHEDULER, CK_NAME_CCTV_OPERATION};
-    char s_process_name[5][256] ={CK_NAME_CCTV_ALARM,CK_NAME_CCTV_LINK_SLOG, CK_NAME_CCTV_DETECTION, CK_NAME_CCTV_SCHEDULER, CK_NAME_CCTV_OPERATION};
-
-
-
-    while ((ch = getopt(argc, argv, "adh")) != -1)
-    {
-        switch (ch)
-        {
-        case 'a':
-			break;
-
-		case 'd':
-			debug_mode = 1;
-			break;
-
-		case 'h':
-			break;
-
-		default:
-            break;
-        }
-
-     break;
-    }
-
-	CATCHB_CONFIG_PTR	pConfig;
+	FTM_RET			xRet;
+	//FTM_BOOL		bDuplicated = FTM_FALSE;
+	FTM_CONFIG_PTR	pConfig = NULL;
+	FTM_CATCHB_PTR	pCatchB = NULL;
 
 	TRACE_ENTRY();
-	xRet = CATCHB_CONFIG_create(&pConfig);
-	if (xRet != CATCHB_RET_OK)
+	xRet = FTM_setOptions(nArgc, ppArgv);
+	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to create config!\n");
+		ERROR(xRet, "Invalid arguemtns!\n");
+		FTM_showUsage();
 		return	0;	
 	}
 
 	TRACE_ENTRY();
-	xRet = CATCHB_CONFIG_load(pConfig, "./catchb.conf");
-	if (xRet != CATCHB_RET_OK)
+#if 0
+	FTM_areDuplicatesRunning(program_invocation_short_name,  getpid(), &bDuplicated);
+	if (bDuplicated)
 	{
-		ERROR(xRet, "Failed to load config!\n");
-		return	0;
-	}
-
-	TRACE_ENTRY();
-	CATCHB_CONFIG_show(pConfig);
-
-	TRACE_ENTRY();
-
-    if (check_pid(program_invocation_short_name) != 0) 
-	{
-		xRet = CATCHB_RET_ALREADY_RUNNING;
+		xRet = FTM_RET_ALREADY_RUNNING;
         ERROR(xRet ,"%s is already running!!\n", program_invocation_short_name);
 		goto finished;
     }
 
-    write_pid(program_invocation_short_name);
+	FTM_createPIDFile(program_invocation_short_name, getpid());
+#endif
+	xRet = FTM_CONFIG_create(&pConfig);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create config!\n");
+		goto finished;
+	}
 
+	xRet = FTM_CONFIG_load(pConfig, pConfigFileName);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to load config!\n");
+		goto finished;
+	}
 
-    if (!debug_mode)
+	FTM_CONFIG_show(pConfig);
+	
+	TRACE_ENTRY();
+    if (!bDebugMode)
 	{
         daemon(0, 0);
 	}
 
-    LOG("cctv_maind daemon start");
+	xRet = FTM_CATCHB_create(&pCatchB);
+	if(xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create catchb!\n");
+		goto finished;
+	}
 
-    create_db();
+	xRet = FTM_CATCHB_start(pCatchB);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to start catchb!\n");
+		goto finished;	
+	}
 
-    initdb();
-
-    while(1)
-    {
-
-        timer = time(NULL);
-
-        t = localtime(&timer);
-
-        current_day = t->tm_mday;
-
-        current_hour = t->tm_hour;
-
-        current_min = t->tm_min;
-
-        
-        if(current_day == 1)
-		{
-            if (current_hour == 1)
-			{
-                if(current_min == 1)
-				{
-                    LOG("cctv_maind db 2 months ago delete");
-                    db_cctv_log_check_delete();
-                }
-            }
-        }
-
-        for(i =0; i< 6; i++)
-        {
-            memset(app, 0x00, sizeof(app));
-            sprintf(app, "%s/%s", APP_PATH, s_process_name[i]);
-            rt = check_process(check_process_name[i]);
-
-            if(rt == 0)  //죽었을 시
-            {
-                // 새로 뛰움
-                log_message(CK_CCTV_MAIND_LOG_FILE_PATH, "cctv_maind process restart :%s",app);
-                system(app);
-            }
-        }
-        system("rm -rf /var/log/*.1");
-        // 검사 후, process sleep 
-        sleep(CHECK_SECOND);    
-    }
+	if (!bDebugMode)
+	{
+    	while(FTM_TRUE)
+    	{
+			sleep(1);    
+    	}
+	}
+	else
+	{
+		FTM_SHELL_run2("catchb", pCatchBShellCmdList, ulCatchBShellCmdCount, pCatchB);
+	}
 
 finished:
+	TRACE_EXIT();
+
+	if (pCatchB != NULL)
+	{
+		xRet = FTM_CATCHB_destroy(&pCatchB);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to destroy catchb!\n");	
+		}
+	}
+
 	if (pConfig != NULL)
 	{
-		CATCHB_CONFIG_destroy(&pConfig);
+		FTM_CONFIG_destroy(&pConfig);
 	}
 	
     return 0;
+}
+
+FTM_RET	FTM_setOptions
+(
+	FTM_INT			nArgc,
+	FTM_CHAR_PTR	ppArgv[]
+)
+{
+	FTM_CHAR	xOption;
+
+    while ((xOption = getopt(nArgc, ppArgv, "c:d")) != -1)
+    {
+        switch (xOption)
+        {
+		case 'c':
+			strncpy(pConfigFileName, optarg, sizeof(pConfigFileName) - 1);
+			break;
+
+		case 'd':
+			bDebugMode = FTM_TRUE;
+			break;
+
+		default:
+			return	FTM_RET_INVALID_ARGUMENTS;
+        }
+    }
+
+	if (strlen(pConfigFileName) == 0)
+	{
+		snprintf(pConfigFileName, sizeof(pConfigFileName) - 1, "/etc/%s.conf", program_invocation_short_name);	
+	}
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_showUsage()
+{
+	return	FTM_RET_OK;
+	
 }
 

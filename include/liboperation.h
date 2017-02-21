@@ -36,8 +36,6 @@
 #include <errno.h>
 #include <stdbool.h>
 
-#include "linux_list.h"
-
 #define STATIC_FOLDER_NUM 3
 #define STATIC_FOLDER_LENG 256
 
@@ -64,7 +62,6 @@
 #define LOCAL_PORT 54321
 #define TRANS_TIMEOUT 1
 #define RETRANS_TIMES 3
-#define PORT_NUM 8
 
 #define TCPOPT_EOL      0   /* End of options */
 #define TCPOPT_NOP      1   /* Nothing */
@@ -137,36 +134,6 @@ struct tcp_hdr
     uint16_t   tcp_cksum;
     uint16_t   tcp_urg_ptr;
 } __attribute__ ((packed));
-
-
-
-typedef struct _packet_os_matrix{
-    bool ttl;
-    bool df;
-    bool tcp_mss;
-    bool window_scale;
-    bool window_size;
-    bool syn_pkt_size;
-    bool options_order;
-    bool ipid;
-}CK_OS_MATRIX;
-
-typedef struct _check_ip_infomation{
-    int ck_id;
-    int ck_cctv_idx;
-    char ck_cctv_id[24];
-    char ck_ip[24];
-    char ck_signature[128];
-    struct list_head list;
-}CK_IP_INFO;
-
-typedef struct _score_infomation{
-    pid_t tid;
-    float score;
-    char analysis_cctv_ip[24];
-    pcap_t* descr;
-    CK_OS_MATRIX os_matrix;
-}CK_SCORE_INFO;
 
 
 struct tcp_pseudo_hdr {
