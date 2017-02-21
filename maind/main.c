@@ -8,6 +8,7 @@
 #include "ftm_utils.h"
 #include "ftm_catchb.h"
 #include "ftm_shell.h"
+#include "ftm_mem.h"
 
 extern	
 FTM_CHAR_PTR	program_invocation_short_name;
@@ -38,12 +39,14 @@ FTM_INT	main
 	FTM_CONFIG_PTR	pConfig = NULL;
 	FTM_CATCHB_PTR	pCatchB = NULL;
 
+	FTM_MEM_init();
+
 	xRet = FTM_setOptions(nArgc, ppArgv);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Invalid arguemtns!\n");
 		FTM_showUsage();
-		return	0;	
+		goto finished;
 	}
 
 #if 0
@@ -121,6 +124,8 @@ finished:
 		FTM_CONFIG_destroy(&pConfig);
 	}
 	
+	FTM_MEM_final();
+
     return 0;
 }
 

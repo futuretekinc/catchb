@@ -77,3 +77,19 @@ FTM_RET	FTM_CCTV_unlock
 
 	return	FTM_RET_OK;
 }
+
+FTM_CHAR_PTR	FTM_printCCTVStat
+(
+	FTM_CCTV_STAT	xStat
+)
+{
+	switch(xStat)
+	{
+	case	FTM_CCTV_STAT_UNREGISTERED:	return	"UNREGISTERED";
+	case	FTM_CCTV_STAT_UNUSED:		return	"UNUSED";
+	case	FTM_CCTV_STAT_NORMAL:		return	"NORMAL";
+	case	FTM_CCTV_STAT_ABNORMAL:		return	"ABNORMAL";
+	default:	return	"UNKNOWN";	
+	}
+
+}

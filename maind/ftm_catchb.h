@@ -30,6 +30,8 @@ typedef	struct	FTM_CATCHB_STRUCT
 	FTM_DB_PTR			pDB;	
 
 	FTM_LIST_PTR		pCCTVList;
+	FTM_LIST_PTR		pSwitchList;
+
 	FTM_ANALYZER_PTR	pAnalyzer;
 	FTM_DETECTOR_PTR	pDetector;
 	FTM_EVENT_TIMER_MANAGER_PTR	pEventManager;
@@ -88,5 +90,12 @@ FTM_RET	FTM_CATCHB_CCTV_setStat
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_CHAR_PTR	pID,
 	FTM_CCTV_STAT	xStat
+);
+
+FTM_RET	FTM_CATCHB_CCTV_register
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pHash
 );
 #endif

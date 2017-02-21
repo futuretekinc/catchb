@@ -4,6 +4,7 @@
 #include <sqlite3.h>
 #include "ftm_types.h"
 #include "ftm_cctv.h"
+#include "ftm_switch.h"
 
 #define	FTM_DB_QUERY_LEN	1024
 
@@ -212,13 +213,13 @@ FTM_RET	FTM_DB_SWITCH_count
 	FTM_UINT32_PTR pCount
 );
 
-FTM_RET	FTM_DB_SWITCH_insert
+FTM_RET	FTM_DB_SWITCH_add
 (
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID,
+	FTM_SWITCH_TYPE	xType,
 	FTM_CHAR_PTR	pUser,
 	FTM_CHAR_PTR	pPasswd,
-	FTM_CHAR_PTR	pName,
 	FTM_CHAR_PTR	pIP,
 	FTM_CHAR_PTR	pComment	
 );
@@ -232,7 +233,7 @@ FTM_RET	FTM_DB_SWITCH_delete
 FTM_RET	FTM_DB_SWITCH_getList
 (
 	FTM_DB_PTR		pDB,
-	FTM_SWITCH_PTR	pElements,
+	FTM_SWITCH_CONFIG_PTR	pElements,
 	FTM_UINT32		ulMaxCount,
 	FTM_UINT32_PTR	pCount
 );

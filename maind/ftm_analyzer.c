@@ -291,14 +291,13 @@ FTM_RET	FTM_ANALYZER_process
 
 		TRACE("CCTV[%s] analyzing!", pCCTV->xConfig.pID);
 
-		cctv_ping_check(pCCTV->xConfig.pIP, &ulReplyCount);
+		FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);
 
 		if(ulReplyCount == 0)
 		{ 
 			TRACE("CCTV[%s] not responsed!", pCCTV->xConfig.pID);
 			if (pCCTV->xConfig.xStat != FTM_CCTV_STAT_UNREGISTERED)
 			{
-				pCCTV->xConfig.xStat = FTM_CCTV_STAT_UNUSED;
 				FTM_CATCHB_CCTV_setStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_UNUSED);
 
 			}
@@ -329,21 +328,26 @@ FTM_RET	FTM_ANALYZER_process
 
 			FTM_HASH_SHA1((FTM_UINT8_PTR)pHashData, ulHashDataLen, pHashValue, sizeof(pHashValue));
 
-			TRACE("Hash Data : %s\n",pHashData);
-			TRACE("Hash Value : %s\n",pHashValue);
-
-			if(!strncmp(pCCTV->xConfig.pHash, pHashValue, sizeof(pHashValue)))
+			if (strlen(pCCTV->xConfig.pHash) == 0)
 			{
-				pCCTV->xConfig.xStat = FTM_CCTV_STAT_NORMAL;
-				FTM_CATCHB_CCTV_setStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_NORMAL);
+				FTM_CATCHB_CCTV_register(pAnalyzer->pCatchB, pCCTV->xConfig.pID, pHashValue);
 			}
 			else
 			{
-				pCCTV->xConfig.xStat = FTM_CCTV_STAT_ABNORMAL;
-				FTM_CATCHB_CCTV_setStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_ABNORMAL);
+				if(!strncmp(pCCTV->xConfig.pHash, pHashValue, sizeof(pHashValue)))
+				{
+					FTM_CATCHB_CCTV_setStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_NORMAL);
+				}
+				else
+				{
+					TRACE("CCTV[%s] hash is abnormal.", pCCTV->xConfig.pID);
+					TRACE("Original Hash : %s", pCCTV->xConfig.pHash);
+					TRACE(" Current Hash : %s", pHashValue);
+					
+					FTM_CATCHB_CCTV_setStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_ABNORMAL);
+				}
+
 			}
-
-
 		}
 
 		FTM_TIMER_addS(&pCCTV->xExpiredTimer, 60);

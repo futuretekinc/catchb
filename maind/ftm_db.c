@@ -32,6 +32,8 @@ FTM_RET	FTM_DB_create
 	FTM_DB_PTR	pDB;
 
 	pDB = (FTM_DB_PTR)FTM_MEM_malloc(sizeof(FTM_DB));
+
+		TRACE("pDB = %08x, sqlite3 = %08x\n", pDB, pDB->pSQLite3);
 	if (pDB == NULL)
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;	
@@ -44,6 +46,8 @@ FTM_RET	FTM_DB_create
 		strcpy(pDB->pLogTableName, "tb_log");
 		strcpy(pDB->pDenyTableName, "tb_deny");
 		strcpy(pDB->pSwitchTableName, "tb_switch");
+
+		TRACE("pDB = %08x, sqlite3 = %08x\n", pDB, pDB->pSQLite3);
 		*ppDB = pDB;	
 	}
 
@@ -75,6 +79,7 @@ FTM_RET	FTM_DB_open
 	ASSERT(pDB != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 
+		TRACE("pDB = %08x\n", pDB);
 	if (pDB->pSQLite3 != NULL)
 	{
 		xRet = FTM_RET_DB_ALREADY_OPENED;	
@@ -825,7 +830,7 @@ FTM_RET	FTM_DB_LOG_insert
 
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (TIME, ID, IP, HASH, STATUS, LOG) VALUES('%s', '%s', '%s', '%s', '%s', '%s');", 
-		pDB->pLogTableName, pTime, pID, pIP, pHash, (nStatus == 0)?"UNUSED":((nStatus == 1)?"NORMAL":"ABORMAL"), pLog);
+		pDB->pLogTableName, pTime, pID, pIP, pHash, FTM_printCCTVStat(nStatus), pLog);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
@@ -949,7 +954,7 @@ FTM_RET	FTM_DB_SWITCH_createTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pSwitchTableName, "ID TEXT PRIMARY KEY, USER TEXT, PASSWD TEXT, NAME TEXT, IP TEXT, COMMENT TEXT");
+	return FTM_DB_createTable(pDB, pDB->pSwitchTableName, "ID TEXT PRIMARY KEY, TYPE INT, IP TEXT, USER TEXT, PASSWD TEXT, COMMENT TEXT");
 }
 
 FTM_RET	FTM_DB_SWITCH_isTableExist
@@ -980,13 +985,13 @@ FTM_RET	FTM_DB_SWITCH_count
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_SWITCH_insert
+FTM_RET	FTM_DB_SWITCH_add
 (
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID,
+	FTM_SWITCH_TYPE	xType,
 	FTM_CHAR_PTR	pUser,
 	FTM_CHAR_PTR	pPasswd,
-	FTM_CHAR_PTR	pName,
 	FTM_CHAR_PTR	pIP,
 	FTM_CHAR_PTR	pComment	
 )
@@ -998,9 +1003,10 @@ FTM_RET	FTM_DB_SWITCH_insert
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (ID, USER, PASSWD, NAME, IP, COMMENT) VALUES('%s', '%s', '%s', '%s', '%s', '%s');", 
-		pDB->pSwitchTableName, pID, (pUser)?pUser:"", (pPasswd)?pPasswd:"", (pName)?pName:"", (pIP)?pIP:"", (pComment)?pComment:"");
-	
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (ID, TYPE, IP, USER, PASSWD, COMMENT) VALUES('%s', %d, '%s', '%s', '%s', '%s');", 
+		pDB->pSwitchTableName, pID, xType, (pIP)?pIP:"", (pUser)?pUser:"", (pPasswd)?pPasswd:"", (pComment)?pComment:"");
+
+	TRACE("QUERY : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
@@ -1038,7 +1044,7 @@ typedef struct
 {
 	FTM_UINT32		ulMaxCount;
 	FTM_UINT32		ulCount;
-	FTM_SWITCH_PTR	pElements;
+	FTM_SWITCH_CONFIG_PTR	pElements;
 }   FTM_SWITCH_GET_LIST_PARAMS, _PTR_ FTM_SWITCH_GET_LIST_PARAMS_PTR;
 
 static 
@@ -1062,6 +1068,10 @@ FTM_INT	FTM_DB_SWITCH_getListCB
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pID, ppArgv[i]);
 			}    
+			else if (strcmp(ppColName[i], "TYPE") == 0)
+			{
+				pParams->pElements[pParams->ulCount].xType = atoi(ppArgv[i]);
+			}
 			else if (strcmp(ppColName[i], "IP") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pIP, ppArgv[i]);
@@ -1074,10 +1084,6 @@ FTM_INT	FTM_DB_SWITCH_getListCB
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pPasswd, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "NAME") == 0)
-			{
-				strcpy(pParams->pElements[pParams->ulCount].pName, ppArgv[i]);
-			}
 			else if (strcmp(ppColName[i], "COMMENT") == 0)
 			{
 				strcpy(pParams->pElements[pParams->ulCount].pComment, ppArgv[i]);
@@ -1094,7 +1100,7 @@ FTM_INT	FTM_DB_SWITCH_getListCB
 FTM_RET	FTM_DB_SWITCH_getList
 (
 	FTM_DB_PTR		pDB,
-	FTM_SWITCH_PTR	pElements,
+	FTM_SWITCH_CONFIG_PTR	pElements,
 	FTM_UINT32		ulMaxCount,
 	FTM_UINT32_PTR	pCount
 

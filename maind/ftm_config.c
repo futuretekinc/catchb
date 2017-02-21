@@ -5,48 +5,7 @@
 #include "ftm_trace.h"
 #include "cjson/cJSON.h"
 #include "ftm_mem.h"
-
-//////////////////////////////////////////////////////////////
-//	FTM_SWITCH_CONFIG functions
-//////////////////////////////////////////////////////////////
-FTM_RET	FTM_SWITCH_CONFIG_create
-(
-	FTM_SWITCH_CONFIG_PTR _PTR_ ppConfig
-)
-{
-	ASSERT(ppConfig != NULL);
-	FTM_RET	xRet = FTM_RET_OK;
-	FTM_SWITCH_CONFIG_PTR	pConfig;
-
-	pConfig = (FTM_SWITCH_CONFIG_PTR)FTM_MEM_malloc(sizeof(FTM_SWITCH_CONFIG));
-	if (pConfig == NULL)
-	{
-		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
-		ERROR(xRet, "Failed to create switch config!\n");
-		return	xRet;
-	}
-
-	memset(pConfig, 0, sizeof(FTM_SWITCH_CONFIG));
-	*ppConfig = pConfig;
-
-	return	xRet;
-}
-
-FTM_RET	FTM_SWITCH_CONFIG_destroy
-(
-	FTM_SWITCH_CONFIG_PTR _PTR_ ppConfig
-)
-{
-	ASSERT(ppConfig != NULL);
-	ASSERT(*ppConfig != NULL);
-	FTM_RET	xRet = FTM_RET_OK;
-
-	FTM_MEM_free(*ppConfig);
-
-	*ppConfig = NULL;
-
-	return	xRet;
-}
+#include "ftm_switch.h"
 
 //////////////////////////////////////////////////////////////
 //	FTM_CONFIG functions

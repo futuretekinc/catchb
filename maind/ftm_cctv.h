@@ -52,4 +52,8 @@ FTM_RET	FTM_CCTV_unlock
 	FTM_CCTV_PTR	pCCTV
 );
 
+FTM_CHAR_PTR	FTM_printCCTVStat
+(
+	FTM_CCTV_STAT	xStat
+);
 #endif

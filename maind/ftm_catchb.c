@@ -7,6 +7,7 @@
 #include "ftm_mem.h"
 #include "ftm_timer.h"
 #include "ftm_cctv.h"
+#include "ftm_cctv.h"
 
 #undef	__MODULE__
 #define	__MODULE__	"CATCHB"
@@ -64,7 +65,55 @@ FTM_RET	FTM_CATCHB_CCTV_onSetStat
 	FTM_MSG_CCTV_SET_STAT_PTR	pMsg
 );
 
+FTM_RET		FTM_CATCHB_onCCTVRegister
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_CCTV_REGISTER_PTR	pMsg
+);
+
 FTM_BOOL	FTM_CATCHB_CCTV_seeker
+(
+	const FTM_VOID_PTR pElement, 
+	const FTM_VOID_PTR pIndicator
+);
+
+FTM_RET	FTM_CATCHB_EVENT_checkNewSwitch
+(
+	FTM_TIMER_PTR pTimer, 
+	FTM_VOID_PTR pData
+);
+
+FTM_RET	FTM_CATCHB_onCheckNewSwitch
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_CHECK_NEW_SWITCH_PTR	pMsg
+);
+
+FTM_RET		FTM_CATCHB_foundNewSwitchInDB
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_SWITCH_CONFIG_PTR	pConfig
+);
+
+FTM_RET		FTM_CATCHB_onFoundSwitchInDB
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_FOUND_NEW_SWITCH_IN_DB_PTR	pMsg
+);
+
+FTM_RET		FTM_CATCHB_removedSwitchInDB
+(	
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pID
+);
+
+FTM_RET		FTM_CATCHB_onRemovedSwitchInDB
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_REMOVED_SWITCH_IN_DB_PTR	pMsg
+);
+
+FTM_BOOL	FTM_CATCHB_SWITCH_seeker
 (
 	const FTM_VOID_PTR pElement, 
 	const FTM_VOID_PTR pIndicator
@@ -116,6 +165,15 @@ FTM_RET	FTM_CATCHB_create
 
 	FTM_LIST_setSeeker(pCatchB->pCCTVList, FTM_CATCHB_CCTV_seeker);
 
+	xRet = FTM_LIST_create(&pCatchB->pSwitchList);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create switch list!");
+		goto error;
+	}
+
+	FTM_LIST_setSeeker(pCatchB->pSwitchList, FTM_CATCHB_SWITCH_seeker);
+
 	xRet = FTM_DB_create(&pCatchB->pDB);
 	if (xRet != FTM_RET_OK)
 	{
@@ -123,6 +181,7 @@ FTM_RET	FTM_CATCHB_create
 		goto error;
 	}
 
+	TRACE("pCatchB = %08x, pDB = %08x\n", pCatchB, pCatchB->pDB);
 	xRet = FTM_MSGQ_create(&pCatchB->pMsgQ);
 	if (xRet != FTM_RET_OK)
 	{
@@ -187,6 +246,11 @@ error:
 			FTM_DB_destroy(&pCatchB->pDB);
 		}
 
+		if (pCatchB->pSwitchList != NULL)
+		{
+			FTM_LIST_destroy(&pCatchB->pSwitchList);	
+		}
+
 		if (pCatchB->pCCTVList != NULL)
 		{
 			FTM_LIST_destroy(&pCatchB->pCCTVList);	
@@ -217,6 +281,23 @@ FTM_RET	FTM_CATCHB_destroy
 		}
 
 		xRet = FTM_LIST_destroy(&(*ppCatchB)->pCCTVList);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to destroy cctv list!");
+		}
+	}
+
+	if ((*ppCatchB)->pSwitchList != NULL)
+	{
+		FTM_SWITCH_PTR	pSwitch = NULL;
+
+		FTM_LIST_iteratorStart((*ppCatchB)->pSwitchList);
+		while(FTM_LIST_iteratorNext((*ppCatchB)->pSwitchList, (FTM_VOID_PTR _PTR_)&pSwitch) == FTM_RET_OK)
+		{
+			FTM_MEM_free(pSwitch);
+		}
+
+		xRet = FTM_LIST_destroy(&(*ppCatchB)->pSwitchList);
 		if (xRet != FTM_RET_OK)
 		{
 			ERROR(xRet, "Failed to destroy cctv list!");
@@ -278,6 +359,7 @@ FTM_RET	FTM_CATCHB_start
 		return	xRet;
 	}
 
+	TRACE("pCatchB = %08x, pDB = %08x\n", pCatchB, pCatchB->pDB);
 	if (pthread_create(&pCatchB->xThread, NULL, FTM_CATCHB_process, (FTM_VOID_PTR)pCatchB) < 0)
 	{
 		xRet = FTM_RET_THREAD_CREATION_FAILED;
@@ -327,11 +409,65 @@ FTM_RET	FTM_CATCHB_initProcess
 
 	FTM_RET	xRet;
 	FTM_BOOL	bExist;
+
+	TRACE("pCatchB = %08x, pDB = %08x\n", pCatchB, pCatchB->pDB);
 	xRet = FTM_DB_open(pCatchB->pDB, pCatchB->xConfig.xDB.pFileName);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to open DB!");	
 		return	xRet;
+	}
+
+	xRet = FTM_DB_SWITCH_isTableExist(pCatchB->pDB, &bExist);
+	if (bExist)
+	{
+		FTM_UINT32	ulCount;
+
+		xRet = FTM_DB_SWITCH_count(pCatchB->pDB, &ulCount);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to get SWITCH count!");	
+		}
+		else if (ulCount != 0)
+		{
+			FTM_SWITCH_CONFIG_PTR	pConfigArray = (FTM_SWITCH_CONFIG_PTR)FTM_MEM_calloc(sizeof(FTM_SWITCH_CONFIG), ulCount);
+			if (pConfigArray == NULL)
+			{
+				xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+				ERROR(xRet, "Failed to alloc SWITCH config array!");
+			}
+			else
+			{
+				FTM_UINT32	i;
+
+				xRet = FTM_DB_SWITCH_getList(pCatchB->pDB, pConfigArray, ulCount, &ulCount);
+				if (xRet != FTM_RET_OK)
+				{
+					ERROR(xRet, "Failed to get SWITCH list!");
+				}
+				else
+				{
+					for(i = 0 ; i < ulCount ; i++)
+					{
+						xRet = FTM_CATCHB_foundNewSwitchInDB(pCatchB, &pConfigArray[i]);
+						if (xRet != FTM_RET_OK)
+						{
+							ERROR(xRet, "Failed to send message to CatchB!");	
+						}
+
+					}
+				}	
+				FTM_MEM_free(pConfigArray);	
+			}
+		}
+	}
+	else
+	{
+		xRet = FTM_DB_SWITCH_createTable(pCatchB->pDB);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to create SWITCH table!");	
+		}	
 	}
 
 	xRet = FTM_DB_CCTV_isTableExist(pCatchB->pDB, &bExist);
@@ -450,6 +586,7 @@ FTM_VOID_PTR	FTM_CATCHB_process
 	FTM_RET	xRet;
 	FTM_CATCHB_PTR	pCatchB = (FTM_CATCHB_PTR)pData;
 
+	TRACE("pCatchB = %08x, pDB = %08x\n", pCatchB, pCatchB->pDB);
 	xRet = FTM_CATCHB_initProcess(pCatchB);
 	if (xRet != FTM_RET_OK)
 	{
@@ -492,6 +629,24 @@ FTM_VOID_PTR	FTM_CATCHB_process
 		{
 			switch(pRcvdMsg->xType)
 			{
+			case	FTM_MSG_TYPE_CHECK_NEW_SWITCH:
+				{
+					xRet = FTM_CATCHB_onCheckNewSwitch(pCatchB, (FTM_MSG_CHECK_NEW_SWITCH_PTR)pRcvdMsg);
+				}
+				break;
+
+			case	FTM_MSG_TYPE_FOUND_NEW_SWITCH_IN_DB:
+				{
+					xRet = FTM_CATCHB_onFoundSwitchInDB(pCatchB, (FTM_MSG_FOUND_NEW_SWITCH_IN_DB_PTR)pRcvdMsg);
+				}
+				break;
+
+			case	FTM_MSG_TYPE_REMOVED_SWITCH_IN_DB:
+				{
+					xRet = FTM_CATCHB_onRemovedSwitchInDB(pCatchB, (FTM_MSG_REMOVED_SWITCH_IN_DB_PTR)pRcvdMsg);
+				}
+				break;
+
 			case	FTM_MSG_TYPE_CHECK_NEW_CCTV:
 				{
 					xRet = FTM_CATCHB_onCheckNewCCTV(pCatchB, (FTM_MSG_CHECK_NEW_CCTV_PTR)pRcvdMsg);
@@ -513,6 +668,18 @@ FTM_VOID_PTR	FTM_CATCHB_process
 			case	FTM_MSG_TYPE_CCTV_HASH_UPDATED:
 				{
 					xRet = FTM_CATCHB_onCCTVHashUpdated(pCatchB, (FTM_MSG_CCTV_HASH_UPDATED_PTR)pRcvdMsg);
+				}
+				break;
+
+			case	FTM_MSG_TYPE_CCTV_SET_STAT:
+				{
+					xRet = FTM_CATCHB_CCTV_onSetStat(pCatchB, (FTM_MSG_CCTV_SET_STAT_PTR)pRcvdMsg);
+				}
+				break;
+
+			case	FTM_MSG_TYPE_CCTV_REGISTER:
+				{
+					xRet = FTM_CATCHB_onCCTVRegister(pCatchB, (FTM_MSG_CCTV_REGISTER_PTR)pRcvdMsg);
 				}
 				break;
 
@@ -925,6 +1092,21 @@ FTM_RET	FTM_CATCHB_CCTV_onSetStat
 	}
 	else
 	{
+		if (pMsg->xStat == FTM_CCTV_STAT_NORMAL)
+		{
+			if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
+			{
+				FTM_DETECTOR_setControl(pCatchB->pDetector, "1.1.1.1", pCCTV->xConfig.pIP, FTM_FALSE);
+			}
+		}
+		else if (pMsg->xStat == FTM_CCTV_STAT_ABNORMAL)
+		{
+			if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
+			{
+				FTM_DETECTOR_setControl(pCatchB->pDetector, "1.1.1.1", pCCTV->xConfig.pIP, FTM_TRUE);
+			}
+		}
+
 		pCCTV->xConfig.xStat = pMsg->xStat;
 
 		xRet = FTM_DB_LOG_insert(pCatchB->pDB, pCCTV->xConfig.pID, pCCTV->xConfig.pIP, pCCTV->xConfig.pHash, "", "", pCCTV->xConfig.xStat);
@@ -936,3 +1118,324 @@ FTM_RET	FTM_CATCHB_CCTV_onSetStat
 
 	return	xRet;
 }
+
+FTM_RET	FTM_CATCHB_CCTV_register
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pHash
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pID != NULL);
+	ASSERT(pHash != NULL);
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_MSG_CCTV_REGISTER_PTR	pMsg;
+
+	pMsg = (FTM_MSG_CCTV_REGISTER_PTR)FTM_MEM_malloc(sizeof(FTM_MSG_CCTV_REGISTER));
+	if (pMsg == NULL)
+	{
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;	
+		ERROR(xRet, "Failed to create message!");
+	}
+	else
+	{
+		pMsg->xHead.xType = FTM_MSG_TYPE_CCTV_REGISTER;
+		pMsg->xHead.ulLen = sizeof(FTM_MSG_CCTV_REGISTER);
+
+		strncpy(pMsg->pID, pID, FTM_ID_LEN);
+		strncpy(pMsg->pHash, pHash, FTM_HASH_LEN);
+
+		xRet = FTM_MSGQ_push(pCatchB->pMsgQ, pMsg);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to send message to CatchB!");
+			FTM_MEM_free(pMsg);	
+		}
+	}
+
+	return	xRet;
+}
+
+FTM_RET		FTM_CATCHB_onCCTVRegister
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_CCTV_REGISTER_PTR	pMsg
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pMsg != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_CCTV_PTR	pCCTV;
+
+	TRACE("On CCTV register : %s[%s]", pMsg->pID, pMsg->pHash);
+
+	xRet = FTM_LIST_get(pCatchB->pCCTVList, pMsg->pID, (FTM_VOID_PTR _PTR_)&pCCTV);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get CCTV[%s]", pMsg->pID);	
+	}
+	else
+	{
+		strncpy(pCCTV->xConfig.pHash, pMsg->pHash, FTM_HASH_LEN);
+
+		xRet = FTM_DB_CCTV_hashUpdated(pCatchB->pDB, pMsg->pID, pMsg->pHash);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to update CCTV[%s] hash", pMsg->pID);	
+		}
+	}
+	
+	return	xRet;
+}
+
+FTM_RET		FTM_CATCHB_foundNewSwitchInDB
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_SWITCH_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pConfig != NULL);
+	FTM_RET	xRet;	
+	FTM_MSG_FOUND_NEW_SWITCH_IN_DB_PTR	pMsg  = (FTM_MSG_FOUND_NEW_SWITCH_IN_DB_PTR)FTM_MEM_malloc(sizeof(FTM_MSG_FOUND_NEW_SWITCH_IN_DB));
+
+	pMsg->xHead.xType = FTM_MSG_TYPE_FOUND_NEW_SWITCH_IN_DB;
+	pMsg->xHead.ulLen = sizeof(FTM_MSG_FOUND_NEW_SWITCH_IN_DB);
+	memcpy(&pMsg->xConfig, pConfig, sizeof(FTM_SWITCH_CONFIG));
+
+	xRet = FTM_MSGQ_push(pCatchB->pMsgQ, pMsg);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to push message!");
+		FTM_MEM_free(pMsg);	
+	}
+
+	return	xRet;
+}
+
+FTM_RET		FTM_CATCHB_onFoundSwitchInDB
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_FOUND_NEW_SWITCH_IN_DB_PTR	pMsg
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pMsg != NULL);
+
+	FTM_RET			xRet;
+	FTM_SWITCH_PTR	pSwitch;
+
+	xRet = FTM_SWITCH_create(&pMsg->xConfig, &pSwitch);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create SWITCH!");
+	}
+	else
+	{
+		xRet = FTM_LIST_append(pCatchB->pSwitchList, pSwitch);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to append list!");
+			FTM_SWITCH_destroy(&pSwitch);
+		}
+	}
+
+	return	xRet;
+}
+
+FTM_RET		FTM_CATCHB_removedSwitchInDB
+(	
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pID
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pID != NULL);
+	FTM_RET	xRet;	
+	FTM_MSG_REMOVED_SWITCH_IN_DB_PTR pMsg  = (FTM_MSG_REMOVED_SWITCH_IN_DB_PTR)FTM_MEM_malloc(sizeof(FTM_MSG_FOUND_NEW_SWITCH_IN_DB));
+
+	pMsg->xHead.xType = FTM_MSG_TYPE_REMOVED_SWITCH_IN_DB;
+	pMsg->xHead.ulLen = sizeof(FTM_MSG_REMOVED_SWITCH_IN_DB);
+	strncpy(pMsg->pID, pID, sizeof(pMsg->pID) - 1);
+
+	xRet = FTM_MSGQ_push(pCatchB->pMsgQ, pMsg);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to push message!");
+		FTM_MEM_free(pMsg);	
+	}
+
+	return	xRet;
+}
+
+FTM_RET		FTM_CATCHB_onRemovedSwitchInDB
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_REMOVED_SWITCH_IN_DB_PTR	pMsg
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pMsg != NULL);
+	FTM_RET			xRet;
+	FTM_SWITCH_PTR	pSwitch;
+
+	TRACE("On Removed SWITCH In DB : %s", pMsg->pID);
+
+	xRet = FTM_LIST_get(pCatchB->pSwitchList, pMsg->pID, (FTM_VOID_PTR _PTR_)&pSwitch);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get SWITCH!");
+		return	xRet;	
+	}
+
+	xRet = FTM_LIST_remove(pCatchB->pSwitchList, pSwitch);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to remove SWITCH!");
+		return	xRet;
+	}
+
+	FTM_SWITCH_destroy(&pSwitch);
+
+	return	xRet;
+}
+FTM_BOOL	FTM_CATCHB_SWITCH_seeker
+(
+	const FTM_VOID_PTR pElement, 
+	const FTM_VOID_PTR pIndicator
+)
+{
+	FTM_SWITCH_PTR	pSwitch = (FTM_SWITCH_PTR)pElement;
+	FTM_CHAR_PTR	pID	  = (FTM_CHAR_PTR)pIndicator;
+
+	return	(strcmp(pSwitch->xConfig.pID, pID) == 0);
+}
+
+FTM_RET	FTM_CATCHB_SWITCH_get
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pID,
+	FTM_SWITCH_PTR _PTR_ ppSwitch
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pID != NULL);
+	ASSERT(ppSwitch != NULL);
+
+	return	FTM_LIST_get(pCatchB->pSwitchList, pID, (FTM_VOID_PTR _PTR_)ppSwitch);
+}
+
+FTM_RET	FTM_CATCHB_SWITCH_count
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32_PTR	pCount
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pCount != NULL);
+
+	return	FTM_LIST_count(pCatchB->pSwitchList, pCount);
+}
+
+FTM_RET	FTM_CATCHB_EVENT_checkNewSwitch
+(
+	FTM_TIMER_PTR pTimer, 
+	FTM_VOID_PTR pData
+)
+{
+	ASSERT(pTimer != NULL);
+	ASSERT(pData != NULL);
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_CATCHB_PTR	pCatchB = (FTM_CATCHB_PTR)pData;
+	FTM_MSG_CHECK_NEW_SWITCH_PTR	pMsg  = (FTM_MSG_CHECK_NEW_SWITCH_PTR)FTM_MEM_malloc(sizeof(FTM_MSG_CHECK_NEW_SWITCH));
+
+	pMsg->xHead.xType = FTM_MSG_TYPE_CHECK_NEW_SWITCH;
+	pMsg->xHead.ulLen = sizeof(FTM_MSG_CHECK_NEW_SWITCH);
+
+	xRet = FTM_MSGQ_push(pCatchB->pMsgQ, pMsg);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to push message!");
+		FTM_MEM_free(pMsg);	
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CATCHB_onCheckNewSwitch
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_CHECK_NEW_SWITCH_PTR	pMsg
+)
+{
+	ASSERT(pCatchB != NULL);
+	FTM_RET			xRet;
+	FTM_UINT32		ulCount;
+
+	TRACE("Check New Switch!");
+	xRet = FTM_DB_SWITCH_count(pCatchB->pDB, &ulCount);
+	if (xRet == FTM_RET_OK)
+	{
+		if (ulCount != 0)
+		{
+			FTM_UINT32		i;
+			FTM_SWITCH_PTR	pSwitch = NULL;
+			FTM_SWITCH_CONFIG_PTR	pConfigArray = NULL;
+
+			pConfigArray = (FTM_SWITCH_CONFIG_PTR)FTM_MEM_calloc(sizeof(FTM_SWITCH_CONFIG), ulCount);
+			if (pConfigArray != NULL)
+			{
+				xRet = FTM_DB_SWITCH_getList(pCatchB->pDB, pConfigArray, ulCount, &ulCount);
+				if (xRet == FTM_RET_OK)
+				{
+					FTM_LIST_iteratorStart(pCatchB->pSwitchList);
+					while(FTM_LIST_iteratorNext(pCatchB->pSwitchList, (FTM_VOID_PTR _PTR_)&pSwitch) == FTM_RET_OK)
+					{
+						for(i = 0 ; i < ulCount ; i++)
+						{
+							if (strcmp(pSwitch->xConfig.pID, pConfigArray[i].pID) == 0)
+							{
+								break;	
+							}
+						}
+
+						if (i == ulCount)
+						{
+							FTM_CATCHB_removedSwitchInDB(	pCatchB, pSwitch->xConfig.pID);
+						}
+					}
+
+
+					for(i = 0 ; i < ulCount ; i++)
+					{
+						xRet = FTM_LIST_get(pCatchB->pSwitchList, pConfigArray[i].pID, (FTM_VOID_PTR _PTR_)&pSwitch);
+						if (xRet != FTM_RET_OK)
+						{
+							FTM_CATCHB_foundNewSwitchInDB(pCatchB, &pConfigArray[i]);
+						}
+					}
+				}
+				else
+				{
+					ERROR(xRet, "Failed to get Switch list from DB!");
+				}
+
+				FTM_MEM_free(pConfigArray);	
+				pConfigArray = NULL;
+			}
+			else
+			{
+				ERROR(xRet, "Failed to alloc Switch array!");
+			}
+		}
+	}
+	else
+	{
+		ERROR(xRet, "Failed to get Switch count from DB!");
+	}
+
+	return	xRet;
+}
+
