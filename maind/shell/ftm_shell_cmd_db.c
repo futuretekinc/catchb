@@ -46,15 +46,15 @@ FTM_RET	FTM_SHELL_CMD_db
 				goto finished;
 			}
 
-			FTM_CCTV_PTR	pCCTVArray = (FTM_CCTV_PTR)FTM_MEM_calloc(sizeof(FTM_CCTV), ulCount);
-			if (pCCTVArray == NULL)
+			FTM_CCTV_CONFIG_PTR	pConfigArray = (FTM_CCTV_CONFIG_PTR)FTM_MEM_calloc(sizeof(FTM_CCTV_CONFIG), ulCount);
+			if (pConfigArray == NULL)
 			{
 				xRet = FTM_RET_NOT_ENOUGH_MEMORY;
 				printf("Failed to alloc CCTV array!\n");
 				goto finished;
 			}
 
-			xRet = FTM_DB_CCTV_getList(pCatchB->pDB, pCCTVArray, ulCount, &ulCount);
+			xRet = FTM_DB_CCTV_getList(pCatchB->pDB, pConfigArray, ulCount, &ulCount);
 			if (xRet != FTM_RET_OK)
 			{
 				printf("Failed to get CCTV list!\n");
@@ -66,11 +66,11 @@ FTM_RET	FTM_SHELL_CMD_db
 				printf("%6s %16s %24s %s\n", "", "ID", "IP", "COMMENT");
 				for(i = 0 ; i < ulCount ; i++)
 				{
-					printf("%4d : %16s %24s %s\n", i + 1, pCCTVArray[i].pID, pCCTVArray[i].pIP, pCCTVArray[i].pComment);
+					printf("%4d : %16s %24s %s\n", i + 1, pConfigArray[i].pID, pConfigArray[i].pIP, pConfigArray[i].pComment);
 				}
 			}
 
-			FTM_MEM_free(pCCTVArray);
+			FTM_MEM_free(pConfigArray);
 		}
 		else
 		{
