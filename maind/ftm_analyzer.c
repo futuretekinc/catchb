@@ -291,7 +291,7 @@ FTM_RET	FTM_ANALYZER_process
 
 		TRACE("CCTV[%s] analyzing!", pCCTV->xConfig.pID);
 
-		FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);
+		cctv_ping_check(pCCTV->xConfig.pIP, &ulReplyCount);
 
 		if(ulReplyCount == 0)
 		{ 
