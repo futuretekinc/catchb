@@ -28,6 +28,7 @@ char pkg[] = "netkit-base-0.10";
 #include <ctype.h>
 #include <errno.h>
 #include <common.h>
+#include "ftm_types.h"
 #include "ftm_trace.h"
 
 #ifdef __linux__

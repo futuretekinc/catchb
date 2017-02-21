@@ -11,7 +11,8 @@ export MODEL TOPDIR
 CFLAGS:= -fPIC -c -g -Wall \
 				-I.\
 				-I$(TOPDIR)/include\
-				-I$(TOPDIR)/lib
+				-I$(TOPDIR)/lib\
+				-I$(TOPDIR)/maind
 
 LDFLAGS:= -Wl,--no-as-needed\
 				-L.\
