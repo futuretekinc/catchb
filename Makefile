@@ -1,5 +1,5 @@
 TOPDIR=$(shell pwd)
-SUBDIR=lib scheduler detection operation link_slog alarm analysis maind libssh
+SUBDIR=lib libssh maind
 
 export TOPDIR
 
