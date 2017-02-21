@@ -4,6 +4,7 @@
 #include "ftm_config.h"
 #include "ftm_trace.h"
 #include "cjson/cJSON.h"
+#include "ftm_mem.h"
 
 //////////////////////////////////////////////////////////////
 //	FTM_SWITCH_CONFIG functions
@@ -17,7 +18,7 @@ FTM_RET	FTM_SWITCH_CONFIG_create
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_SWITCH_CONFIG_PTR	pConfig;
 
-	pConfig = (FTM_SWITCH_CONFIG_PTR)malloc(sizeof(FTM_SWITCH_CONFIG));
+	pConfig = (FTM_SWITCH_CONFIG_PTR)FTM_MEM_malloc(sizeof(FTM_SWITCH_CONFIG));
 	if (pConfig == NULL)
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
@@ -40,7 +41,7 @@ FTM_RET	FTM_SWITCH_CONFIG_destroy
 	ASSERT(*ppConfig != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 
-	free(*ppConfig);
+	FTM_MEM_free(*ppConfig);
 
 	*ppConfig = NULL;
 
@@ -59,7 +60,7 @@ FTM_RET	FTM_CONFIG_create
 	FTM_RET			xRet;
 	FTM_CONFIG_PTR	pConfig = NULL;
 
-	pConfig = (FTM_CONFIG_PTR)malloc(sizeof(FTM_CONFIG));
+	pConfig = (FTM_CONFIG_PTR)FTM_MEM_malloc(sizeof(FTM_CONFIG));
 	if (pConfig == NULL)
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
@@ -102,7 +103,7 @@ error:
 			pConfig->pSwitchList = NULL;
 		}
 
-		free(pConfig);
+		FTM_MEM_free(pConfig);
 		pConfig = NULL;
 	}
 	return	xRet;
@@ -128,7 +129,7 @@ FTM_RET	FTM_CONFIG_destroy
 		xRet = FTM_LIST_getAt((*ppConfig)->pProcessList, i, (FTM_VOID_PTR _PTR_)&pProcessName);
 		if (xRet == FTM_RET_OK)
 		{
-			free(pProcessName);
+			FTM_MEM_free(pProcessName);
 		}
 	}
 
@@ -156,7 +157,7 @@ FTM_RET	FTM_CONFIG_destroy
 		ERROR(xRet, "Failed to destroy switch list!\n");	
 	}
 
-	free(*ppConfig);
+	FTM_MEM_free(*ppConfig);
 
 	*ppConfig = NULL;
 
@@ -194,7 +195,7 @@ FTM_RET	FTM_CONFIG_load
 
 	if (ulFileLen > 0)
 	{
-		pData = (FTM_CHAR_PTR)malloc(ulFileLen);
+		pData = (FTM_CHAR_PTR)FTM_MEM_malloc(ulFileLen);
 		if (pData != NULL)
 		{
 			memset(pData, 0, ulFileLen);
@@ -270,7 +271,7 @@ FTM_RET	FTM_CONFIG_load
 					goto finished;
 				}
 
-				FTM_CHAR_PTR	pProcessName = (FTM_CHAR_PTR)malloc(strlen(pItem->valuestring) + 1);
+				FTM_CHAR_PTR	pProcessName = (FTM_CHAR_PTR)FTM_MEM_malloc(strlen(pItem->valuestring) + 1);
 				if (pProcessName != NULL)
 				{
 					strcpy(pProcessName, pItem->valuestring);
@@ -356,7 +357,7 @@ finished:
 
 	if (pData != NULL)
 	{
-		free(pData);
+		FTM_MEM_free(pData);
 		pData = NULL;
 	}
 

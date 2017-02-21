@@ -10,6 +10,8 @@
 
 typedef	struct FTM_ANALYZER_STRUCT
 {
+	FTM_CHAR		pName[FTM_NAME_LEN+1];
+
 	struct	FTM_CATCHB_STRUCT _PTR_	pCatchB;
 
 	FTM_MSGQ_PTR	pMsgQ;

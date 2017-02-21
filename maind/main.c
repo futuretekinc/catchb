@@ -38,7 +38,6 @@ FTM_INT	main
 	FTM_CONFIG_PTR	pConfig = NULL;
 	FTM_CATCHB_PTR	pCatchB = NULL;
 
-	TRACE_ENTRY();
 	xRet = FTM_setOptions(nArgc, ppArgv);
 	if (xRet != FTM_RET_OK)
 	{
@@ -47,7 +46,6 @@ FTM_INT	main
 		return	0;	
 	}
 
-	TRACE_ENTRY();
 #if 0
 	FTM_areDuplicatesRunning(program_invocation_short_name,  getpid(), &bDuplicated);
 	if (bDuplicated)
@@ -75,7 +73,6 @@ FTM_INT	main
 
 	FTM_CONFIG_show(pConfig);
 	
-	TRACE_ENTRY();
     if (!bDebugMode)
 	{
         daemon(0, 0);

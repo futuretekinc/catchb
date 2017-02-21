@@ -55,6 +55,8 @@ FTM_RET	FTM_ANALYZER_create
 		goto error;
 	}
 
+	strcpy(pAnalyzer->pName, __MODULE__);
+
 	xRet = FTM_LOCK_create(&pAnalyzer->pLock);
 	if (xRet != FTM_RET_OK)
 	{
@@ -159,14 +161,14 @@ FTM_RET	FTM_ANALYZER_start
 	if (pAnalyzer->xThread != 0)
 	{
 		xRet = FTM_RET_ALREADY_RUNNING;
-		TRACE("The notifier is already running!");	
+		TRACE("The %s is already running!", pAnalyzer->pName);	
 		return	xRet;
 	}
 
 	if (pthread_create(&pAnalyzer->xThread, NULL, FTM_ANALYZER_threadMain, (FTM_VOID_PTR)pAnalyzer) < 0)
 	{
 		xRet = FTM_RET_THREAD_CREATION_FAILED;
-		TRACE("Failed to start analyzer!");
+		TRACE("Failed to start %s!", pAnalyzer->pName);
 	}
 
     return xRet;
@@ -254,6 +256,7 @@ FTM_RET	FTM_ANALYZER_process
 	}
 	else if (ulCount == 0)
 	{
+		ERROR(xRet, "CCTV count is 0!\n");
 		return	FTM_RET_OK;
 	}
 
@@ -341,8 +344,9 @@ FTM_RET	FTM_ANALYZER_process
 			}
 
 
-			FTM_TIMER_addS(&pCCTV->xExpiredTimer, 60);
 		}
+
+		FTM_TIMER_addS(&pCCTV->xExpiredTimer, 60);
 
 		FTM_LIST_remove(pAnalyzer->pList, pID);
 		FTM_LIST_append(pAnalyzer->pList, pID);

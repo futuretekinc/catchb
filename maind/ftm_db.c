@@ -35,7 +35,7 @@ FTM_RET	FTM_DB_create
 	if (pDB == NULL)
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;	
-		ERROR(xRet, "Failed to create DB!\n");
+		ERROR(xRet, "Failed to create DB!");
 	}
 	else
 	{
@@ -78,18 +78,18 @@ FTM_RET	FTM_DB_open
 	if (pDB->pSQLite3 != NULL)
 	{
 		xRet = FTM_RET_DB_ALREADY_OPENED;	
-		ERROR(xRet, "DB already opened!\n");	
+		ERROR(xRet, "DB already opened!");	
 	}
 	else
 	{
 		if (sqlite3_open(pFileName, &pDB->pSQLite3) != 0)
 		{
 			xRet = FTM_RET_DB_OPEN_FAILED;	
-			ERROR(xRet, "DB open failed!\n");
+			ERROR(xRet, "DB open failed!");
 		}
 		else
 		{
-			TRACE("The database[%s] opened successfully.\n", pFileName);
+			TRACE("The database[%s] opened successfully.", pFileName);
 		}
 	}
 
@@ -129,7 +129,7 @@ FTM_RET	FTM_DB_createTable
 	if (bExist)
 	{
 		xRet = FTM_RET_DB_ALREADY_EXIST;	
-		ERROR(xRet, "The table[%s] exists!\n", pTableName);
+		ERROR(xRet, "The table[%s] exists!", pTableName);
 	}
 	else
 	{
@@ -142,7 +142,7 @@ FTM_RET	FTM_DB_createTable
 		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
 		{
 			xRet = FTM_RET_DB_EXEC_ERROR;
-			ERROR(xRet, "Failed to execute query!\n");
+			ERROR(xRet, "Failed to execute query!");
 			sqlite3_free(pErrorMsg);
 		}
 	}
@@ -286,7 +286,7 @@ FTM_RET	FTM_DB_getElementList
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, fCallback, pData, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!\n");
+		ERROR(xRet, "Failed to execute query!");
 	}
 
 	return	xRet;
@@ -344,12 +344,12 @@ FTM_RET	FTM_DB_CCTV_insert
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to insert item to DB!\n");
+		ERROR(xRet, "Failed to insert item to DB!");
 		sqlite3_free(pErrorMsg);
 	}
 	else
 	{
-		TRACE("DB[%s] inserted(%s, %s, %s, %s, '')\n", pDB->pCCTVTableName, pID, pIP, (pComment != NULL)?pComment:"", pTime);
+		TRACE("DB[%s] inserted(%s, %s, %s, %s, '')", pDB->pCCTVTableName, pID, pIP, (pComment != NULL)?pComment:"", pTime);
 	}
 
 	return	xRet;
@@ -513,12 +513,12 @@ FTM_RET	FTM_DB_CCTV_getUsingIP
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_CCTV_getListCB, (FTM_VOID_PTR)&xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!\n");
+		ERROR(xRet, "Failed to execute query!");
 	}
 	else if (xParams.ulCount == 0)
 	{
 		xRet = FTM_RET_OBJECT_NOT_FOUND;
-		ERROR(xRet, "Object not found!\n");
+		ERROR(xRet, "Object not found!");
 	}
 
 	return	xRet;
@@ -573,7 +573,7 @@ FTM_RET	FTM_DB_CCTV_hashUpdated
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!\n");
+		ERROR(xRet, "Failed to execute query!");
 	}
 
 	return	xRet;
@@ -599,7 +599,7 @@ FTM_RET	FTM_DB_CCTV_setStat
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!\n");
+		ERROR(xRet, "Failed to execute query!");
 	}
 
 	return	xRet;
@@ -638,7 +638,7 @@ FTM_RET	FTM_DB_ALARM_count
 	xRet =FTM_DB_getElementCount(pDB, pDB->pAlarmTableName, pCount);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to get element count of table tv_alarm_info!\n");
+		ERROR(xRet, "Failed to get element count of table tv_alarm_info!");
 	}
 
 	return	xRet;
@@ -800,7 +800,7 @@ FTM_RET	FTM_DB_LOG_count
 	xRet =FTM_DB_getElementCount(pDB, pDB->pLogTableName, pCount);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to get element count of table tv_log_info!\n");
+		ERROR(xRet, "Failed to get element count of table tv_log_info!");
 	}
 
 	return	xRet;
@@ -974,7 +974,7 @@ FTM_RET	FTM_DB_SWITCH_count
 	xRet =FTM_DB_getElementCount(pDB, pDB->pSwitchTableName, pCount);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to get element count of table tv_switch_info!\n");
+		ERROR(xRet, "Failed to get element count of table tv_switch_info!");
 	}
 
 	return	xRet;
@@ -1152,7 +1152,7 @@ FTM_RET	FTM_DB_DENY_count
 	xRet =FTM_DB_getElementCount(pDB, pDB->pDenyTableName, pCount);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to get element count of table tv_deny_info!\n");
+		ERROR(xRet, "Failed to get element count of table tv_deny_info!");
 	}
 
 	return	xRet;
@@ -1279,12 +1279,12 @@ FTM_RET	FTM_DB_DENY_get
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_DENY_getListCB, (FTM_VOID_PTR)&xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!\n");
+		ERROR(xRet, "Failed to execute query!");
 	}
 	else if (xParams.ulCount == 0)
 	{
 		xRet = FTM_RET_OBJECT_NOT_FOUND;
-		ERROR(xRet, "Object not found!\n");
+		ERROR(xRet, "Object not found!");
 	}
 
 	return	xRet;
