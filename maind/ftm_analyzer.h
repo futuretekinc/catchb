@@ -8,8 +8,15 @@
 #include "ftm_msgq.h"
 #include "ftm_lock.h"
 
+typedef	struct	FTM_ANALYZER_CONFIG_STRUCT
+{
+	FTM_UINT32		ulIPCheckInterval;
+}	FTM_ANALYZER_CONFIG, _PTR_ FTM_ANALYZER_CONFIG_PTR;
+
 typedef	struct FTM_ANALYZER_STRUCT
 {
+	FTM_ANALYZER_CONFIG	xConfig;
+
 	FTM_CHAR		pName[FTM_NAME_LEN+1];
 
 	struct	FTM_CATCHB_STRUCT _PTR_	pCatchB;

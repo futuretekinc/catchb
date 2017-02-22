@@ -33,7 +33,6 @@ FTM_RET	FTM_DB_create
 
 	pDB = (FTM_DB_PTR)FTM_MEM_malloc(sizeof(FTM_DB));
 
-		TRACE("pDB = %08x, sqlite3 = %08x\n", pDB, pDB->pSQLite3);
 	if (pDB == NULL)
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;	
@@ -47,7 +46,6 @@ FTM_RET	FTM_DB_create
 		strcpy(pDB->pDenyTableName, "tb_deny");
 		strcpy(pDB->pSwitchTableName, "tb_switch");
 
-		TRACE("pDB = %08x, sqlite3 = %08x\n", pDB, pDB->pSQLite3);
 		*ppDB = pDB;	
 	}
 
@@ -79,7 +77,6 @@ FTM_RET	FTM_DB_open
 	ASSERT(pDB != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 
-		TRACE("pDB = %08x\n", pDB);
 	if (pDB->pSQLite3 != NULL)
 	{
 		xRet = FTM_RET_DB_ALREADY_OPENED;	
@@ -144,6 +141,44 @@ FTM_RET	FTM_DB_createTable
 		memset(pQuery, 0, sizeof(pQuery));
 
 		snprintf(pQuery, sizeof(pQuery) - 1, "CREATE TABLE %s (%s)", pTableName, pFields);
+		TRACE("Query : %s", pQuery);
+		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			ERROR(xRet, "Failed to execute query!");
+			sqlite3_free(pErrorMsg);
+		}
+	}
+		
+	TRACE("The tables[%s] created.", pTableName);
+	return	xRet;
+}
+
+FTM_RET	FTM_DB_destroyTable
+(
+	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR	pTableName
+)
+{
+	ASSERT(pDB != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_BOOL	bExist = FTM_FALSE;
+
+	FTM_DB_isExistTable(pDB, pTableName, &bExist);
+	if (!bExist)
+	{
+		xRet = FTM_RET_DB_TABLE_NOT_EXIST;	
+		ERROR(xRet, "The table[%s] is not exist!", pTableName);
+	}
+	else
+	{
+		FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
+		FTM_CHAR_PTR	pErrorMsg;
+
+		memset(pQuery, 0, sizeof(pQuery));
+
+		snprintf(pQuery, sizeof(pQuery) - 1, "DROP TABLE %s", pTableName);
 		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
 		{
 			xRet = FTM_RET_DB_EXEC_ERROR;
@@ -157,8 +192,9 @@ FTM_RET	FTM_DB_createTable
 
 typedef struct FTM_DB_IS_EXIST_TABLE_PARAMS_STRUCT
 {
+	FTM_CHAR_PTR	pName;
 	FTM_BOOL        bExist;
-	FTM_CHAR_PTR    pName;
+	
 } 	FTM_DB_IS_EXIST_TABLE_PARAMS, _PTR_ FTM_DB_IS_EXIST_TABLE_PARAMS_PTR;
 
 FTM_INT FTM_DB_isExistTableCB
@@ -196,13 +232,18 @@ FTM_RET FTM_DB_isExistTable
 {
 	FTM_RET	xRet = FTM_RET_OK;
 
-	FTM_DB_IS_EXIST_TABLE_PARAMS xParams = { .bExist = FTM_FALSE, .pName = pTableName};
+	FTM_DB_IS_EXIST_TABLE_PARAMS xParams;
+	
+	xParams.bExist = FTM_FALSE;
+	xParams.pName 	= pTableName;
+
 	FTM_CHAR_PTR    pQuery = "select name from sqlite_master where type='table' order by name";
 	FTM_CHAR_PTR    pErrMsg = NULL;
 
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_isExistTableCB, &xParams, &pErrMsg) != 0)
 	{    
-		xRet = FTM_RET_ERROR;
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute DB query !");
 		sqlite3_free(pErrMsg);
 	}    
 	else
@@ -301,15 +342,15 @@ FTM_RET	FTM_DB_getElementList
 //
 /////////////////////////////////////////////////////////////////////////////////////
 
-FTM_RET	FTM_DB_CCTV_createTable
+FTM_RET	FTM_DB_createCCTVTable
 (
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pCCTVTableName, "ID TEXT PRIMARY KEY, IP TEXT, COMMENT TEXT, TIME TEXT, HASH TEXT, STAT INT");
+	return FTM_DB_createTable(pDB, pDB->pCCTVTableName, "_ID TEXT PRIMARY KEY, _IP TEXT, _COMMENT TEXT, TIME TEXT, HASH TEXT, STAT INT");
 }
 
-FTM_RET	FTM_DB_CCTV_isTableExist
+FTM_RET	FTM_DB_isCCTVTableExist
 (
 	FTM_DB_PTR		pDB,
 	FTM_BOOL_PTR	pExist
@@ -318,7 +359,7 @@ FTM_RET	FTM_DB_CCTV_isTableExist
 	return	FTM_DB_isExistTable(pDB, pDB->pCCTVTableName, pExist);
 }
 
-FTM_RET	FTM_DB_CCTV_count
+FTM_RET	FTM_DB_getCCTVCount
 (
 	FTM_DB_PTR 	pDB, 
 	FTM_UINT32_PTR pCount
@@ -327,7 +368,7 @@ FTM_RET	FTM_DB_CCTV_count
 	return	FTM_DB_getElementCount(pDB, pDB->pCCTVTableName, pCount);
 }
 
-FTM_RET	FTM_DB_CCTV_insert
+FTM_RET	FTM_DB_addCCTV
 (
 	FTM_DB_PTR	pDB,
 	FTM_CHAR_PTR	pID,
@@ -343,7 +384,7 @@ FTM_RET	FTM_DB_CCTV_insert
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(ID, IP, COMMENT, TIME, HASH, STAT) VALUES('%s', '%s', '%s', '%s', '', 0);", 
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_ID, _IP, _COMMENT, TIME, HASH, STAT) VALUES('%s', '%s', '%s', '%s', '', 0);", 
 		pDB->pCCTVTableName, pID, pIP, (pComment != NULL)?pComment:"", pTime);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
@@ -360,7 +401,7 @@ FTM_RET	FTM_DB_CCTV_insert
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_CCTV_update
+FTM_RET	FTM_DB_updateCCTV
 (
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID,
@@ -387,7 +428,7 @@ FTM_RET	FTM_DB_CCTV_update
 			bNew = FTM_FALSE;
 		}
 
-		ulQueryLen +=snprintf(pQuery, sizeof(pQuery) - ulQueryLen, " COMMENT = '%s'", pComment);
+		ulQueryLen +=snprintf(pQuery, sizeof(pQuery) - ulQueryLen, " _COMMENT = '%s'", pComment);
 	}
 
 	if (pHash != NULL)
@@ -402,7 +443,7 @@ FTM_RET	FTM_DB_CCTV_update
 	}
 
 	
-	ulQueryLen +=snprintf(pQuery, sizeof(pQuery) - ulQueryLen, " WHERE ID = '%s';", pID);
+	ulQueryLen +=snprintf(pQuery, sizeof(pQuery) - ulQueryLen, " WHERE _ID = '%s';", pID);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
@@ -413,7 +454,7 @@ FTM_RET	FTM_DB_CCTV_update
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_CCTV_delete
+FTM_RET	FTM_DB_deleteCCTV
 (
 	FTM_DB_PTR	pDB,
 	FTM_CHAR_PTR	pID
@@ -426,7 +467,7 @@ FTM_RET	FTM_DB_CCTV_delete
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE ID = '%s'", pDB->pCCTVTableName, pID);
+	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _ID = '%s'", pDB->pCCTVTableName, pID);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
@@ -442,10 +483,10 @@ typedef struct
 	FTM_UINT32			ulMaxCount;
 	FTM_UINT32			ulCount;
 	FTM_CCTV_CONFIG_PTR	pElements;
-}   FTM_CCTV_CONFIG_GET_LIST_PARAMS, _PTR_ FTM_CCTV_CONFIG_GET_LIST_PARAMS_PTR;
+}   FTM_GET_CCTV_CONFIG_LIST_PARAMS, _PTR_ FTM_GET_CCTV_CONFIG_LIST_PARAMS_PTR;
 
 static 
-FTM_INT	FTM_DB_CCTV_getListCB
+FTM_INT	FTM_DB_getCCTVListCB
 (
 	FTM_VOID_PTR	pData, 
  	FTM_INT		nArgc, 
@@ -453,7 +494,7 @@ FTM_INT	FTM_DB_CCTV_getListCB
  	FTM_CHAR_PTR	ppColName[]
 )
 {
-	FTM_CCTV_CONFIG_GET_LIST_PARAMS_PTR	pParams = (FTM_CCTV_CONFIG_GET_LIST_PARAMS_PTR)pData;
+	FTM_GET_CCTV_CONFIG_LIST_PARAMS_PTR	pParams = (FTM_GET_CCTV_CONFIG_LIST_PARAMS_PTR)pData;
 
 	if ((nArgc != 0) && (pParams->ulCount < pParams->ulMaxCount))
 	{    
@@ -461,15 +502,15 @@ FTM_INT	FTM_DB_CCTV_getListCB
 
 		for(i = 0 ; i < nArgc ; i++) 
 		{    
-			if (strcmp(ppColName[i], "ID") == 0)
+			if (strcmp(ppColName[i], "_ID") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pID, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "IP") == 0)
+			else if (strcmp(ppColName[i], "_IP") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pIP, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "COMMENT") == 0)
+			else if (strcmp(ppColName[i], "_COMMENT") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pComment, ppArgv[i]);
 			}    
@@ -493,7 +534,7 @@ FTM_INT	FTM_DB_CCTV_getListCB
 	return  FTM_RET_OK;
 }
 
-FTM_RET	FTM_DB_CCTV_getUsingIP
+FTM_RET	FTM_DB_getCCTVUsingIP
 (
 	FTM_DB_PTR			pDB,
 	FTM_CHAR_PTR		pIP,
@@ -505,7 +546,7 @@ FTM_RET	FTM_DB_CCTV_getUsingIP
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
 	FTM_CHAR_PTR	pErrorMsg;
-    FTM_CCTV_CONFIG_GET_LIST_PARAMS	xParams;
+    FTM_GET_CCTV_CONFIG_LIST_PARAMS	xParams;
 
 	xParams.ulMaxCount 	= 1;
 	xParams.ulCount 	= 0;
@@ -513,9 +554,9 @@ FTM_RET	FTM_DB_CCTV_getUsingIP
 
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s WHERE IP = %s", pDB->pCCTVTableName, pIP);
+	snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s WHERE _IP = %s", pDB->pCCTVTableName, pIP);
 
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_CCTV_getListCB, (FTM_VOID_PTR)&xParams, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getCCTVListCB, (FTM_VOID_PTR)&xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
@@ -529,7 +570,7 @@ FTM_RET	FTM_DB_CCTV_getUsingIP
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_CCTV_getList
+FTM_RET	FTM_DB_getCCTVList
 (
 	FTM_DB_PTR			pDB,
 	FTM_CCTV_CONFIG_PTR	pElements,
@@ -542,13 +583,13 @@ FTM_RET	FTM_DB_CCTV_getList
 	ASSERT(pElements != NULL);
 	ASSERT(pCount != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
-	FTM_CCTV_CONFIG_GET_LIST_PARAMS	xParams;
+	FTM_GET_CCTV_CONFIG_LIST_PARAMS	xParams;
 
 	xParams.ulMaxCount 	= ulMaxCount;
 	xParams.ulCount 	= 0;
 	xParams.pElements 	= pElements;
 
-	xRet = FTM_DB_getElementList(pDB, pDB->pCCTVTableName, FTM_DB_CCTV_getListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementList(pDB, pDB->pCCTVTableName, FTM_DB_getCCTVListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -557,7 +598,7 @@ FTM_RET	FTM_DB_CCTV_getList
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_CCTV_hashUpdated
+FTM_RET	FTM_DB_updateCCTVHash
 (
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID,
@@ -573,7 +614,7 @@ FTM_RET	FTM_DB_CCTV_hashUpdated
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "UPDATE %s SET HASH='%s' WHERE ID = '%s'", pDB->pCCTVTableName, pHash, pID);
+	snprintf(pQuery, sizeof(pQuery) - 1, "UPDATE %s SET HASH='%s' WHERE _ID = '%s'", pDB->pCCTVTableName, pHash, pID);
 
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
 	{
@@ -584,7 +625,7 @@ FTM_RET	FTM_DB_CCTV_hashUpdated
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_CCTV_setStat
+FTM_RET	FTM_DB_setCCTVStat
 (
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID,
@@ -599,7 +640,7 @@ FTM_RET	FTM_DB_CCTV_setStat
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "UPDATE %s SET STAT=%d WHERE ID = '%s'", pDB->pCCTVTableName, xStat, pID);
+	snprintf(pQuery, sizeof(pQuery) - 1, "UPDATE %s SET STAT=%d WHERE _ID = '%s'", pDB->pCCTVTableName, xStat, pID);
 
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
 	{
@@ -613,15 +654,15 @@ FTM_RET	FTM_DB_CCTV_setStat
 ////////////////////////////////////////////////////////////////////////////////////
 //
 /////////////////////////////////////////////////////////////////////////////////////
-FTM_RET	FTM_DB_ALARM_createTable
+FTM_RET	FTM_DB_createAlarmTable
 (
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pAlarmTableName, "ID TEXT PRIMARY KEY, MESSAGE TEXT, EMAIL TEXT");
+	return FTM_DB_createTable(pDB, pDB->pAlarmTableName, "_NAME TEXT PRIMARY KEY, _EMAIL TEXT, _MESSAGE TEXT");
 }
 
-FTM_RET	FTM_DB_ALARM_isTableExist
+FTM_RET	FTM_DB_isAlarmTableExist
 (
 	FTM_DB_PTR		pDB,
 	FTM_BOOL_PTR	pExist
@@ -630,7 +671,7 @@ FTM_RET	FTM_DB_ALARM_isTableExist
 	return	FTM_DB_isExistTable(pDB, pDB->pAlarmTableName, pExist);
 }
 
-FTM_RET	FTM_DB_ALARM_count
+FTM_RET	FTM_DB_getAlarmCount
 (
 	FTM_DB_PTR 	pDB, 
 	FTM_UINT32_PTR pCount
@@ -649,21 +690,22 @@ FTM_RET	FTM_DB_ALARM_count
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_ALARM_insert
+FTM_RET	FTM_DB_addAlarm
 (
 	FTM_DB_PTR	pDB,
-	FTM_CHAR_PTR	pID,
-	FTM_CHAR_PTR	pMail
+	FTM_CHAR_PTR	pName,
+	FTM_CHAR_PTR	pEmail,
+	FTM_CHAR_PTR	pMessage
 )
 {
 	ASSERT(pDB != NULL);
-	ASSERT(pID != NULL);
+	ASSERT(pName != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(ID, MESSAGE, EMAIL) VALUES('%s', '%s', '%s');", pDB->pAlarmTableName, pID, "", pMail);
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_NAME, _EMAIL, _MESSAGE) VALUES('%s', '%s', '%s');", pDB->pAlarmTableName, pName, pEmail, pMessage);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
@@ -674,20 +716,20 @@ FTM_RET	FTM_DB_ALARM_insert
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_ALARM_delete
+FTM_RET	FTM_DB_deleteAlarm
 (
 	FTM_DB_PTR	pDB,
-	FTM_CHAR_PTR	pID
+	FTM_CHAR_PTR	pName
 )
 {
 	ASSERT(pDB != NULL);
-	ASSERT(pID != NULL);
+	ASSERT(pName != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE ID = '%s'", pDB->pAlarmTableName, pID);
+	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _NAME = '%s'", pDB->pAlarmTableName, pName);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
@@ -703,10 +745,10 @@ typedef struct
 	FTM_UINT32		ulMaxCount;
 	FTM_UINT32		ulCount;
 	FTM_ALARM_PTR	pElements;
-}   FTM_ALARM_GET_LIST_PARAMS, _PTR_ FTM_ALARM_GET_LIST_PARAMS_PTR;
+}   FTM_GET_ALARM_LIST_PARAMS, _PTR_ FTM_GET_ALARM_LIST_PARAMS_PTR;
 
 static 
-FTM_INT	FTM_DB_ALARM_getListCB
+FTM_INT	FTM_DB_getAlarmListCB
 (
 	FTM_VOID_PTR	pData, 
  	FTM_INT		nArgc, 
@@ -714,7 +756,7 @@ FTM_INT	FTM_DB_ALARM_getListCB
  	FTM_CHAR_PTR	ppColName[]
 )
 {
-	FTM_ALARM_GET_LIST_PARAMS_PTR	pParams = (FTM_ALARM_GET_LIST_PARAMS_PTR)pData;
+	FTM_GET_ALARM_LIST_PARAMS_PTR	pParams = (FTM_GET_ALARM_LIST_PARAMS_PTR)pData;
 
 	if ((nArgc != 0) && (pParams->ulCount < pParams->ulMaxCount))
 	{    
@@ -722,15 +764,15 @@ FTM_INT	FTM_DB_ALARM_getListCB
 
 		for(i = 0 ; i < nArgc ; i++) 
 		{    
-			if (strcmp(ppColName[i], "ID") == 0)
+			if (strcmp(ppColName[i], "_NAME") == 0)
 			{    
-				strcpy(pParams->pElements[pParams->ulCount].pID, ppArgv[i]);
+				strcpy(pParams->pElements[pParams->ulCount].pName, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "MESSAGE") == 0)
+			else if (strcmp(ppColName[i], "_MESSAGE") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pMessage, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "EMAIL") == 0)
+			else if (strcmp(ppColName[i], "_EMAIL") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pEmail, ppArgv[i]);
 			}    
@@ -743,7 +785,7 @@ FTM_INT	FTM_DB_ALARM_getListCB
 }
 
 
-FTM_RET	FTM_DB_ALARM_getList
+FTM_RET	FTM_DB_getAlarmList
 (
 	FTM_DB_PTR		pDB,
 	FTM_ALARM_PTR	pElements,
@@ -756,13 +798,13 @@ FTM_RET	FTM_DB_ALARM_getList
 	ASSERT(pElements != NULL);
 	ASSERT(pCount != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
-    FTM_ALARM_GET_LIST_PARAMS	xParams;
+    FTM_GET_ALARM_LIST_PARAMS	xParams;
 
 	xParams.ulMaxCount 	= ulMaxCount;
 	xParams.ulCount =	 0;
 	xParams.pElements 	= pElements;
 
-	xRet = FTM_DB_getElementList(pDB, pDB->pAlarmTableName, FTM_DB_ALARM_getListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementList(pDB, pDB->pAlarmTableName, FTM_DB_getAlarmListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -775,15 +817,15 @@ FTM_RET	FTM_DB_ALARM_getList
 ////////////////////////////////////////////////////////////////////////////////////
 //
 /////////////////////////////////////////////////////////////////////////////////////
-FTM_RET	FTM_DB_LOG_createTable
+FTM_RET	FTM_DB_createLogTable
 (
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pLogTableName, "TIME TEXT, ID TEXT, IP TEXT, HASH TEXT, STATUS TEXT, LOG TEXT");
+	return FTM_DB_createTable(pDB, pDB->pLogTableName, "TIME TEXT, _ID TEXT, _IP TEXT, HASH TEXT, STATUS TEXT, LOG TEXT");
 }
 
-FTM_RET	FTM_DB_LOG_isTableExist
+FTM_RET	FTM_DB_isLogTableExist
 (
 	FTM_DB_PTR		pDB,
 	FTM_BOOL_PTR	pExist
@@ -792,7 +834,7 @@ FTM_RET	FTM_DB_LOG_isTableExist
 	return	FTM_DB_isExistTable(pDB, pDB->pLogTableName, pExist);
 }
 
-FTM_RET	FTM_DB_LOG_count
+FTM_RET	FTM_DB_getLogCount
 (
 	FTM_DB_PTR 	pDB, 
 	FTM_UINT32_PTR pCount
@@ -811,7 +853,7 @@ FTM_RET	FTM_DB_LOG_count
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_LOG_insert
+FTM_RET	FTM_DB_addLog
 (
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID,
@@ -829,7 +871,7 @@ FTM_RET	FTM_DB_LOG_insert
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (TIME, ID, IP, HASH, STATUS, LOG) VALUES('%s', '%s', '%s', '%s', '%s', '%s');", 
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (TIME, _ID, _IP, HASH, STATUS, LOG) VALUES('%s', '%s', '%s', '%s', '%s', '%s');", 
 		pDB->pLogTableName, pTime, pID, pIP, pHash, FTM_printCCTVStat(nStatus), pLog);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
@@ -841,7 +883,7 @@ FTM_RET	FTM_DB_LOG_insert
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_LOG_delete
+FTM_RET	FTM_DB_deleteLog
 (
 	FTM_DB_PTR	pDB,
 	FTM_CHAR_PTR	pID
@@ -854,7 +896,7 @@ FTM_RET	FTM_DB_LOG_delete
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE ID = '%s'", pDB->pLogTableName, pID);
+	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _ID = '%s'", pDB->pLogTableName, pID);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
@@ -870,18 +912,18 @@ typedef struct
 	FTM_UINT32	ulMaxCount;
 	FTM_UINT32	ulCount;
 	FTM_LOG_PTR	pElements;
-}   FTM_LOG_GET_LIST_PARAMS, _PTR_ FTM_LOG_GET_LIST_PARAMS_PTR;
+}   FTM_GET_LOG_LIST_PARAMS, _PTR_ FTM_GET_LOG_LIST_PARAMS_PTR;
 
 static 
-FTM_INT	FTM_DB_LOG_getListCB
+FTM_INT	FTM_DB_getLogListCB
 (
 	FTM_VOID_PTR	pData, 
- 	FTM_INT		nArgc, 
+ 	FTM_INT			nArgc, 
  	FTM_CHAR_PTR	ppArgv[],
  	FTM_CHAR_PTR	ppColName[]
 )
 {
-	FTM_LOG_GET_LIST_PARAMS_PTR	pParams = (FTM_LOG_GET_LIST_PARAMS_PTR)pData;
+	FTM_GET_LOG_LIST_PARAMS_PTR	pParams = (FTM_GET_LOG_LIST_PARAMS_PTR)pData;
 
 	if ((nArgc != 0) && (pParams->ulCount < pParams->ulMaxCount))
 	{    
@@ -889,11 +931,11 @@ FTM_INT	FTM_DB_LOG_getListCB
 
 		for(i = 0 ; i < nArgc ; i++) 
 		{    
-			if (strcmp(ppColName[i], "ID") == 0)
+			if (strcmp(ppColName[i], "_ID") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pID, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "IP") == 0)
+			else if (strcmp(ppColName[i], "_IP") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pIP, ppArgv[i]);
 			}    
@@ -918,7 +960,7 @@ FTM_INT	FTM_DB_LOG_getListCB
 }
 
 
-FTM_RET	FTM_DB_LOG_getList
+FTM_RET	FTM_DB_getLogList
 (
 	FTM_DB_PTR		pDB,
 	FTM_LOG_PTR		pElements,
@@ -931,13 +973,13 @@ FTM_RET	FTM_DB_LOG_getList
 	ASSERT(pElements!= NULL);
 	ASSERT(pCount != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
-    FTM_LOG_GET_LIST_PARAMS	xParams;
+    FTM_GET_LOG_LIST_PARAMS	xParams;
 
 	xParams.ulMaxCount = ulMaxCount;
 	xParams.ulCount = 0;
 	xParams.pElements 	= pElements;
 
-	xRet = FTM_DB_getElementList(pDB, pDB->pLogTableName, FTM_DB_LOG_getListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementList(pDB, pDB->pLogTableName, FTM_DB_getLogListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -954,7 +996,7 @@ FTM_RET	FTM_DB_createSwitchTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pSwitchTableName, "ID TEXT PRIMARY KEY, TYPE INT, IP TEXT, USER TEXT, PASSWD TEXT, COMMENT TEXT");
+	return FTM_DB_createTable(pDB, pDB->pSwitchTableName, "_ID TEXT PRIMARY KEY, _MODEL INT, _IP TEXT, _USERID TEXT, _PASSWD TEXT, _COMMENT TEXT");
 }
 
 FTM_RET	FTM_DB_isSwitchTableExist
@@ -987,13 +1029,13 @@ FTM_RET	FTM_DB_getSwitchCount
 
 FTM_RET	FTM_DB_addSwitch
 (
-	FTM_DB_PTR		pDB,
-	FTM_CHAR_PTR	pID,
-	FTM_SWITCH_TYPE	xType,
-	FTM_CHAR_PTR	pUser,
-	FTM_CHAR_PTR	pPasswd,
-	FTM_CHAR_PTR	pIP,
-	FTM_CHAR_PTR	pComment	
+	FTM_DB_PTR			pDB,
+	FTM_CHAR_PTR		pID,
+	FTM_SWITCH_MODEL	xModel,
+	FTM_CHAR_PTR		pUser,
+	FTM_CHAR_PTR		pPasswd,
+	FTM_CHAR_PTR		pIP,
+	FTM_CHAR_PTR		pComment	
 )
 {
 	ASSERT(pDB != NULL);
@@ -1003,8 +1045,8 @@ FTM_RET	FTM_DB_addSwitch
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (ID, TYPE, IP, USER, PASSWD, COMMENT) VALUES('%s', %d, '%s', '%s', '%s', '%s');", 
-		pDB->pSwitchTableName, pID, xType, (pIP)?pIP:"", (pUser)?pUser:"", (pPasswd)?pPasswd:"", (pComment)?pComment:"");
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_ID, _MODEL, _IP, _USERID, _PASSWD, _COMMENT) VALUES('%s', %d, '%s', '%s', '%s', '%s');", 
+		pDB->pSwitchTableName, pID, xModel, (pIP)?pIP:"", (pUser)?pUser:"", (pPasswd)?pPasswd:"", (pComment)?pComment:"");
 
 	TRACE("QUERY : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
@@ -1029,7 +1071,7 @@ FTM_RET	FTM_DB_deleteSwitch
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE ID = '%s'", pDB->pSwitchTableName, pID);
+	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _ID = '%s'", pDB->pSwitchTableName, pID);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
@@ -1064,27 +1106,27 @@ FTM_INT	FTM_DB_getSwitchListCB
 
 		for(i = 0 ; i < nArgc ; i++) 
 		{    
-			if (strcmp(ppColName[i], "ID") == 0)
+			if (strcmp(ppColName[i], "_ID") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pID, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "TYPE") == 0)
+			else if (strcmp(ppColName[i], "_MODEL") == 0)
 			{
-				pParams->pElements[pParams->ulCount].xType = atoi(ppArgv[i]);
+				pParams->pElements[pParams->ulCount].xModel = atoi(ppArgv[i]);
 			}
-			else if (strcmp(ppColName[i], "IP") == 0)
+			else if (strcmp(ppColName[i], "_IP") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pIP, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "USER") == 0)
+			else if (strcmp(ppColName[i], "_USERID") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pUserID, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "PASSWD") == 0)
+			else if (strcmp(ppColName[i], "_PASSWD") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pPasswd, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "COMMENT") == 0)
+			else if (strcmp(ppColName[i], "_COMMENT") == 0)
 			{
 				strcpy(pParams->pElements[pParams->ulCount].pComment, ppArgv[i]);
 			}
@@ -1139,9 +1181,25 @@ FTM_RET	FTM_DB_createACTable
 
 	FTM_CHAR	pTableName[256];
 
-	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
+	sprintf(pTableName, "tb_sw_%s_ac", pSwitchID);
 
-	return FTM_DB_createTable(pDB, pTableName, "IP TEXT PRIMARY KEY, INDEX INT, POLICY INT");
+	return FTM_DB_createTable(pDB, pTableName, "_IP TEXT PRIMARY KEY, _INDEX INT, _POLICY INT");
+}
+
+FTM_RET	FTM_DB_destroyACTable
+(
+	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR	pSwitchID
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pSwitchID != NULL);
+
+	FTM_CHAR	pTableName[256];
+
+	sprintf(pTableName, "tb_sw_%s_ac", pSwitchID);
+
+	return FTM_DB_destroyTable(pDB, pTableName);
 }
 
 FTM_RET	FTM_DB_isACTableExist
@@ -1157,7 +1215,7 @@ FTM_RET	FTM_DB_isACTableExist
 
 	FTM_CHAR	pTableName[256];
 
-	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
+	sprintf(pTableName, "tb_sw_%s_ac", pSwitchID);
 
 	return	FTM_DB_isExistTable(pDB, pTableName, pExist);
 }
@@ -1175,7 +1233,7 @@ FTM_RET	FTM_DB_getACCount
 	FTM_CHAR	pTableName[256];
 	FTM_RET		xRet = FTM_RET_OK;
 
-	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
+	sprintf(pTableName, "tb_sw_%s_ac", pSwitchID);
 	
 	xRet =FTM_DB_getElementCount(pDB, pTableName, pCount);
 	if (xRet != FTM_RET_OK)
@@ -1204,10 +1262,10 @@ FTM_RET	FTM_DB_addAC
 	FTM_CHAR_PTR	pErrorMsg;
 	FTM_CHAR	pTableName[256];
 
-	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
+	sprintf(pTableName, "tb_sw_%s_ac", pSwitchID);
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (IP, INDEX, POLICY) VALUES('%s', %d, %d);", pTableName, pIP, nIndex, xPolicy);
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_IP, _INDEX, _POLICY) VALUES('%s', %d, %d);", pTableName, pIP, nIndex, xPolicy);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
@@ -1231,10 +1289,10 @@ FTM_RET	FTM_DB_deleteAC
 	FTM_CHAR_PTR	pErrorMsg;
 	FTM_CHAR	pTableName[256];
 
-	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
+	sprintf(pTableName, "tb_sw_%s_ac", pSwitchID);
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE IP = '%s'", pTableName, pIP);
+	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _IP = '%s'", pTableName, pIP);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
@@ -1269,15 +1327,15 @@ FTM_INT	FTM_DB_getACListCB
 
 		for(i = 0 ; i < nArgc ; i++) 
 		{    
-			if (strcmp(ppColName[i], "IP") == 0)
+			if (strcmp(ppColName[i], "_IP") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pIP, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "POLICY") == 0)
+			else if (strcmp(ppColName[i], "_POLICY") == 0)
 			{    
 				pParams->pElements[pParams->ulCount].xPolicy = atoi(ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "INDEX") == 0)
+			else if (strcmp(ppColName[i], "_INDEX") == 0)
 			{    
 				pParams->pElements[pParams->ulCount].nIndex = atoi(ppArgv[i]);
 			}    
@@ -1309,7 +1367,7 @@ FTM_RET	FTM_DB_getACList
     FTM_GET_AC_LIST_PARAMS	xParams;
 	FTM_CHAR	pTableName[256];
 
-	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
+	sprintf(pTableName, "tb_sw_%s_ac", pSwitchID);
 	xParams.ulMaxCount 	= ulMaxCount;
 	xParams.ulCount 	= 0;
 	xParams.pElements	= pElements;

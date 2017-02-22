@@ -177,7 +177,6 @@ FTM_RET	FTM_CONFIG_load
 	fclose(pFile);
 	pFile = NULL;
 
-	TRACE_ENTRY();
 	pRoot = cJSON_Parse(pData);
 	if (pRoot == NULL)
 	{    
@@ -186,7 +185,6 @@ FTM_RET	FTM_CONFIG_load
 		goto finished;
 	}    
 
-	TRACE_ENTRY();
 	pSection = cJSON_GetObjectItem(pRoot, "log");
 	if (pSection != NULL)
 	{
@@ -199,7 +197,6 @@ FTM_RET	FTM_CONFIG_load
 		}
 	}
 
-	TRACE_ENTRY();
 	pSection = cJSON_GetObjectItem(pRoot, "processes");
 	if (pSection != NULL)
 	{

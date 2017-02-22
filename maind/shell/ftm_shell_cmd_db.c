@@ -33,7 +33,7 @@ FTM_RET	FTM_SHELL_CMD_db
 		{
 			FTM_UINT32	ulCount = 0;
 
-			xRet = FTM_DB_CCTV_count(pCatchB->pDB, &ulCount);
+			xRet = FTM_DB_getCCTVCount(pCatchB->pDB, &ulCount);
 			if (xRet != FTM_RET_OK)
 			{
 				ERROR(xRet, "Failed to get CCTV count from DB!\n");
@@ -54,7 +54,7 @@ FTM_RET	FTM_SHELL_CMD_db
 				goto finished;
 			}
 
-			xRet = FTM_DB_CCTV_getList(pCatchB->pDB, pConfigArray, ulCount, &ulCount);
+			xRet = FTM_DB_getCCTVList(pCatchB->pDB, pConfigArray, ulCount, &ulCount);
 			if (xRet != FTM_RET_OK)
 			{
 				printf("Failed to get CCTV list!\n");
@@ -76,7 +76,7 @@ FTM_RET	FTM_SHELL_CMD_db
 		{
 			if ((strcasecmp(pArgv[2], "add") == 0) && (nArgc == 5))
 			{
-				xRet = FTM_DB_CCTV_insert(pCatchB->pDB, pArgv[3], pArgv[4], "", FTM_TIME_printfCurrent(NULL));
+				xRet = FTM_DB_addCCTV(pCatchB->pDB, pArgv[3], pArgv[4], "", FTM_TIME_printfCurrent(NULL));
 				if (xRet != FTM_RET_OK)
 				{
 					printf("Failed to insert cctv[%s] to DB!\n", pArgv[3]);
@@ -84,7 +84,7 @@ FTM_RET	FTM_SHELL_CMD_db
 			}
 			else if ((strcasecmp(pArgv[2], "del") == 0) && (nArgc == 4))
 			{
-				xRet = FTM_DB_CCTV_delete(pCatchB->pDB, pArgv[3]);
+				xRet = FTM_DB_deleteCCTV(pCatchB->pDB, pArgv[3]);
 				if (xRet != FTM_RET_OK)
 				{
 					printf("Failed to delete cctv[%s] from DB!\n", pArgv[3]);	
@@ -146,19 +146,19 @@ FTM_RET	FTM_SHELL_CMD_db
 		{
 			if ((strcasecmp(pArgv[2], "add") == 0) && (nArgc == 8))
 			{
-				FTM_SWITCH_TYPE	xType;
+				FTM_SWITCH_MODEL	xModel;
 
 				if (strcasecmp(pArgv[4], "nst") == 0)
 				{
-					xType = FTM_SWITCH_TYPE_NST;
+					xModel = FTM_SWITCH_MODEL_NST;
 				}
 				else if (strcasecmp(pArgv[4], "dasan") == 0)
 				{
-					xType = FTM_SWITCH_TYPE_DASAN;
+					xModel = FTM_SWITCH_MODEL_DASAN;
 				}
 				else if (strcasecmp(pArgv[4], "juniper") == 0)
 				{
-					xType = FTM_SWITCH_TYPE_JUNIPER;
+					xModel = FTM_SWITCH_MODEL_JUNIPER;
 				}
 				else
 				{
@@ -166,7 +166,7 @@ FTM_RET	FTM_SHELL_CMD_db
 					goto finished;	
 				}
 
-				xRet = FTM_DB_addSwitch(pCatchB->pDB, pArgv[3], xType, pArgv[5], pArgv[6], pArgv[7], "");
+				xRet = FTM_DB_addSwitch(pCatchB->pDB, pArgv[3], xModel, pArgv[5], pArgv[6], pArgv[7], "");
 				if (xRet != FTM_RET_OK)
 				{
 					printf("Failed to insert cctv[%s] to DB!\n", pArgv[3]);

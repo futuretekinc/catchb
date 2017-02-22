@@ -170,7 +170,7 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 		{
 			FTM_UINT32	ulCount = 0;
 
-			xRet = FTM_DB_ALARM_count(pNotifier->pDB, &ulCount);
+			xRet = FTM_DB_getAlarmCount(pNotifier->pDB, &ulCount);
 			if (xRet == FTM_RET_OK)
 			{
 				if(ulCount != 0)
@@ -180,14 +180,14 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 					pAlarms = (FTM_ALARM_PTR)FTM_MEM_calloc(sizeof(FTM_ALARM), ulCount);
 					if (pAlarms != NULL)
 					{
-						xRet = FTM_DB_ALARM_getList(pNotifier->pDB, pAlarms, ulCount, &ulCount);	
+						xRet = FTM_DB_getAlarmList(pNotifier->pDB, pAlarms, ulCount, &ulCount);	
 						if (xRet == FTM_RET_OK)
 						{
 							FTM_UINT32	i;
 
 							for(i = 0 ; i < ulCount ; i++)
 							{
-								TRACE("Send e-mail to %s - %s:%s\n", pAlarms[i].pEmail, pAlarms[i].pID, pAlarms[i].pMessage);	
+								TRACE("Send e-mail to %s - %s:%s\n", pAlarms[i].pEmail, pAlarms[i].pName, pAlarms[i].pMessage);	
 							}
 						}
 						else

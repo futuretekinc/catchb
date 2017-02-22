@@ -55,6 +55,8 @@ FTM_RET	FTM_ANALYZER_create
 		goto error;
 	}
 
+	pAnalyzer->xConfig.ulIPCheckInterval = FTM_CATCHB_DEFAULT_IP_CHECK_INTERVAL;
+
 	strcpy(pAnalyzer->pName, __MODULE__);
 
 	xRet = FTM_LOCK_create(&pAnalyzer->pLock);
@@ -246,8 +248,6 @@ FTM_RET	FTM_ANALYZER_process
 	FTM_RET			xRet;
 	FTM_UINT32		ulCount = 0;
 
-	TRACE_ENTRY();
-
 	xRet = FTM_LIST_count(pAnalyzer->pList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
@@ -256,7 +256,6 @@ FTM_RET	FTM_ANALYZER_process
 	}
 	else if (ulCount == 0)
 	{
-		ERROR(xRet, "CCTV count is 0!\n");
 		return	FTM_RET_OK;
 	}
 
@@ -334,7 +333,10 @@ FTM_RET	FTM_ANALYZER_process
 			}
 			else
 			{
-				if(!strncmp(pCCTV->xConfig.pHash, pHashValue, sizeof(pHashValue)))
+				static int i = 0;
+
+				///if(!strncmp(pCCTV->xConfig.pHash, pHashValue, sizeof(pHashValue)))
+				if (++i % 2)
 				{
 					FTM_CATCHB_CCTV_setStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_NORMAL);
 				}
@@ -350,14 +352,10 @@ FTM_RET	FTM_ANALYZER_process
 			}
 		}
 
-		FTM_TIMER_addS(&pCCTV->xExpiredTimer, 60);
+		FTM_TIMER_addMS(&pCCTV->xExpiredTimer, pAnalyzer->xConfig.ulIPCheckInterval);
 
 		FTM_LIST_remove(pAnalyzer->pList, pID);
 		FTM_LIST_append(pAnalyzer->pList, pID);
-	}
-	else
-	{
-		TRACE("CCTV[%s] is not expired[%s]!", pCCTV->xConfig.pID, FTM_TIMER_toString(&pCCTV->xExpiredTimer, NULL));	
 	}
 
 	FTM_CCTV_unlock(pCCTV);

@@ -86,6 +86,7 @@ FTM_RET	FTM_SWITCH_create
 	{
 		goto finished;	
 	}
+	FTM_LIST_setSeeker(pSwitch->pACList, FTM_SWITCH_AC_seeker);
 
 	for(i = 0 ; i < ulACCount ; i++)
 	{
@@ -104,11 +105,11 @@ FTM_RET	FTM_SWITCH_create
 		FTM_LIST_append(pSwitch->pACList, pAC);
 	}
 
-	FTM_LIST_setSeeker(pSwitch->pACList, FTM_SWITCH_AC_seeker);
-
 	FTM_LOCK_init(&pSwitch->xLock);
 
 	*ppSwitch = pSwitch;
+
+	return	FTM_RET_OK;
 
 finished:
 	if (pSwitch != NULL)
@@ -184,12 +185,12 @@ FTM_RET	FTM_SWITCH_addAC
 	FTM_SWITCH_PTR	pSwitch,
 	FTM_CHAR_PTR	pIP,
 	FTM_SWITCH_AC_POLICY	xPolicy,
-	FTM_INT32_PTR	pIndex
+	FTM_SWITCH_AC_PTR _PTR_ ppAC
 )
 {
 	ASSERT(pSwitch != NULL);
 	ASSERT(pIP != NULL);
-	ASSERT(pIndex != NULL);
+	ASSERT(ppAC != NULL);
 	
 	FTM_RET				xRet = FTM_RET_OK;
 	FTM_BOOL			pIndexTable[48];
@@ -241,7 +242,13 @@ FTM_RET	FTM_SWITCH_addAC
 		return	xRet;
 	}
 
-	*pIndex = nIndex;
+	xRet = FTM_SWITCH_NST_process(pSwitch, pIP, nIndex, xPolicy);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR("Failed to deny IP[%s] from switch[%s].", pIP, pSwitch->xConfig.pID);
+	}
+
+	*ppAC = pAC;
 
 	return	FTM_RET_OK;
 }
@@ -265,14 +272,22 @@ FTM_RET	FTM_SWITCH_deleteAC
 		return	xRet;
 	}
 
-	xRet = FTM_LIST_remove(pSwitch->pACList, pAC);
+	xRet = FTM_SWITCH_NST_process(pSwitch, pIP, pAC->nIndex, FTM_SWITCH_AC_POLICY_ALLOW);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to remove AC");
-		return	xRet;
+		ERROR("Failed to allow IP[%s] from switch[%s].", pIP, pSwitch->xConfig.pID);	
 	}
+	else
+	{
+		xRet = FTM_LIST_remove(pSwitch->pACList, pAC);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to remove AC");
+			return	xRet;
+		}
 
-	FTM_MEM_free(pAC);
+		FTM_MEM_free(pAC);
+	}
 
 	return	xRet;
 }
@@ -290,3 +305,27 @@ FTM_RET	FTM_SWITCH_getAC
 
 	return	FTM_LIST_get(pSwitch->pACList, pIP, (FTM_VOID_PTR _PTR_)ppAC);
 }
+
+FTM_SWITCH_MODEL	FTM_getSwitchModelID
+(	
+	FTM_CHAR_PTR	pModel
+)
+{
+	ASSERT(pModel != NULL);
+
+	if (strcasecmp(pModel, "nst") == 0)
+	{
+		return	FTM_SWITCH_MODEL_NST;	
+	}
+	else if (strcasecmp(pModel, "dasan") == 0)
+	{
+		return	FTM_SWITCH_MODEL_DASAN;	
+	}
+	else if (strcasecmp(pModel, "juniper") == 0)
+	{
+		return	FTM_SWITCH_MODEL_JUNIPER;	
+	}
+
+	return	FTM_SWITCH_MODEL_UNKNOWN;
+}
+

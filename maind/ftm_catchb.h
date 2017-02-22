@@ -31,6 +31,7 @@ typedef	struct	FTM_CATCHB_STRUCT
 
 	FTM_LIST_PTR		pCCTVList;
 	FTM_LIST_PTR		pSwitchList;
+	FTM_LIST_PTR		pAlarmList;
 
 	FTM_ANALYZER_PTR	pAnalyzer;
 	FTM_DETECTOR_PTR	pDetector;
@@ -99,16 +100,66 @@ FTM_RET	FTM_CATCHB_CCTV_register
 	FTM_CHAR_PTR	pHash
 );
 
-FTM_RET	FTM_CATCHB_SWITCH_get
+FTM_RET	FTM_CATCHB_createSwitch
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_SWITCH_CONFIG_PTR	pConfig,
+	FTM_SWITCH_PTR	_PTR_ ppSwitch
+);
+
+FTM_RET	FTM_CATCHB_destroySwitch
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pID
+);
+
+FTM_RET	FTM_CATCHB_getSwitch
 (
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_CHAR_PTR	pID,
 	FTM_SWITCH_PTR _PTR_ pSwitch
 );
 
-FTM_RET	FTM_CATCHB_SWITCH_count
+FTM_RET	FTM_CATCHB_getSwitchCount
 (
 	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_CATCHB_getSwitchList
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_SWITCH_PTR	_PTR_ ppSwitches,
+	FTM_UINT32		ulMaxCount,
+	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_CATCHB_createAlarm
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pName,
+	FTM_CHAR_PTR	pEmail,
+	FTM_CHAR_PTR	pMessage,
+	FTM_ALARM_PTR _PTR_ ppAlarm
+);
+
+FTM_RET	FTM_CATCHB_destroyAlarm
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pName
+);
+
+FTM_RET	FTM_CATCHB_getAlarmCount
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_CATCHB_getAlarmList
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_ALARM_PTR	_PTR_ ppAlarmes,
+	FTM_UINT32		ulMaxCount,
 	FTM_UINT32_PTR	pCount
 );
 

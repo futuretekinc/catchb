@@ -7,10 +7,26 @@
 #include "ftm_mem.h"
 
 FTM_RET	FTM_SHELL_CMD_db(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
+FTM_RET	FTM_SHELL_CMD_switch(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
+FTM_RET	FTM_SHELL_CMD_alarm(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_analyzer(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 
 FTM_SHELL_CMD	pCatchBShellCmdList[] = 
 {
+	{
+		.pString	= "alarm",
+		.function	= FTM_SHELL_CMD_alarm,
+		.pShortHelp	= "Alarm",
+		.pHelp		= "Alarm",
+		.pData		= NULL
+	},
+	{
+		.pString	= "analyzer",
+		.function	= FTM_SHELL_CMD_analyzer,
+		.pShortHelp	= "Analyzer",
+		.pHelp		= "Analyzer",
+		.pData		= NULL
+	},
 	{
 		.pString	= "db",
 		.function	= FTM_SHELL_CMD_db,
@@ -19,10 +35,10 @@ FTM_SHELL_CMD	pCatchBShellCmdList[] =
 		.pData		= NULL
 	},
 	{
-		.pString	= "analyzer",
-		.function	= FTM_SHELL_CMD_analyzer,
-		.pShortHelp	= "Analyzer",
-		.pHelp		= "Analyzer",
+		.pString	= "switch",
+		.function	= FTM_SHELL_CMD_switch,
+		.pShortHelp	= "Switch",
+		.pHelp		= "Switch",
 		.pData		= NULL
 	},
 };

@@ -276,7 +276,7 @@ FTM_RET	FTM_DETECTOR_setControl
 		pMsg->xHead.ulLen = sizeof(FTM_MSG_SWITCH_CONTROL);
 		strncpy(pMsg->pSwitchID, pSwitchID, sizeof(pMsg->pSwitchID) - 1);
 		strncpy(pMsg->pTargetIP, pTargetIP, sizeof(pMsg->pTargetIP) - 1);
-		pMsg->bAllow = bAllow;
+		pMsg->xPolicy	= (bAllow)?FTM_SWITCH_AC_POLICY_ALLOW:FTM_SWITCH_AC_POLICY_DENY;
 
 		xRet = FTM_MSGQ_push(pDetector->pMsgQ, pMsg);
 		if (xRet != FTM_RET_OK)
@@ -299,21 +299,35 @@ FTM_RET	FTM_DETECTOR_onSetControl
 	ASSERT(pMsg != NULL);
 
 	FTM_RET	xRet = FTM_RET_OK;
-	FTM_SWITCH_PTR	pSwitch = NULL;
+	FTM_SWITCH_PTR		pSwitch = NULL;
+	FTM_SWITCH_AC_PTR	pAC;
 
-	xRet = FTM_CATCHB_SWITCH_get(pDetector->pCatchB, pMsg->pSwitchID, &pSwitch);
+	xRet = FTM_CATCHB_getSwitch(pDetector->pCatchB, pMsg->pSwitchID, &pSwitch);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to get switch!");
+		ERROR(xRet, "Failed to get switch[%s]!", pMsg->pSwitchID);
 		return	xRet;	
 	}
 
-	
-	if (pMsg->bAllow)
+	xRet = FTM_SWITCH_getAC(pSwitch, pMsg->pTargetIP, &pAC);
+	if (xRet == FTM_RET_OBJECT_NOT_FOUND)
 	{
+		if (pMsg->xPolicy == FTM_SWITCH_AC_POLICY_DENY)
+		{
+			xRet = FTM_SWITCH_addAC(pSwitch, pMsg->pTargetIP, pMsg->xPolicy, &pAC);
+			if (xRet != FTM_RET_OK)
+			{
+				ERROR(xRet, "Failed to add AC to switch[%s]", pMsg->pSwitchID);
+				return	xRet;	
+			}
+		}
 	}
 	else
 	{
+		if (pMsg->xPolicy == FTM_SWITCH_AC_POLICY_ALLOW)
+		{
+			FTM_SWITCH_deleteAC(pSwitch, pMsg->pTargetIP);
+		}
 	}
 
 	return	FTM_RET_OK;

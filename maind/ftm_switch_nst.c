@@ -39,6 +39,16 @@ FTM_RET	FTM_SWITCH_NST_process
     FTM_CHAR	pLocalIP[FTM_IP_LEN+1];
     FTM_CHAR	pCommandBuffers[NST_MAX_COMD][FTM_COMMAND_LEN];
 
+	if (xPolicy)
+	{
+		TRACE("IP[%s] is allow!");
+	}
+	else
+	{
+		TRACE("IP[%s] is deny!");
+	}
+
+	return	0;
 	FTM_getLocalIP(pLocalIP, sizeof(pLocalIP)-1);
 
     sprintf(pTelnetCommand, "telnet %s", pSwitch->xConfig.pIP);
