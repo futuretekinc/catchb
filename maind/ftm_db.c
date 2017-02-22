@@ -949,7 +949,7 @@ FTM_RET	FTM_DB_LOG_getList
 ////////////////////////////////////////////////////////////////////////////////////
 //
 /////////////////////////////////////////////////////////////////////////////////////
-FTM_RET	FTM_DB_SWITCH_createTable
+FTM_RET	FTM_DB_createSwitchTable
 (
 	FTM_DB_PTR	pDB
 )
@@ -957,7 +957,7 @@ FTM_RET	FTM_DB_SWITCH_createTable
 	return FTM_DB_createTable(pDB, pDB->pSwitchTableName, "ID TEXT PRIMARY KEY, TYPE INT, IP TEXT, USER TEXT, PASSWD TEXT, COMMENT TEXT");
 }
 
-FTM_RET	FTM_DB_SWITCH_isTableExist
+FTM_RET	FTM_DB_isSwitchTableExist
 (
 	FTM_DB_PTR		pDB,
 	FTM_BOOL_PTR	pExist
@@ -966,7 +966,7 @@ FTM_RET	FTM_DB_SWITCH_isTableExist
 	return	FTM_DB_isExistTable(pDB, pDB->pSwitchTableName, pExist);
 }
 
-FTM_RET	FTM_DB_SWITCH_count
+FTM_RET	FTM_DB_getSwitchCount
 (
 	FTM_DB_PTR 	pDB, 
 	FTM_UINT32_PTR pCount
@@ -985,7 +985,7 @@ FTM_RET	FTM_DB_SWITCH_count
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_SWITCH_add
+FTM_RET	FTM_DB_addSwitch
 (
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID,
@@ -1016,7 +1016,7 @@ FTM_RET	FTM_DB_SWITCH_add
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_SWITCH_delete
+FTM_RET	FTM_DB_deleteSwitch
 (
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID
@@ -1045,10 +1045,10 @@ typedef struct
 	FTM_UINT32		ulMaxCount;
 	FTM_UINT32		ulCount;
 	FTM_SWITCH_CONFIG_PTR	pElements;
-}   FTM_SWITCH_GET_LIST_PARAMS, _PTR_ FTM_SWITCH_GET_LIST_PARAMS_PTR;
+}   FTM_DB_GET_SWITCH_LIST_PARAMS, _PTR_ FTM_DB_GET_SWITCH_LIST_PARAMS_PTR;
 
 static 
-FTM_INT	FTM_DB_SWITCH_getListCB
+FTM_INT	FTM_DB_getSwitchListCB
 (
 	FTM_VOID_PTR	pData, 
  	FTM_INT			nArgc, 
@@ -1056,7 +1056,7 @@ FTM_INT	FTM_DB_SWITCH_getListCB
  	FTM_CHAR_PTR	ppColName[]
 )
 {
-	FTM_SWITCH_GET_LIST_PARAMS_PTR	pParams = (FTM_SWITCH_GET_LIST_PARAMS_PTR)pData;
+	FTM_DB_GET_SWITCH_LIST_PARAMS_PTR	pParams = (FTM_DB_GET_SWITCH_LIST_PARAMS_PTR)pData;
 
 	if ((nArgc != 0) && (pParams->ulCount < pParams->ulMaxCount))
 	{    
@@ -1078,7 +1078,7 @@ FTM_INT	FTM_DB_SWITCH_getListCB
 			}    
 			else if (strcmp(ppColName[i], "USER") == 0)
 			{    
-				strcpy(pParams->pElements[pParams->ulCount].pUser, ppArgv[i]);
+				strcpy(pParams->pElements[pParams->ulCount].pUserID, ppArgv[i]);
 			}    
 			else if (strcmp(ppColName[i], "PASSWD") == 0)
 			{    
@@ -1097,7 +1097,7 @@ FTM_INT	FTM_DB_SWITCH_getListCB
 }
 
 
-FTM_RET	FTM_DB_SWITCH_getList
+FTM_RET	FTM_DB_getSwitchList
 (
 	FTM_DB_PTR		pDB,
 	FTM_SWITCH_CONFIG_PTR	pElements,
@@ -1110,13 +1110,13 @@ FTM_RET	FTM_DB_SWITCH_getList
 	ASSERT(pElements != NULL);
 	ASSERT(pCount != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
-    FTM_SWITCH_GET_LIST_PARAMS	xParams;
+    FTM_DB_GET_SWITCH_LIST_PARAMS	xParams;
 
 	xParams.ulMaxCount 	= ulMaxCount;
 	xParams.ulCount 	= 0;
 	xParams.pElements	= pElements;
 
-	xRet = FTM_DB_getElementList(pDB, pDB->pSwitchTableName, FTM_DB_SWITCH_getListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementList(pDB, pDB->pSwitchTableName, FTM_DB_getSwitchListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -1128,34 +1128,56 @@ FTM_RET	FTM_DB_SWITCH_getList
 ////////////////////////////////////////////////////////////////////////////////////
 //
 /////////////////////////////////////////////////////////////////////////////////////
-FTM_RET	FTM_DB_DENY_createTable
-(
-	FTM_DB_PTR	pDB
-)
-{
-	return FTM_DB_createTable(pDB, pDB->pDenyTableName, "IP TEXT PRIMARY KEY, INDEX INT, SWITCH TEXT");
-}
-
-FTM_RET	FTM_DB_DENY_isTableExist
+FTM_RET	FTM_DB_createACTable
 (
 	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR	pSwitchID
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pSwitchID != NULL);
+
+	FTM_CHAR	pTableName[256];
+
+	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
+
+	return FTM_DB_createTable(pDB, pTableName, "IP TEXT PRIMARY KEY, INDEX INT, POLICY INT");
+}
+
+FTM_RET	FTM_DB_isACTableExist
+(
+	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR	pSwitchID,
 	FTM_BOOL_PTR	pExist
 )
 {
-	return	FTM_DB_isExistTable(pDB, pDB->pDenyTableName, pExist);
+	ASSERT(pDB != NULL);
+	ASSERT(pSwitchID != NULL);
+	ASSERT(pExist != NULL);
+
+	FTM_CHAR	pTableName[256];
+
+	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
+
+	return	FTM_DB_isExistTable(pDB, pTableName, pExist);
 }
 
-FTM_RET	FTM_DB_DENY_count
+FTM_RET	FTM_DB_getACCount
 (
-	FTM_DB_PTR 	pDB, 
-	FTM_UINT32_PTR pCount
+	FTM_DB_PTR 		pDB, 
+	FTM_CHAR_PTR	pSwitchID,
+	FTM_UINT32_PTR 	pCount
 )
 {
 	ASSERT(pDB != NULL);
 	ASSERT(pCount != NULL);
-	FTM_RET	xRet = FTM_RET_OK;
+
+	FTM_CHAR	pTableName[256];
+	FTM_RET		xRet = FTM_RET_OK;
+
+	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
 	
-	xRet =FTM_DB_getElementCount(pDB, pDB->pDenyTableName, pCount);
+	xRet =FTM_DB_getElementCount(pDB, pTableName, pCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get element count of table tv_deny_info!");
@@ -1164,23 +1186,28 @@ FTM_RET	FTM_DB_DENY_count
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_DENY_insert
+FTM_RET	FTM_DB_addAC
 (
 	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR	pSwitchID,
 	FTM_CHAR_PTR	pIP,
 	FTM_UINT32		nIndex,
-	FTM_CHAR_PTR	pSwitchID
+	FTM_SWITCH_AC_POLICY	xPolicy
 )
 {
 	ASSERT(pDB != NULL);
 	ASSERT(pIP != NULL);
 	ASSERT(pSwitchID != NULL);
-	FTM_RET	xRet = FTM_RET_OK;
+
+	FTM_RET		xRet = FTM_RET_OK;
 	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
 	FTM_CHAR_PTR	pErrorMsg;
+	FTM_CHAR	pTableName[256];
+
+	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (IP, INDEX, SWITCH) VALUES('%s', %d, '%s');", pDB->pDenyTableName, pIP, nIndex, pSwitchID);
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (IP, INDEX, POLICY) VALUES('%s', %d, %d);", pTableName, pIP, nIndex, xPolicy);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
@@ -1190,20 +1217,24 @@ FTM_RET	FTM_DB_DENY_insert
 	return	xRet;
 }
 
-FTM_RET	FTM_DB_DENY_delete
+FTM_RET	FTM_DB_deleteAC
 (
 	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR	pSwitchID,
 	FTM_CHAR_PTR	pIP
 )
 {
 	ASSERT(pDB != NULL);
 	ASSERT(pIP != NULL);
-	FTM_RET	xRet = FTM_RET_OK;
-	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
+	FTM_RET			xRet = FTM_RET_OK;
+	FTM_CHAR		pQuery[FTM_DB_QUERY_LEN+1];
 	FTM_CHAR_PTR	pErrorMsg;
+	FTM_CHAR	pTableName[256];
+
+	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE IP = '%s'", pDB->pDenyTableName, pIP);
+	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE IP = '%s'", pTableName, pIP);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
@@ -1216,13 +1247,13 @@ FTM_RET	FTM_DB_DENY_delete
 
 typedef struct
 {
-	FTM_UINT32		ulMaxCount;
-	FTM_UINT32		ulCount;
-	FTM_DENY_PTR	pElements;
-}   FTM_DENY_GET_LIST_PARAMS, _PTR_ FTM_DENY_GET_LIST_PARAMS_PTR;
+	FTM_UINT32			ulMaxCount;
+	FTM_UINT32			ulCount;
+	FTM_SWITCH_AC_PTR	pElements;
+}   FTM_GET_AC_LIST_PARAMS, _PTR_ FTM_GET_AC_LIST_PARAMS_PTR;
 
 static 
-FTM_INT	FTM_DB_DENY_getListCB
+FTM_INT	FTM_DB_getACListCB
 (
 	FTM_VOID_PTR	pData, 
  	FTM_INT			nArgc, 
@@ -1230,7 +1261,7 @@ FTM_INT	FTM_DB_DENY_getListCB
  	FTM_CHAR_PTR	ppColName[]
 )
 {
-	FTM_DENY_GET_LIST_PARAMS_PTR	pParams = (FTM_DENY_GET_LIST_PARAMS_PTR)pData;
+	FTM_GET_AC_LIST_PARAMS_PTR	pParams = (FTM_GET_AC_LIST_PARAMS_PTR)pData;
 
 	if ((nArgc != 0) && (pParams->ulCount < pParams->ulMaxCount))
 	{    
@@ -1242,9 +1273,9 @@ FTM_INT	FTM_DB_DENY_getListCB
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pIP, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "SWITCH") == 0)
+			else if (strcmp(ppColName[i], "POLICY") == 0)
 			{    
-				strcpy(pParams->pElements[pParams->ulCount].pSwitchID, ppArgv[i]);
+				pParams->pElements[pParams->ulCount].xPolicy = atoi(ppArgv[i]);
 			}    
 			else if (strcmp(ppColName[i], "INDEX") == 0)
 			{    
@@ -1259,63 +1290,31 @@ FTM_INT	FTM_DB_DENY_getListCB
 }
 
 
-FTM_RET	FTM_DB_DENY_get
+FTM_RET	FTM_DB_getACList
 (
-	FTM_DB_PTR		pDB,
-	FTM_CHAR_PTR	pIP,
-	FTM_DENY_PTR	pDeny
-)
-{
-	ASSERT(pDB != NULL);
-	ASSERT(pIP != NULL);
-	ASSERT(pDeny != NULL);
-	FTM_RET	xRet = FTM_RET_OK;
-	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
-	FTM_CHAR_PTR	pErrorMsg;
-    FTM_DENY_GET_LIST_PARAMS	xParams;
-
-	xParams.ulMaxCount 	= 1;
-	xParams.ulCount 	= 0;
-	xParams.pElements	= pDeny;
-
-
-	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM ft_deny_info WHERE IP = %s", pIP);
-
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_DENY_getListCB, (FTM_VOID_PTR)&xParams, &pErrorMsg) < 0)
-	{
-		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
-	}
-	else if (xParams.ulCount == 0)
-	{
-		xRet = FTM_RET_OBJECT_NOT_FOUND;
-		ERROR(xRet, "Object not found!");
-	}
-
-	return	xRet;
-}
-
-FTM_RET	FTM_DB_DENY_getList
-(
-	FTM_DB_PTR		pDB,
-	FTM_DENY_PTR	pElements,
-	FTM_UINT32		ulMaxCount,
-	FTM_UINT32_PTR	pCount
+	FTM_DB_PTR			pDB,
+	FTM_CHAR_PTR		pSwitchID,
+	FTM_SWITCH_AC_PTR	pElements,
+	FTM_UINT32			ulMaxCount,
+	FTM_UINT32_PTR		pCount
 
 )
 {
 	ASSERT(pDB != NULL);
+	ASSERT(pSwitchID != NULL);
 	ASSERT(pElements != NULL);
 	ASSERT(pCount != NULL);
-	FTM_RET	xRet = FTM_RET_OK;
-    FTM_DENY_GET_LIST_PARAMS	xParams;
 
+	FTM_RET	xRet = FTM_RET_OK;
+    FTM_GET_AC_LIST_PARAMS	xParams;
+	FTM_CHAR	pTableName[256];
+
+	sprintf(pTableName, "tb_sw%s_ac", pSwitchID);
 	xParams.ulMaxCount 	= ulMaxCount;
 	xParams.ulCount 	= 0;
 	xParams.pElements	= pElements;
 
-	xRet = FTM_DB_getElementList(pDB, pDB->pDenyTableName, FTM_DB_DENY_getListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementList(pDB, pTableName, FTM_DB_getACListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;

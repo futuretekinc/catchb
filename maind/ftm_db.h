@@ -196,24 +196,24 @@ FTM_RET	FTM_DB_LOG_getList
 	FTM_UINT32_PTR	pCount
 );
 
-FTM_RET	FTM_DB_SWITCH_createTable
+FTM_RET	FTM_DB_createSwitchTable
 (
 	FTM_DB_PTR	pDB
 );
 
-FTM_RET	FTM_DB_SWITCH_isTableExist
+FTM_RET	FTM_DB_isSwitchTableExist
 (
 	FTM_DB_PTR		pDB,
 	FTM_BOOL_PTR	pExist
 );
 
-FTM_RET	FTM_DB_SWITCH_count
+FTM_RET	FTM_DB_getSwitchCount
 (
 	FTM_DB_PTR 	pDB, 
 	FTM_UINT32_PTR pCount
 );
 
-FTM_RET	FTM_DB_SWITCH_add
+FTM_RET	FTM_DB_addSwitch
 (
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID,
@@ -224,13 +224,13 @@ FTM_RET	FTM_DB_SWITCH_add
 	FTM_CHAR_PTR	pComment	
 );
 
-FTM_RET	FTM_DB_SWITCH_delete
+FTM_RET	FTM_DB_deleteSwitch
 (
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID
 );
 
-FTM_RET	FTM_DB_SWITCH_getList
+FTM_RET	FTM_DB_getSwitchList
 (
 	FTM_DB_PTR		pDB,
 	FTM_SWITCH_CONFIG_PTR	pElements,
@@ -238,49 +238,49 @@ FTM_RET	FTM_DB_SWITCH_getList
 	FTM_UINT32_PTR	pCount
 );
 
-FTM_RET	FTM_DB_DENY_createTable
-(
-	FTM_DB_PTR		pDB
-);
 
-FTM_RET	FTM_DB_DENY_isTableExist
+FTM_RET	FTM_DB_createACTable
 (
 	FTM_DB_PTR		pDB,
-	FTM_BOOL_PTR	pExist
-);
-
-FTM_RET	FTM_DB_DENY_count
-(
-	FTM_DB_PTR		pDB,
-	FTM_UINT32_PTR	pCount
-);
-
-FTM_RET	FTM_DB_DENY_insert
-(
-	FTM_DB_PTR		pDB,
-	FTM_CHAR_PTR	pIP,
-	FTM_UINT32		nIndex,
 	FTM_CHAR_PTR	pSwitchID
 );
 
-FTM_RET	FTM_DB_DENY_delete
+FTM_RET	FTM_DB_isACTableExist
 (
 	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR	pSwitchID,
+	FTM_BOOL_PTR	pExist
+);
+
+FTM_RET	FTM_DB_getACCount
+(
+	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR	pSwitchID,
+	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_DB_addAC
+(
+	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR	pSwitchID,
+	FTM_CHAR_PTR	pIP,
+	FTM_UINT32		nIndex,
+	FTM_SWITCH_AC_POLICY	xPolicy
+);
+
+FTM_RET	FTM_DB_deleteAC
+(
+	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR	pSwitchID,
 	FTM_CHAR_PTR	pIP
 );
 
-FTM_RET	FTM_DB_DENY_get
+FTM_RET	FTM_DB_getACList
 (
-	FTM_DB_PTR		pDB,
-	FTM_CHAR_PTR	pIP,
-	FTM_DENY_PTR	pDeny
-);
-
-FTM_RET	FTM_DB_DENY_getList
-(
-	FTM_DB_PTR		pDB,
-	FTM_DENY_PTR	pElements,
-	FTM_UINT32		ulMaxCount,
-	FTM_UINT32_PTR	pCount
+	FTM_DB_PTR			pDB,
+	FTM_CHAR_PTR		pSwitchID,
+	FTM_SWITCH_AC_PTR	pElements,
+	FTM_UINT32			ulMaxCount,
+	FTM_UINT32_PTR		pCount
 );
 #endif

@@ -17,6 +17,7 @@
 #define	FTM_FILE_NAME_LEN		256
 #define	FTM_EMAIL_LEN			128
 #define	FTM_ALARM_MESSAGE_LEN	128
+#define	FTM_COMMAND_LEN			256
 
 #define	_PTR_	*
 
@@ -33,6 +34,7 @@ typedef	char			FTM_CHAR,	_PTR_ FTM_CHAR_PTR;
 typedef	unsigned char	FTM_UINT8,	_PTR_ FTM_UINT8_PTR;
 typedef	int				FTM_INT,	_PTR_ FTM_INT_PTR;
 typedef	uint16_t		FTM_UINT16, _PTR_ FTM_UINT16_PTR;
+typedef	int32_t			FTM_INT32, 	_PTR_ FTM_INT32_PTR;
 typedef	uint32_t		FTM_UINT32, _PTR_ FTM_UINT32_PTR;
 typedef	int64_t			FTM_INT64, 	_PTR_ FTM_INT64_PTR;
 typedef	uint64_t		FTM_UINT64, _PTR_ FTM_UINT64_PTR;
@@ -40,7 +42,8 @@ typedef	float			FTM_FLOAT,	_PTR_ FTM_FLOAT_PTR;
 
 typedef	FTM_CHAR	FTM_ID[FTM_ID_LEN+1];
 
-typedef	FTM_ID _PTR_	FTM_ID_PTR;
+typedef	FTM_ID 	_PTR_	FTM_ID_PTR;
+
 typedef	struct	FTM_ALARM_STRUCT
 {
 	FTM_CHAR	pID[FTM_ID_LEN+1];
@@ -58,12 +61,6 @@ typedef	struct	FTM_LOG_STRUCT
 	FTM_INT	nStatus;
 }	FTM_LOG, _PTR_ FTM_LOG_PTR;
 
-typedef	struct	FTM_DENY_STRUCT
-{
-	FTM_CHAR	pIP[FTM_IP_LEN+1];
-	FTM_UINT32	nIndex;
-	FTM_CHAR	pSwitchID[FTM_ID_LEN+1];
-}	FTM_DENY, _PTR_ FTM_DENY_PTR;
 
 typedef	struct	FTM_OS_MATRIX_STRUCT
 {

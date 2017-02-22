@@ -331,7 +331,7 @@ FTM_RET	FTM_PING_check
 	{
         struct sockaddr_in from;
         register int cc;
-        size_t fromlen;
+        socklen_t	fromlen;
 
         if(fail_count == 2)
 		{

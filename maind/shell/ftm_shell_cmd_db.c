@@ -103,7 +103,7 @@ FTM_RET	FTM_SHELL_CMD_db
 		{
 			FTM_UINT32	ulCount = 0;
 
-			xRet = FTM_DB_SWITCH_count(pCatchB->pDB, &ulCount);
+			xRet = FTM_DB_getSwitchCount(pCatchB->pDB, &ulCount);
 			if (xRet != FTM_RET_OK)
 			{
 				ERROR(xRet, "Failed to get switch count from DB!\n");
@@ -124,7 +124,7 @@ FTM_RET	FTM_SHELL_CMD_db
 				goto finished;
 			}
 
-			xRet = FTM_DB_SWITCH_getList(pCatchB->pDB, pSwitchArray, ulCount, &ulCount);
+			xRet = FTM_DB_getSwitchList(pCatchB->pDB, pSwitchArray, ulCount, &ulCount);
 			if (xRet != FTM_RET_OK)
 			{
 				printf("Failed to get switch list!\n");
@@ -136,7 +136,7 @@ FTM_RET	FTM_SHELL_CMD_db
 				printf("%6s %16s %24s %16s %16s %s\n", "", "ID", "IP", "USER", "PASSWD", "COMMENT");
 				for(i = 0 ; i < ulCount ; i++)
 				{
-					printf("%4d : %16s %24s %16s %16s %s\n", i + 1, pSwitchArray[i].pID, pSwitchArray[i].pIP, pSwitchArray[i].pUser, pSwitchArray[i].pPasswd, pSwitchArray[i].pComment);
+					printf("%4d : %16s %24s %16s %16s %s\n", i + 1, pSwitchArray[i].pID, pSwitchArray[i].pIP, pSwitchArray[i].pUserID, pSwitchArray[i].pPasswd, pSwitchArray[i].pComment);
 				}
 			}
 
@@ -166,7 +166,7 @@ FTM_RET	FTM_SHELL_CMD_db
 					goto finished;	
 				}
 
-				xRet = FTM_DB_SWITCH_add(pCatchB->pDB, pArgv[3], xType, pArgv[5], pArgv[6], pArgv[7], "");
+				xRet = FTM_DB_addSwitch(pCatchB->pDB, pArgv[3], xType, pArgv[5], pArgv[6], pArgv[7], "");
 				if (xRet != FTM_RET_OK)
 				{
 					printf("Failed to insert cctv[%s] to DB!\n", pArgv[3]);
@@ -174,7 +174,7 @@ FTM_RET	FTM_SHELL_CMD_db
 			}
 			else if ((strcasecmp(pArgv[2], "del") == 0) && (nArgc == 4))
 			{
-				xRet = FTM_DB_SWITCH_delete(pCatchB->pDB, pArgv[3]);
+				xRet = FTM_DB_deleteSwitch(pCatchB->pDB, pArgv[3]);
 				if (xRet != FTM_RET_OK)
 				{
 					printf("Failed to delete switch[%s] from DB!\n", pArgv[3]);	

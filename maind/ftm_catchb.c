@@ -418,12 +418,12 @@ FTM_RET	FTM_CATCHB_initProcess
 		return	xRet;
 	}
 
-	xRet = FTM_DB_SWITCH_isTableExist(pCatchB->pDB, &bExist);
+	xRet = FTM_DB_isSwitchTableExist(pCatchB->pDB, &bExist);
 	if (bExist)
 	{
 		FTM_UINT32	ulCount;
 
-		xRet = FTM_DB_SWITCH_count(pCatchB->pDB, &ulCount);
+		xRet = FTM_DB_getSwitchCount(pCatchB->pDB, &ulCount);
 		if (xRet != FTM_RET_OK)
 		{
 			ERROR(xRet, "Failed to get SWITCH count!");	
@@ -440,7 +440,7 @@ FTM_RET	FTM_CATCHB_initProcess
 			{
 				FTM_UINT32	i;
 
-				xRet = FTM_DB_SWITCH_getList(pCatchB->pDB, pConfigArray, ulCount, &ulCount);
+				xRet = FTM_DB_getSwitchList(pCatchB->pDB, pConfigArray, ulCount, &ulCount);
 				if (xRet != FTM_RET_OK)
 				{
 					ERROR(xRet, "Failed to get SWITCH list!");
@@ -449,12 +449,66 @@ FTM_RET	FTM_CATCHB_initProcess
 				{
 					for(i = 0 ; i < ulCount ; i++)
 					{
-						xRet = FTM_CATCHB_foundNewSwitchInDB(pCatchB, &pConfigArray[i]);
-						if (xRet != FTM_RET_OK)
+						FTM_SWITCH_PTR	pSwitch = NULL;
+						FTM_SWITCH_AC_PTR	pACs = NULL;
+						FTM_UINT32			ulACCount = 0;
+						FTM_BOOL			bExist = FTM_FALSE;	
+
+						xRet = FTM_DB_isACTableExist(pCatchB->pDB, pConfigArray[i].pIP, &bExist);
+						if ((xRet == FTM_RET_OK) && bExist)
 						{
-							ERROR(xRet, "Failed to send message to CatchB!");	
+							FTM_UINT32	ulCount = 0;
+
+							FTM_DB_getACCount(pCatchB->pDB, pConfigArray[i].pIP, &ulCount);
+							if (ulCount != 0)
+							{
+								FTM_SWITCH_AC_PTR	pACs = (FTM_SWITCH_AC_PTR)FTM_MEM_calloc(sizeof(FTM_SWITCH_AC), ulCount);
+								if (pACs == NULL)
+								{
+									xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+									ERROR(xRet, "Failed to create AC list!");	
+								}
+								else
+								{
+									xRet = FTM_DB_getACList(pCatchB->pDB, pConfigArray[i].pIP, pACs, ulCount, &ulACCount);
+									if (xRet != FTM_RET_OK)
+									{
+										ERROR(xRet, "Failed to get AC list!");	
+										FTM_MEM_free(pACs);
+										pACs = NULL;
+									}
+								}
+							}
+						}
+						else
+						{
+							xRet = FTM_DB_createACTable(pCatchB->pDB, pConfigArray[i].pIP);	
+							if (xRet != FTM_RET_OK)
+							{
+								ERROR(xRet, "Failed to create AC table!");	
+							}
 						}
 
+
+						xRet = FTM_SWITCH_create(&pConfigArray[i], pACs, ulACCount, &pSwitch);
+						if (xRet != FTM_RET_OK)
+						{
+							ERROR(xRet, "Failed to create SWITCH!");
+						}
+						else
+						{
+							xRet = FTM_LIST_append(pCatchB->pSwitchList, pSwitch);
+							if (xRet != FTM_RET_OK)
+							{
+								ERROR(xRet, "Failed to append list!");
+								FTM_SWITCH_destroy(&pSwitch);
+							}
+						}
+
+						if (pACs != NULL)
+						{
+							FTM_MEM_free(pACs);	
+						}
 					}
 				}	
 				FTM_MEM_free(pConfigArray);	
@@ -463,7 +517,7 @@ FTM_RET	FTM_CATCHB_initProcess
 	}
 	else
 	{
-		xRet = FTM_DB_SWITCH_createTable(pCatchB->pDB);
+		xRet = FTM_DB_createSwitchTable(pCatchB->pDB);
 		if (xRet != FTM_RET_OK)
 		{
 			ERROR(xRet, "Failed to create SWITCH table!");	
@@ -548,30 +602,17 @@ FTM_RET	FTM_CATCHB_initProcess
 		}	
 	}
 
-	xRet = FTM_DB_SWITCH_isTableExist(pCatchB->pDB, &bExist);
+	xRet = FTM_DB_isSwitchTableExist(pCatchB->pDB, &bExist);
 	if (bExist)
 	{
 	}
 	else
 	{
-		xRet = FTM_DB_SWITCH_createTable(pCatchB->pDB);
+		xRet = FTM_DB_createSwitchTable(pCatchB->pDB);
 		if (xRet != FTM_RET_OK)
 		{
 			ERROR(xRet, "Failed to create switch table!");	
 		}	
-	}
-
-	xRet = FTM_DB_DENY_isTableExist(pCatchB->pDB, &bExist);
-	if (bExist)
-	{
-	}
-	else
-	{
-		xRet = FTM_DB_DENY_createTable(pCatchB->pDB);
-		if (xRet != FTM_RET_OK)
-		{
-			ERROR(xRet, "Failed to create deny table!");	
-		}
 	}
 
 	return	xRet;
@@ -1226,8 +1267,49 @@ FTM_RET		FTM_CATCHB_onFoundSwitchInDB
 
 	FTM_RET			xRet;
 	FTM_SWITCH_PTR	pSwitch;
+	FTM_SWITCH_AC_PTR	pACs = NULL;
+	FTM_UINT32		ulACCount = 0;
+	FTM_BOOL		bExist = FTM_FALSE;	
 
-	xRet = FTM_SWITCH_create(&pMsg->xConfig, &pSwitch);
+	xRet = FTM_DB_isACTableExist(pCatchB->pDB, pMsg->xConfig.pIP, &bExist);
+	if ((xRet == FTM_RET_OK) && bExist)
+	{
+		FTM_UINT32	ulCount = 0;
+
+		FTM_DB_getACCount(pCatchB->pDB, pMsg->xConfig.pIP, &ulCount);
+		if (ulCount != 0)
+		{
+			FTM_SWITCH_AC_PTR	pACs = (FTM_SWITCH_AC_PTR)FTM_MEM_calloc(sizeof(FTM_SWITCH_AC), ulCount);
+			if (pACs == NULL)
+			{
+				xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+				ERROR(xRet, "Failed to create AC list!");
+				return	xRet;
+
+			}
+			else
+			{
+				xRet = FTM_DB_getACList(pCatchB->pDB, pMsg->xConfig.pIP, pACs, ulCount, &ulACCount);
+				if (xRet != FTM_RET_OK)
+				{
+					ERROR(xRet, "Failed to get AC list!");	
+					FTM_MEM_free(pACs);
+					return	xRet;
+				}
+			}
+		}
+	}
+	else
+	{
+		xRet = FTM_DB_createACTable(pCatchB->pDB, pMsg->xConfig.pIP);	
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to create AC table!");	
+			return	xRet;
+		}
+	}
+
+	xRet = FTM_SWITCH_create(&pMsg->xConfig, pACs, ulACCount, &pSwitch);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to create SWITCH!");
@@ -1240,6 +1322,11 @@ FTM_RET		FTM_CATCHB_onFoundSwitchInDB
 			ERROR(xRet, "Failed to append list!");
 			FTM_SWITCH_destroy(&pSwitch);
 		}
+	}
+
+	if (pACs != NULL)
+	{
+		FTM_MEM_free(pACs);	
 	}
 
 	return	xRet;
@@ -1375,7 +1462,7 @@ FTM_RET	FTM_CATCHB_onCheckNewSwitch
 	FTM_UINT32		ulCount;
 
 	TRACE("Check New Switch!");
-	xRet = FTM_DB_SWITCH_count(pCatchB->pDB, &ulCount);
+	xRet = FTM_DB_getSwitchCount(pCatchB->pDB, &ulCount);
 	if (xRet == FTM_RET_OK)
 	{
 		if (ulCount != 0)
@@ -1387,7 +1474,7 @@ FTM_RET	FTM_CATCHB_onCheckNewSwitch
 			pConfigArray = (FTM_SWITCH_CONFIG_PTR)FTM_MEM_calloc(sizeof(FTM_SWITCH_CONFIG), ulCount);
 			if (pConfigArray != NULL)
 			{
-				xRet = FTM_DB_SWITCH_getList(pCatchB->pDB, pConfigArray, ulCount, &ulCount);
+				xRet = FTM_DB_getSwitchList(pCatchB->pDB, pConfigArray, ulCount, &ulCount);
 				if (xRet == FTM_RET_OK)
 				{
 					FTM_LIST_iteratorStart(pCatchB->pSwitchList);

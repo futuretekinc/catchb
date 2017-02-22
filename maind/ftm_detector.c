@@ -1,17 +1,10 @@
 #include "ftm_mem.h"
+#include "ftm_catchb.h"
 #include "ftm_detector.h"
 #include "ftm_message.h"
 #include "ftm_trace.h"
 
 #include <common_libssh.h>
-
-    /*
-       0. (tb_ck_switch_detection_info) select
-
-       1. (tb_ck_deny_ip) sql switch ip, id, password read
-       2. ssh process(ssh connection, ssh command write)
-       3. (tb_ck_switch_detection_info) sql detection insert
-    */
 
 #undef	__MODULE__
 #define	__MODULE__	"DETECTOR"
@@ -267,6 +260,7 @@ FTM_RET	FTM_DETECTOR_setControl
 	ASSERT(pDetector != NULL);
 	ASSERT(pSwitchID != NULL);
 	ASSERT(pTargetIP != NULL);
+
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_MSG_SWITCH_CONTROL_PTR	pMsg;
 	
@@ -304,69 +298,26 @@ FTM_RET	FTM_DETECTOR_onSetControl
 	ASSERT(pDetector != NULL);
 	ASSERT(pMsg != NULL);
 
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_SWITCH_PTR	pSwitch = NULL;
+
+	xRet = FTM_CATCHB_SWITCH_get(pDetector->pCatchB, pMsg->pSwitchID, &pSwitch);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get switch!");
+		return	xRet;	
+	}
+
+	
 	if (pMsg->bAllow)
 	{
-		TRACE("Switch[%s] allow IP[%s]", pMsg->pSwitchID, pMsg->pTargetIP);
 	}
 	else
 	{
-		TRACE("Switch[%s] deny IP[%s]", pMsg->pSwitchID, pMsg->pTargetIP);
 	}
 
 	return	FTM_RET_OK;
 }
-
-FTM_RET	FTM_DETECTOR_setDeny
-(
-	FTM_DETECTOR_PTR	pDetector,
-	FTM_CHAR_PTR		pIP,
-	FTM_CHAR_PTR		pSwitchID
-)
-{
-	ASSERT(pDetector != NULL);
-	ASSERT(pIP != NULL);
-	FTM_RET	xRet = FTM_RET_OK;
-
-#if 0
-	FTM_DENY	xDeny;
-
-	xRet = FTM_DB_DENY_get(pDetector->pDB, pIP, &xDeny);
-	if (xRet == FTM_RET_OBJECT_NOT_FOUND)
-	{
-		FTM_DB_DENY_insert(pDetector->pDB, pIP, 0, pSwitchID);
-	}
-#endif
-	return	xRet;
-}
-
-FTM_RET	FTM_DETECTOR_resetDeny
-(
-	FTM_DETECTOR_PTR	pDetector,
-	FTM_CHAR_PTR		pIP
-)
-{
-	ASSERT(pDetector != NULL);
-	ASSERT(pIP != NULL);
-	FTM_RET	xRet = FTM_RET_OK;
-
-#if 0
-	FTM_DENY	xDeny;
-
-	xRet = FTM_DB_DENY_get(pDetector->pDB, pIP, &xDeny);
-	if (xRet != FTM_RET_OK)
-	{
-		return	xRet;
-	}
-
-	xRet = FTM_DB_DENY_delete(pDetector->pDB, pIP);
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to delete info from DB!\n");
-	}
-#endif
-	return	xRet;
-}
-
 
 FTM_BOOL	FTM_DETECTOR_seeker
 (

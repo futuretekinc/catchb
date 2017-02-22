@@ -13,24 +13,19 @@
 
 FTM_RET	FTM_getLocalIP
 (
-	struct in_addr*	pLocalIP
+	FTM_CHAR_PTR	pBuff,
+	FTM_UINT32		ulBuffSize
 ) 
 {
-	ASSERT(pLocalIP);
+	ASSERT(pBuff != NULL);
 
 	FTM_RET	xRet = FTM_RET_OK;
-    FTM_CHAR	pBuffer[1024];
-
     FILE *pFP;
 	
 	pFP = popen("ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'", "r");
     if(pFP != NULL) 
 	{
-        if (fgets(pBuffer, sizeof(pBuffer), pFP) != NULL)
-		{
-        	inet_aton(pBuffer, pLocalIP);
-		}
-		else
+        if (fgets(pBuff, ulBuffSize, pFP) == NULL)
 		{
 			xRet = FTM_RET_NET_INTERFACE_ERROR;
 		}

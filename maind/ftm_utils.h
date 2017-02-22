@@ -8,7 +8,8 @@
 
 FTM_RET	FTM_getLocalIP
 (
-	struct in_addr*	pLocalIP
+	FTM_CHAR_PTR	pBuff,
+	FTM_UINT32		ulBuffSize
 );
 
 FTM_RET	FTM_portScan
@@ -22,7 +23,7 @@ FTM_RET	FTM_HASH_SHA1
 (
 	FTM_UINT8_PTR	pData,
 	FTM_UINT32		ulDataLen,
-	FTM_CHAR_PTR		pValue,
+	FTM_CHAR_PTR	pValue,
 	FTM_UINT32		ulBufferSize
 );
 
