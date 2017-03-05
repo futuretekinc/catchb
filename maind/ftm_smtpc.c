@@ -123,6 +123,8 @@ FTM_RET	FTM_SMTPC_connect
 		return	xRet;	
 	}
 
+	TRACE("S : %s", pBuff);
+
 	pSMTPC->nCode = atoi(pBuff);
 
 	return FTM_RET_OK;
@@ -141,14 +143,13 @@ FTM_RET	FTM_SMTPC_sendAndReceive
 
 	FTM_RET	xRet = FTM_RET_OK;
 
+	TRACE("C : %s", pData);
 	xRet = FTM_SMTPC_CONNECTION_write(pSMTPC->xSock, pData, strlen(pData));
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to write data to socket!");
 		return	xRet;	
 	}
-
-	TRACE("C : %s", pData);
 	
 	xRet = FTM_SMTPC_CONNECTION_read(pSMTPC->xSock, pBuff, sizeof(pBuff), &ulReadDataLen);
 	if (xRet != FTM_RET_OK)
@@ -169,12 +170,21 @@ FTM_RET	FTM_SMTPC_sendGreeting
 )
 {
 	ASSERT(pSMTPC != NULL);
-
+	FTM_RET		xRet;
 	FTM_CHAR	pBuff[256];
 
 	sprintf(pBuff, "EHLO %s\r\n", pSMTPC->pHostName);
 
-	return	FTM_SMTPC_sendAndReceive(pSMTPC, pBuff);
+	xRet = FTM_SMTPC_sendAndReceive(pSMTPC, pBuff);
+	if (xRet == FTM_RET_OK)
+	{
+		if (pSMTPC->nCode != FTM_SMTP_RET_COMPLETED)
+		{
+			xRet = FTM_RET_SMTPC_ERROR;
+		}
+	}
+
+	return	xRet;
 }
 
 FTM_RET	FTM_SMTPC_sendAuth
@@ -214,21 +224,37 @@ FTM_RET	FTM_SMTPC_sendAuth
 
 	sprintf(pBuff, "AUTH LOGIN %s\r\n", pEncodedID);
 	xRet = FTM_SMTPC_sendAndReceive(pSMTPC, pBuff);
+	if (xRet == FTM_RET_OK)
+	{
+		if (pSMTPC->nCode != FTM_SMTP_RET_BASE64_ENCODED_STRING)
+		{
+			xRet = FTM_RET_SMTPC_ERROR;
+			ERROR(xRet, "Failed to encoding string");
+		}
+	}
+
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to send ID and receive!");
 		return	xRet;
 	}
-
+	
 	sprintf(pBuff, "%s\r\n", pEncodedPW);
-	xRet = FTM_SMTPC_sendAndReceive(pSMTPC, pEncodedPW);
-	if (xRet != FTM_RET_OK)
+	xRet = FTM_SMTPC_sendAndReceive(pSMTPC, pBuff);
+	if (xRet == FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to send PW and receive!");
-		return	xRet;
+		if (pSMTPC->nCode != FTM_SMTP_RET_AUTHENTICATION_SUCCEEDED)
+		{
+			ERROR(xRet, "Failed to send PW and receive!");
+		}
 	}
 
-	return FTM_RET_OK;
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to send ID and receive!");
+	}
+
+	return	xRet;
 }
 
 FTM_RET	FTM_SMTPC_sendCmdAndArg

@@ -93,4 +93,5 @@ FTM_SWITCH_MODEL	FTM_getSwitchModelID
 	FTM_CHAR_PTR	pModel
 );
 
+#include "ftm_switch_nst.h"
 #endif

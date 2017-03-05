@@ -24,6 +24,10 @@
 
 #include "ftm_types.h"
 
+#define	FTM_SMTP_RET_AUTHENTICATION_SUCCEEDED	235
+#define	FTM_SMTP_RET_COMPLETED			250
+#define	FTM_SMTP_RET_BASE64_ENCODED_STRING	334
+
 typedef	struct	FTM_SMTP_CLIENT_STRUCT
 {
 	FTM_INT			xSock;

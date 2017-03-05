@@ -5,6 +5,7 @@
 #include "ftm_message.h"
 #include "ftm_utils.h"
 #include "ftm_mem.h"
+#include "ftm_ping.h"
 
 #undef	__MODULE__
 #define	__MODULE__	"ANALYZER"

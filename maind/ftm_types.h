@@ -22,7 +22,7 @@
 
 #define	_PTR_	*
 
-#define	FTM_RET	unsigned int
+#define	FTM_RET	uint32_t
 
 #define	FTM_VOID		void
 #define	FTM_VOID_PTR	void *
@@ -148,6 +148,7 @@ typedef struct FTM_SCORE_INFO_STRUCT
 #define	FTM_RET_SEND_MAIL_ERROR				122
 #define	FTM_RET_BUFFER_TOO_SMALL			123	
 
+#define	FTM_RET_SMTPC_ERROR					124
 
 #define	FTM_CATCHB_DEFAULT_IP_CHECK_INTERVAL	10000
 

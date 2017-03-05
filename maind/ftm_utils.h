@@ -33,12 +33,6 @@ FTM_RET	FTM_ARP_parsing
 	FTM_CHAR_PTR	pMAC
 );
 
-FTM_INT FTM_PING_check
-(
-	FTM_CHAR_PTR	pTargetIP, 
-	FTM_UINT32_PTR	pReplyCount
-);
-
 #define PORT_NUM 8
 extern	const FTM_UINT16		pPortList[PORT_NUM];
 
