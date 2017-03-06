@@ -60,6 +60,7 @@ typedef	struct	FTM_NOTIFIER_STRUCT
 
 	struct FTM_CATCHB_STRUCT _PTR_ pCatchB;
 
+	FTM_CHAR		pName[FTM_NAME_LEN+1];
 	FTM_BOOL		bStop;
 	FTM_MSGQ_PTR	pMsgQ;
 

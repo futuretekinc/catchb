@@ -7,7 +7,7 @@
 #include <common_libssh.h>
 
 #undef	__MODULE__
-#define	__MODULE__	"DETECTOR"
+#define	__MODULE__	"detector"
 
 FTM_BOOL	FTM_DETECTOR_seeker
 (
@@ -89,6 +89,7 @@ FTM_RET	FTM_DETECTOR_create
 		ERROR(xRet, "Failed to create message queue!");
 		goto error;
    	}
+	pDetector->bStop = FTM_FALSE;
 	pDetector->pCatchB = pCatchB;
 
 	*ppDetector = pDetector;	
@@ -219,6 +220,8 @@ FTM_VOID_PTR	FTM_DETECTOR_process
 	FTM_RET	xRet;
 	FTM_DETECTOR_PTR	pDetector = (FTM_DETECTOR_PTR)pData;
 
+	TRACE("%s started.", pDetector->pName);
+
 	pDetector->bStop = FTM_FALSE;
 	while(!pDetector->bStop)
 	{
@@ -244,6 +247,8 @@ FTM_VOID_PTR	FTM_DETECTOR_process
 			FTM_MEM_free(pRcvdMsg);
 		}
 	}
+
+	TRACE("%s stopped.", pDetector->pName);
 
 	return	0;
 }

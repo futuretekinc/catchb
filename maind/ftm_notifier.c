@@ -17,6 +17,8 @@
 #include "ftm_smtpc.h"
 #include "ftm_time.h"
 
+#undef	__MODULE__
+#define	__MODULE__	"notifier"
 
 extern	FTM_CHAR_PTR	program_invocation_short_name;
 
@@ -51,7 +53,8 @@ FTM_RET	FTM_NOTIFIER_create
 		goto finished;
 	}
 
-	memset(pNotifier, 0, sizeof(FTM_NOTIFIER));
+	strcpy(pNotifier->pName, __MODULE__);
+
 	xRet = FTM_MSGQ_create(&pNotifier->pMsgQ);
 	if (xRet != FTM_RET_OK)
 	{
@@ -61,6 +64,7 @@ FTM_RET	FTM_NOTIFIER_create
     }
 
 	pNotifier->pCatchB = pCatchB;
+	pNotifier->bStop  = FTM_TRUE;
 
 	*ppNotifier = pNotifier;	
 
@@ -181,6 +185,8 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 	FTM_RET	xRet;
 	FTM_NOTIFIER_PTR	pNotifier = (FTM_NOTIFIER_PTR)pData;
 
+	TRACE("%s started.", pNotifier->pName);
+
 	pNotifier->bStop = FTM_FALSE;
 
     while(!pNotifier->bStop)
@@ -240,6 +246,8 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 			FTM_MEM_free(pRcvdMsg);
 		}
 	}
+
+	TRACE("%s stopped.", pNotifier->pName);
 
 	return	NULL;
 }

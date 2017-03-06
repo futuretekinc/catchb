@@ -30,6 +30,8 @@ typedef	struct	FTM_CATCHB_STRUCT
 {
 	FTM_CATCHB_CONFIG	xConfig;
 
+	FTM_CHAR			pName[FTM_NAME_LEN+1];
+
 	FTM_MSGQ_PTR		pMsgQ;	
 	FTM_DB_PTR			pDB;	
 

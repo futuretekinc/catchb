@@ -9,7 +9,7 @@
 #include "ftm_ping.h"
 
 #undef	__MODULE__
-#define	__MODULE__	"ANALYZER"
+#define	__MODULE__	"analyzer"
 
 FTM_BOOL	FTM_ANALYZER_seeker
 (
@@ -175,6 +175,7 @@ FTM_RET	FTM_ANALYZER_create
 		goto error;
 	}
 
+	pAnalyzer->bStop = FTM_TRUE;
 	pAnalyzer->pCatchB = pCatchB;
 
 	*ppAnalyzer = pAnalyzer;	
@@ -260,7 +261,7 @@ FTM_RET	FTM_ANALYZER_setConfig
 	if (!pAnalyzer->bStop)
 	{
 		xRet = FTM_RET_ALREADY_RUNNING;
-		ERROR(xRet, "Failed to set config!");
+		ERROR(xRet, "Failed to set analyzer configuration!");
 	}
 	else
 	{
@@ -321,6 +322,8 @@ FTM_VOID_PTR FTM_ANALYZER_threadMain
 	FTM_RET				xRet;
 	FTM_ANALYZER_PTR	pAnalyzer = (FTM_ANALYZER_PTR)pData;
 
+	TRACE("%s started.", pAnalyzer->pName);
+
 	pAnalyzer->bStop = FTM_FALSE;
 
 	while(!pAnalyzer->bStop)
@@ -353,6 +356,8 @@ FTM_VOID_PTR FTM_ANALYZER_threadMain
 			ERROR(xRet, "Failed to update analyzer!\n");	
 		}
 	}
+
+	TRACE("%s stopped.", pAnalyzer->pName);
 
 	return	0;
 }

@@ -11,7 +11,7 @@
 #include "ftm_config.h"
 
 #undef	__MODULE__
-#define	__MODULE__	"CATCHB"
+#define	__MODULE__	"catchb"
 
 FTM_RET	FTM_CATCHB_EVENT_checkNewCCTV
 (
@@ -156,6 +156,8 @@ FTM_RET	FTM_CATCHB_create
 		goto error;
 	}
 
+	strcpy(pCatchB->pName, __MODULE__);
+
 	xRet = FTM_CATCHB_CONFIG_init(&pCatchB->xConfig);
 	if (xRet != FTM_RET_OK)
 	{
@@ -223,6 +225,13 @@ FTM_RET	FTM_CATCHB_create
 		goto error;
 	}
 
+	xRet = FTM_LOGGER_create(pCatchB, &pCatchB->pLogger);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create logger!");
+		goto error;
+	}
+
 	xRet = FTM_EVENT_TIMER_MANAGER_create(&pCatchB->pEventManager);
 	if (xRet != FTM_RET_OK)
 	{
@@ -244,6 +253,11 @@ error:
 			{
 				ERROR(xRet, "Failed to destroy event timer manager!");
 			}
+		}
+
+		if (pCatchB->pLogger != NULL)
+		{
+			FTM_LOGGER_destroy(&pCatchB->pLogger);	
 		}
 
 		if (pCatchB->pNotifier != NULL)
@@ -378,6 +392,11 @@ FTM_RET	FTM_CATCHB_destroy
 	if ((*ppCatchB)->pAnalyzer != NULL)
 	{
 		FTM_ANALYZER_destroy(&(*ppCatchB)->pAnalyzer);	
+	}
+
+	if ((*ppCatchB)->pLogger != NULL)
+	{
+		FTM_LOGGER_destroy(&(*ppCatchB)->pLogger);	
 	}
 
 	if ((*ppCatchB)->pEventManager != NULL)
@@ -747,10 +766,18 @@ FTM_VOID_PTR	FTM_CATCHB_process
 	FTM_RET	xRet;
 	FTM_CATCHB_PTR	pCatchB = (FTM_CATCHB_PTR)pData;
 
+	TRACE("%s started.", pCatchB->pName);
+
 	xRet = FTM_CATCHB_initProcess(pCatchB);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to init catchb!");
+	}
+
+	xRet = FTM_LOGGER_start(pCatchB->pLogger);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to start logger!");
 	}
 
 	xRet = FTM_ANALYZER_start(pCatchB->pAnalyzer);
@@ -856,7 +883,10 @@ FTM_VOID_PTR	FTM_CATCHB_process
 	FTM_EVENT_TIMER_MANAGER_stop(pCatchB->pEventManager);
 	FTM_DETECTOR_stop(pCatchB->pDetector);
 	FTM_ANALYZER_stop(pCatchB->pAnalyzer);
+	FTM_LOGGER_stop(pCatchB->pLogger);
 	
+	TRACE("%s stopped.", pCatchB->pName);
+
 	return	0;
 }
 
