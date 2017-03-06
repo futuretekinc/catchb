@@ -57,7 +57,7 @@ FTM_RET	FTM_portScan
 	if (xSocket < 0)
 	{
 		xRet = FTM_RET_SOCKET_CREATION_FAILED;
-		ERROR(xRet, "Failed to create socket!\n");
+		ERROR(xRet, "Failed to create socket!");
 	}
 	else
 	{
@@ -74,7 +74,7 @@ FTM_RET	FTM_portScan
 		if ( nOriginStat < 0 )  
 		{ 
 			xRet = FTM_RET_SOCKET_STAT_GET_FAILED;
-			ERROR(xRet, "Failed to get socket stat!\n");
+			ERROR(xRet, "Failed to get socket stat!");
 		} 
 		else
 		{
@@ -83,7 +83,7 @@ FTM_RET	FTM_portScan
 			if(fcntl(xSocket, F_SETFL, nNewStat) < 0) 
 			{ 
 				xRet = FTM_RET_SOCKET_STAT_SET_FAILED;
-				ERROR(xRet, "Failed to set socket stat!\n");
+				ERROR(xRet, "Failed to set socket stat!");
 			} 
 			else
 			{
@@ -92,11 +92,11 @@ FTM_RET	FTM_portScan
 				if(nRet < 0) 
 				{ 
 					xRet = FTM_RET_SOCKET_CONNECTION_FAILED;
-					ERROR(xRet, "Failed to connect socket!\n");
+				//	TRACE("Failed to connect socket!");
 				} 
 				else if (nRet == 0) 
 				{ 
-					TRACE("The connection was successful!\n");
+					TRACE("The connection was successful!");
 					fcntl(xSocket, F_SETFL, nOriginStat); 
 					*pOpened = FTM_TRUE;
 				} 
@@ -117,7 +117,7 @@ FTM_RET	FTM_portScan
 					if (select(xSocket+1, &xRFDS, &xWFDS, NULL, &xTimeout) == 0) 
 					{ 
 						xRet = FTM_RET_SOCKET_CONNECTION_TIMEOUT;
-						ERROR(xRet, "Failed to connect socket!\n");
+						ERROR(xRet, "Failed to connect socket!");
 					}
 					else
 					{
@@ -129,13 +129,13 @@ FTM_RET	FTM_portScan
 							if (getsockopt(xSocket, SOL_SOCKET, SO_ERROR, &nError, (socklen_t *)&nSize) < 0) 
 							{
 								xRet = FTM_RET_SOCKET_CONNECTION_FAILED;
-								ERROR(xRet, "Failed to connect socket!\n");
+								ERROR(xRet, "Failed to connect socket!");
 							}
 						} 
 						else 
 						{ 
 							xRet = FTM_RET_SOCKET_CONNECTION_TIMEOUT;
-							ERROR(xRet, "Failed to connect socket!\n");
+							ERROR(xRet, "Failed to connect socket!");
 						} 
 					}
 				}
@@ -169,7 +169,7 @@ FTM_RET	FTM_HASH_SHA1
     SHA1Input(&xSHA, pData, ulDataLen);
     if (!SHA1Result(&xSHA))
     {
-		ERROR(0, "ERROR-- could not compute message digest\n");
+		ERROR(0, "ERROR-- could not compute message digest");
 		return	FTM_RET_ERROR;
     }
     else
@@ -221,7 +221,7 @@ FTM_RET	FTM_ARP_parsing
     if(pFile == NULL)
 	{
 		xRet = FTM_RET_ERROR;
-		ERROR(xRet, "Failed to open %s\n", ARP_PATH);
+		ERROR(xRet, "Failed to open %s", ARP_PATH);
 	}
 	else
 	{
@@ -279,7 +279,7 @@ FTM_RET	FTM_getProcessCount
 	if (pFP == NULL)
 	{
 		xRet = FTM_RET_ERROR;
-		ERROR(xRet, "Failed to execute shell command[%s]\n", pCmd);
+		ERROR(xRet, "Failed to execute shell command[%s]", pCmd);
 	}
 	else
 	{
@@ -293,7 +293,7 @@ FTM_RET	FTM_getProcessCount
 		*pCount = nCount;
 	}
 
-	TRACE("Process : %d\n", nCount);
+	TRACE("Process : %d", nCount);
 	return	xRet;
 }
 
@@ -313,7 +313,7 @@ FTM_RET	FTM_areDuplicatesRunning
 	xRet = FTM_getProcessCount(pProcessName, &ulProcessCount);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to get process count!\n");	
+		ERROR(xRet, "Failed to get process count!");	
 		return	xRet;
 	}
 
@@ -373,7 +373,7 @@ FTM_RET	FTM_createPIDFile
 	if (pFP == NULL)
 	{
 		xRet = FTM_RET_FILE_OPEN_FAILED;
-		ERROR(xRet, "Failed to open file[%s]\n", pFileName);
+		ERROR(xRet, "Failed to open file[%s]", pFileName);
 	}
 	else
 	{
@@ -402,7 +402,7 @@ FTM_RET	FTM_destroyPIDFile
 	if (pFP == NULL)
 	{
 		xRet = FTM_RET_EXECUTE_FAILED;
-		ERROR(xRet, "Failed to execute [%s]\n", pCmd);
+		ERROR(xRet, "Failed to execute [%s]", pCmd);
 	}
 	else
 	{

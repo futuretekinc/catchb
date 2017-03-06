@@ -9,9 +9,14 @@
 #include <libutil.h>
 #include <syslog.h>
 #include "ftm_trace.h"
+#include "ftm_catchb.h"
 #include "ftm_mem.h"
 #include "ftm_message.h"
 #include "ftm_notifier.h"
+#include "ftm_alarm.h"
+#include "ftm_smtpc.h"
+#include "ftm_time.h"
+
 
 extern	FTM_CHAR_PTR	program_invocation_short_name;
 
@@ -20,12 +25,21 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 	FTM_VOID_PTR	pData
 );
 
+FTM_RET	FTM_NOTIFIER_onSendAlarm
+(
+	FTM_NOTIFIER_PTR	pNotifier,
+	FTM_CHAR_PTR		pID,
+	FTM_ALARM_PTR	pAlarm
+);
+
 FTM_RET	FTM_NOTIFIER_create
 (
+	struct FTM_CATCHB_STRUCT _PTR_ pCatchB,
 	FTM_NOTIFIER_PTR _PTR_ ppNotifier
 )
 {
 	ASSERT(ppNotifier != NULL);
+
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_NOTIFIER_PTR	pNotifier;
 
@@ -34,19 +48,28 @@ FTM_RET	FTM_NOTIFIER_create
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
 		ERROR(xRet, "Failed to create notifier!\n");	
+		goto finished;
 	}
-	else
+
+	memset(pNotifier, 0, sizeof(FTM_NOTIFIER));
+	xRet = FTM_MSGQ_create(&pNotifier->pMsgQ);
+	if (xRet != FTM_RET_OK)
 	{
-		memset(pNotifier, 0, sizeof(FTM_NOTIFIER));
-		xRet = FTM_MSGQ_create(&pNotifier->pMsgQ);
-		if (xRet != FTM_RET_OK)
+		FTM_MEM_free(pNotifier);
+		ERROR(xRet, "Failed to create message queue!");
+		goto finished;
+    }
+
+	pNotifier->pCatchB = pCatchB;
+
+	*ppNotifier = pNotifier;	
+
+finished:
+	if (xRet != FTM_RET_OK)
+	{
+		if (pNotifier != NULL)
 		{
-			FTM_MEM_free(pNotifier);
-			ERROR(xRet, "Failed to create message queue!");
-    	}
-		else
-		{
-			*ppNotifier = pNotifier;	
+			FTM_MEM_free(pNotifier);	
 		}
 	}
 
@@ -78,6 +101,30 @@ FTM_RET	FTM_NOTIFIER_destroy
 	*ppNotifier = NULL;
 
 	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_NOTIFIER_setConfig
+(
+	FTM_NOTIFIER_PTR	pNotifier,
+	FTM_NOTIFIER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pNotifier != NULL);
+	ASSERT(pConfig != NULL);
+	
+	FTM_RET	xRet = FTM_RET_OK;
+
+	if (!pNotifier->bStop)
+	{
+		xRet = FTM_RET_ALREADY_RUNNING;
+		ERROR(xRet, "Failed to set notifier configuration!");
+	}
+	else
+	{
+		memcpy(&pNotifier->xConfig, pConfig, sizeof(FTM_NOTIFIER_CONFIG));
+	}
+
+	return	xRet;
 }
 
 FTM_RET	FTM_NOTIFIER_start
@@ -135,31 +182,6 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 	FTM_NOTIFIER_PTR	pNotifier = (FTM_NOTIFIER_PTR)pData;
 
 	pNotifier->bStop = FTM_FALSE;
-    LOG("%s started.", program_invocation_short_name);
-
-	if(pNotifier->pDB == NULL)
-	{
-		FTM_DB_PTR	pDB;
-
-		xRet = FTM_DB_create(&pDB);
-		if (xRet != FTM_RET_OK)
-		{
-			ERROR(xRet, "Failed to create DB!\n");
-			goto finished;
-		}
-
-		xRet = FTM_DB_open(pDB, "/tmp/catchb.db");
-		if (xRet != FTM_RET_OK)
-		{
-			ERROR(xRet, "Failed to open DB!\n");
-			FTM_DB_destroy(&pDB);
-
-			goto finished;
-		}
-
-		pNotifier->pDB = pDB;
-		pNotifier->bInternalDB = FTM_TRUE;
-	}
 
     while(!pNotifier->bStop)
     {
@@ -168,63 +190,58 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 		xRet= FTM_MSGQ_timedPop(pNotifier->pMsgQ, 1000, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
 		if (xRet == FTM_RET_OK)
 		{
-			FTM_UINT32	ulCount = 0;
-
-			xRet = FTM_DB_getAlarmCount(pNotifier->pDB, &ulCount);
-			if (xRet == FTM_RET_OK)
+			switch(pRcvdMsg->xType)
 			{
-				if(ulCount != 0)
+			case	FTM_MSG_TYPE_SEND_ALARM:
 				{
-					FTM_ALARM_PTR	pAlarms;
+					FTM_MSG_SEND_ALARM_PTR	pMsg = (FTM_MSG_SEND_ALARM_PTR)pRcvdMsg;
+					FTM_UINT32		ulAlarmCount = 0;
+					FTM_ALARM_PTR	pAlarms = NULL;
 
-					pAlarms = (FTM_ALARM_PTR)FTM_MEM_calloc(sizeof(FTM_ALARM), ulCount);
-					if (pAlarms != NULL)
+					xRet = FTM_CATCHB_getAlarmCount(pNotifier->pCatchB, &ulAlarmCount);
+					if (xRet != FTM_RET_OK)
 					{
-						xRet = FTM_DB_getAlarmList(pNotifier->pDB, pAlarms, ulCount, &ulCount);	
+						ERROR(xRet, "Failed to get alarm count!");	
+						break;
+					}
+
+					if (ulAlarmCount != 0)
+					{
+						pAlarms = (FTM_ALARM_PTR)FTM_MEM_calloc(sizeof(FTM_ALARM), ulAlarmCount);
+						if (pAlarms == NULL)
+						{
+							xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+							ERROR(xRet, "Failed to alloc memory!\n");
+							break;
+						}
+					
+						xRet = FTM_CATCHB_getAlarmList(pNotifier->pCatchB, pAlarms, ulAlarmCount, &ulAlarmCount);
 						if (xRet == FTM_RET_OK)
 						{
 							FTM_UINT32	i;
 
-							for(i = 0 ; i < ulCount ; i++)
+							for(i = 0 ; i < ulAlarmCount ; i++)
 							{
-								TRACE("Send e-mail to %s - %s:%s\n", pAlarms[i].pEmail, pAlarms[i].pName, pAlarms[i].pMessage);	
+								FTM_NOTIFIER_onSendAlarm(pNotifier, pMsg->pID, &pAlarms[i]);
 							}
-						}
-						else
-						{
-							ERROR(xRet, "Failed to get alarm list from DB!\n");	
 						}
 
 						FTM_MEM_free(pAlarms);
 					}
-					else
-					{
-						xRet = FTM_RET_NOT_ENOUGH_MEMORY;
-						ERROR(xRet, "Failed to alloc alarm buffer[%lu * %lu]!\n", sizeof(FTM_ALARM), ulCount);
-					}
 				}
-			}
-			else
-			{
-				ERROR(xRet, "Failed to get alarm count!\n");
+				break;
+
+				default:
+				{
+					TRACE("Unknown command[%x]", pRcvdMsg->xType);
+				}
 			}
 
 			FTM_MEM_free(pRcvdMsg);
 		}
 	}
 
-finished:
-
-	if (pNotifier->bInternalDB)
-	{
-		if(pNotifier->pDB != NULL)
-		{
-			FTM_DB_destroy(&pNotifier->pDB);	
-		}
-
-		pNotifier->bInternalDB = FTM_FALSE;	
-	}
-	return	0;
+	return	NULL;
 }
 
 FTM_RET	FTM_NOTIFIER_sendMessage
@@ -280,3 +297,181 @@ FTM_RET	FTM_NOTIFIER_sendAlarm
 	}
 	return	xRet;
 }
+
+FTM_RET	FTM_NOTIFIER_onSendAlarm
+(
+	FTM_NOTIFIER_PTR	pNotifier,
+	FTM_CHAR_PTR	pID,
+	FTM_ALARM_PTR	pAlarm
+)
+{
+	ASSERT(pAlarm != NULL);
+
+	FTM_RET	xRet;
+	FTM_SMTPC_PTR	pSMTPC;
+	FTM_CHAR		pBody[2048];
+	FTM_UINT32		ulBodyLen = 0;
+
+
+	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "Date:%s\r\n", FTM_TIME_printfCurrent(NULL));
+	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "From:<%s>\r\n", pNotifier->xConfig.xMail.pFrom);
+	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "To:<%s>\r\n", pAlarm->pEmail);
+	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "Subject:%s\r\n\r\n", "ALARM!");
+	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "%s\r\n\r\n", pAlarm->pMessage);
+
+
+	xRet = FTM_SMTPC_create(pNotifier->xConfig.xMail.pServer, pNotifier->xConfig.xMail.usPort, &pSMTPC);
+	if (xRet != FTM_RET_OK)
+	{
+		TRACE_ENTRY();
+		return	xRet;	
+	}
+
+	xRet = FTM_SMTPC_connect(pSMTPC);
+	if (xRet != FTM_RET_OK)
+	{
+		TRACE_ENTRY();
+		goto finished;
+	}
+
+	xRet = FTM_SMTPC_sendGreeting(pSMTPC);
+	if (xRet != FTM_RET_OK)
+	{
+		TRACE_ENTRY();
+		goto finished;
+	}
+
+	xRet = FTM_SMTPC_sendAuth(pSMTPC, pNotifier->xConfig.xMail.pUserID, pNotifier->xConfig.xMail.pPasswd);
+	if (xRet != FTM_RET_OK)
+	{
+		TRACE_ENTRY();
+		goto finished;
+	}
+
+	xRet = FTM_SMTPC_sendFrom(pSMTPC, pNotifier->xConfig.xMail.pFrom);
+	if (xRet != FTM_RET_OK)
+	{
+		TRACE_ENTRY();
+		goto finished;
+	}
+
+	xRet = FTM_SMTPC_sendTo(pSMTPC, pAlarm->pEmail);
+	if (xRet != FTM_RET_OK)
+	{
+		TRACE_ENTRY();
+		goto finished;
+	}
+
+	xRet = FTM_SMTPC_sendMessage(pSMTPC, pBody);
+	if (xRet != FTM_RET_OK)
+	{
+		TRACE_ENTRY();
+		goto finished;
+	}
+	
+	xRet = FTM_SMTPC_disconnect(pSMTPC);
+	if (xRet != FTM_RET_OK)
+		TRACE_ENTRY();
+	{
+		goto finished;
+	}
+
+finished:
+	if (pSMTPC != NULL)
+	{
+		FTM_SMTPC_destroy(&pSMTPC);	
+	}
+
+	return	xRet;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_NOTIFIER_CONFIG_load
+(
+	FTM_NOTIFIER_CONFIG_PTR	pConfig,
+	cJSON _PTR_		pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	cJSON _PTR_	pSection;
+
+	pSection = cJSON_GetObjectItem(pRoot, "mail");
+	if (pSection != NULL)
+	{
+		xRet = FTM_NOTIFIER_MAIL_CONFIG_load(&pConfig->xMail, pSection);
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_NOTIFIER_CONFIG_show
+(
+	FTM_NOTIFIER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	LOG("[ Notifier Configuration ]");
+	return	FTM_NOTIFIER_MAIL_CONFIG_show(&pConfig->xMail);
+
+}
+
+FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_load
+(
+	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig,
+	cJSON _PTR_		pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	cJSON _PTR_ pItem;
+
+	pItem = cJSON_GetObjectItem(pRoot, "server");
+	if (pItem != NULL)
+	{
+		strncpy(pConfig->pServer, pItem->valuestring, sizeof(pConfig->pServer) - 1);
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "port");
+	if (pItem != NULL)
+	{
+		pConfig->usPort = pItem->valueint;
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "userid");
+	if (pItem != NULL)
+	{
+		strncpy(pConfig->pUserID, pItem->valuestring, sizeof(pConfig->pUserID) - 1);
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "passwd");
+	if (pItem != NULL)
+	{
+		strncpy(pConfig->pPasswd, pItem->valuestring, sizeof(pConfig->pPasswd) - 1);
+	}
+
+	return	FTM_RET_OK;
+
+}
+
+FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_show
+(
+	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	LOG("");
+	LOG("%16s : %s", "Server", pConfig->pServer);
+	LOG("%16s : %d", "Port", 	pConfig->usPort);
+	LOG("%16s : %s", "user ID", pConfig->pUserID);
+	LOG("%16s : %s", "Password", pConfig->pPasswd);
+
+	return	FTM_RET_OK;
+}
+

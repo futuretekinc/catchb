@@ -5,6 +5,7 @@
 #include "ftm_types.h"
 #include "ftm_cctv.h"
 #include "ftm_switch.h"
+#include "ftm_alarm.h"
 
 #define	FTM_DB_QUERY_LEN	1024
 
@@ -135,10 +136,8 @@ FTM_RET	FTM_DB_getAlarmCount
 
 FTM_RET	FTM_DB_addAlarm
 (
-	FTM_DB_PTR	pDB,
-	FTM_CHAR_PTR	pName,
-	FTM_CHAR_PTR	pMail,
-	FTM_CHAR_PTR	pMessage
+	FTM_DB_PTR		pDB,
+	FTM_ALARM_PTR	pAlarms
 );
 
 FTM_RET	FTM_DB_deleteAlarm

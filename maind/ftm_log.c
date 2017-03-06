@@ -17,7 +17,13 @@
 #include <common.h>
 #include "ftm_trace.h"
 
-static const FTM_CHAR_PTR	pDefaultLogFileName = "/var/log/catchb.log";
+static const 
+FTM_CHAR_PTR	pDefaultLogFileNames[] =
+{
+	"/var/log/catchb.log",
+	"/var/log/catchb.trace",
+	"/var/log/catchb.trace"
+};
 
 FTM_VOID	FTM_LOG_SystemError
 (
@@ -36,12 +42,12 @@ FTM_VOID	FTM_LOG_SystemError
 
 FTM_VOID	FTM_LOG_Out
 (
-	const FTM_CHAR_PTR pFileName,
-	const char *			pFunctionName,
-		  FTM_UINT32		ulLine,
+		  FTM_UINT32	ulOutput,
+	const char *		pFunctionName,
+		  FTM_UINT32	ulLine,
 	const FTM_CHAR_PTR	pModuleName,
-	const FTM_CHAR_PTR pTitle,
-	const FTM_CHAR_PTR pFormat,
+	const FTM_CHAR_PTR 	pTitle,
+	const FTM_CHAR_PTR 	pFormat,
 	...
 )
 {
@@ -51,40 +57,49 @@ FTM_VOID	FTM_LOG_Out
 	time_t		xCurrentTime;
 	FTM_CHAR	pBuffer[2048];	
 	FTM_UINT32	ulLen = 0;
-	
-	xCurrentTime = time(NULL);
-	ulLen += strftime(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "[%Y-%m-%d %H:%M:%S]", localtime(&xCurrentTime));
-	ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "[%24s][%4u]", pFunctionName, ulLine);
-	if (pModuleName != NULL)
-	{
-		ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "[");
-		snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "%8s", pModuleName);
-		ulLen += 8;
-		if(strlen(pModuleName) > 8)
-		{
-			pBuffer[ulLen] = '\0';
-		}
-		ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "]");
-	}
-	else
-	{
-		ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "[%8s]", "COMMON");
-	}
 
-	if (pTitle != NULL)
+	memset(pBuffer, 0, sizeof(pBuffer));
+
+	xCurrentTime = time(NULL);
+	ulLen += strftime(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "[%Y-%m-%d %H:%M:%S] ", localtime(&xCurrentTime));
+	if (ulOutput != 0)
 	{
 		ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "[");
-		snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "%8s", pTitle);
-		ulLen += 8;
-		if(strlen(pTitle) > 8)
+		snprintf(&pBuffer[ulLen], 25, "%24s", pFunctionName);
+		ulLen += 24;
+		ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "][%4u]", ulLine);
+
+		if (pModuleName != NULL)
 		{
-			pBuffer[ulLen] = '\0';
+			ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "[");
+			snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "%8s", pModuleName);
+			ulLen += 8;
+			if(strlen(pModuleName) > 8)
+			{
+				pBuffer[ulLen] = '\0';
+			}
+			ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "]");
 		}
-		ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "] ");
-	}
-	else
-	{
-		ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "[%8s] ", "COMMON");
+		else
+		{
+			ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "[%8s]", "COMMON");
+		}
+
+		if (pTitle != NULL)
+		{
+			ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "[");
+			snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "%8s", pTitle);
+			ulLen += 8;
+			if(strlen(pTitle) > 8)
+			{
+				pBuffer[ulLen] = '\0';
+			}
+			ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "] ");
+		}
+		else
+		{
+			ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "[%8s] ", "COMMON");
+		}
 	}
 
     va_start(xArgs, pFormat);
@@ -94,15 +109,7 @@ FTM_VOID	FTM_LOG_Out
 	pBuffer[ulLen++] = '\n';
 	pBuffer[ulLen] = '\0';
 
-	if(pFileName == NULL)
-	{
-    	pFile = fopen(pDefaultLogFileName, "a");
-	}
-	else
-	{
-    	pFile = fopen(pFileName, "a");
-	}
-
+   	pFile = fopen(pDefaultLogFileNames[ulOutput], "a");
     if(!pFile)
 	{
         printf("%s", pBuffer);

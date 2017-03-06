@@ -12,7 +12,7 @@ FTM_VOID	FTM_LOG_SystemError
 
 FTM_VOID	FTM_LOG_Out
 (
-	const FTM_CHAR_PTR 	pFileName,
+		  FTM_UINT32	ulOutput,
 	const char *		pFunctionName,
 		  FTM_UINT32	ulLine,
 	const FTM_CHAR_PTR	pModuleName,
@@ -23,11 +23,11 @@ FTM_VOID	FTM_LOG_Out
 
 #define	__MODULE__				NULL
 
-#define	TRACE(format, ...)			FTM_LOG_Out(NULL, __func__, __LINE__, __MODULE__, "TRACE", format, ## __VA_ARGS__)
-#define	TRACE_ENTRY()				FTM_LOG_Out(NULL, __func__, __LINE__, __MODULE__, "TRACE", "ENTRY")
-#define	TRACE_EXIT()				FTM_LOG_Out(NULL, __func__, __LINE__, __MODULE__, "TRACE", "EXIT")
-#define	ERROR(errno, format, ...)	FTM_LOG_Out(NULL, __func__, __LINE__, __MODULE__, "ERROR", format, ## __VA_ARGS__)
-#define	LOG(format, ...)			FTM_LOG_Out(NULL, __func__, __LINE__, __MODULE__, "LOG", format, ## __VA_ARGS__)
+#define	LOG(format, ...)			FTM_LOG_Out(0, __func__, __LINE__, __MODULE__, "LOG", format, ## __VA_ARGS__)
+#define	TRACE(format, ...)			FTM_LOG_Out(1, __func__, __LINE__, __MODULE__, "TRACE", format, ## __VA_ARGS__)
+#define	TRACE_ENTRY()				FTM_LOG_Out(1, __func__, __LINE__, __MODULE__, "TRACE", "ENTRY")
+#define	TRACE_EXIT()				FTM_LOG_Out(1, __func__, __LINE__, __MODULE__, "TRACE", "EXIT")
+#define	ERROR(errno, format, ...)	FTM_LOG_Out(2, __func__, __LINE__, __MODULE__, "ERROR", format, ## __VA_ARGS__)
 
 #define	ASSERT(x)					{ if (!(x)) { printf("ASSERTED[%s:%d] - %s\n", __func__, __LINE__, #x);}; }
 #endif

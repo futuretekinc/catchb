@@ -294,6 +294,34 @@ FTM_RET	FTM_SMTPC_sendFrom
 	return	FTM_SMTPC_sendCmdAndArg(pSMTPC, "MAIL FROM:", pFrom);
 }
 
+FTM_RET	FTM_SMTPC_sendMessage
+(
+	FTM_SMTPC_PTR	pSMTPC,
+	FTM_CHAR_PTR	pMessage
+)
+{
+	ASSERT(pSMTPC != NULL);
+	ASSERT(pMessage != NULL);
+
+	FTM_RET	xRet;
+
+	xRet = FTM_SMTPC_startBody(pSMTPC);
+	if (xRet != FTM_RET_OK)
+	{
+		return	xRet;	
+	}
+
+	xRet = FTM_SMTPC_sendRawBody(pSMTPC, pMessage);
+	if (xRet != FTM_RET_OK)
+	{
+		return	xRet;	
+	}
+
+	xRet = FTM_SMTPC_endBody(pSMTPC);
+
+	return	xRet;
+}
+
 FTM_RET	FTM_SMTPC_startBody
 (
 	FTM_SMTPC_PTR	pSMTPC

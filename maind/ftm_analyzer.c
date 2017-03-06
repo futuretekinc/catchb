@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 #include "ftm_catchb.h"
 #include "ftm_analyzer.h"
 #include "ftm_trace.h"
@@ -38,6 +39,98 @@ FTM_RET	FTM_ANALYZER_onDeleteCCTV
 	FTM_MSG_DELETE_CCTV_PTR	pMsg
 );
 
+/*****************************************************************
+ *
+ *****************************************************************/
+FTM_RET	FTM_ANALYZER_CONFIG_setDefault
+(
+	FTM_ANALYZER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	
+	pConfig->xTest.bEnable 		= FTM_CATCHB_ANALYZER_DEFAULT_TEST_ENABLE;
+	pConfig->xTest.ulErrorRate 	= FTM_CATCHB_ANALYZER_DEFAULT_TEST_ERROR_RATE;
+
+	pConfig->ulIPCheckInterval 	= FTM_CATCHB_ANALYZER_DEFAULT_IP_CHECK_INTERVAL;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_ANALYZER_CONFIG_load
+(
+	FTM_ANALYZER_CONFIG_PTR	pConfig,
+	cJSON _PTR_ pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	cJSON _PTR_ pSection;
+	cJSON _PTR_ pItem;
+
+	pItem = cJSON_GetObjectItem(pRoot, "interval");
+	if (pItem != NULL)
+	{
+		if (FTM_CATCHB_ANALYZER_MINIMUM_IP_CHECK_INTERVAL <= pItem->valueint)
+		{
+			pConfig->ulIPCheckInterval = pItem->valueint;	
+		}
+	}
+
+	pSection = cJSON_GetObjectItem(pRoot, "test");
+	if (pSection != NULL)
+	{
+		pItem = cJSON_GetObjectItem(pSection, "enable");
+		if (pItem != NULL)
+		{
+			if ((strcmp(pItem->valuestring, "on") == 0) || (strcmp(pItem->valuestring, "yes") == 0))
+			{
+				pConfig->xTest.bEnable = FTM_TRUE;	
+			}
+			else if ((strcmp(pItem->valuestring, "off") == 0) || (strcmp(pItem->valuestring, "no") == 0))
+			{
+				pConfig->xTest.bEnable = FTM_FALSE;	
+			}
+			else
+			{
+				return	FTM_RET_INVALID_ARGUMENTS;
+			}
+		}
+
+		pItem = cJSON_GetObjectItem(pSection, "error_rate");
+		if (pItem != NULL)
+		{
+			if (0 <= pItem->valueint && pItem->valueint <= 100)
+			{
+				pConfig->xTest.ulErrorRate = pItem->valueint;	
+			}
+		}
+	}
+
+	return	FTM_RET_OK;
+}
+
+
+FTM_RET	FTM_ANALYZER_CONFIG_show
+(
+	FTM_ANALYZER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	LOG("[ Analyzer Configuration ]");
+	LOG("%16s : %d ms", "IP Check Interval", pConfig->ulIPCheckInterval);
+	LOG("%16s : %s", "Test Enabled", (pConfig->xTest.bEnable)?"yes":"no");
+	LOG("%16s : %d %", "Test Error Rate", pConfig->xTest.ulErrorRate);
+
+	return	FTM_RET_OK;
+}
+
+/*****************************************************************
+ *
+ *****************************************************************/
 FTM_RET	FTM_ANALYZER_create
 (	
 	struct	FTM_CATCHB_STRUCT _PTR_	pCatchB,
@@ -56,9 +149,9 @@ FTM_RET	FTM_ANALYZER_create
 		goto error;
 	}
 
-	pAnalyzer->xConfig.ulIPCheckInterval = FTM_CATCHB_DEFAULT_IP_CHECK_INTERVAL;
-
 	strcpy(pAnalyzer->pName, __MODULE__);
+
+	FTM_ANALYZER_CONFIG_setDefault(&pAnalyzer->xConfig);
 
 	xRet = FTM_LOCK_create(&pAnalyzer->pLock);
 	if (xRet != FTM_RET_OK)
@@ -151,6 +244,30 @@ FTM_RET	FTM_ANALYZER_destroy
 	*ppAnalyzer= NULL;
 
 	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_ANALYZER_setConfig
+(
+	FTM_ANALYZER_PTR	pAnalyzer,
+	FTM_ANALYZER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pAnalyzer != NULL);
+	ASSERT(pConfig != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+
+	if (!pAnalyzer->bStop)
+	{
+		xRet = FTM_RET_ALREADY_RUNNING;
+		ERROR(xRet, "Failed to set config!");
+	}
+	else
+	{
+		memcpy(&pAnalyzer->xConfig, pConfig, sizeof(FTM_ANALYZER_CONFIG));
+	}
+
+	return	xRet;
 }
 
 FTM_RET	FTM_ANALYZER_start
@@ -322,6 +439,7 @@ FTM_RET	FTM_ANALYZER_process
 					ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, ", ");
 				}
 
+				TRACE("Port %5d : %s", pPortList[j], (bOpened)?"open":"close"); 
 				ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, "%d - %s", pPortList[j], (bOpened)?"open":"close"); 
 			}
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, "]");
@@ -334,10 +452,17 @@ FTM_RET	FTM_ANALYZER_process
 			}
 			else
 			{
-				static int i = 0;
+				FTM_BOOL	bTestFailed = FTM_FALSE;
 
-				///if(!strncmp(pCCTV->xConfig.pHash, pHashValue, sizeof(pHashValue)))
-				if (++i % 2)
+				if (pAnalyzer->xConfig.xTest.bEnable)
+				{
+					if (pAnalyzer->xConfig.xTest.ulErrorRate > (rand() % 100))
+					{
+						bTestFailed = FTM_TRUE;	
+					}
+				}
+
+				if(!bTestFailed && !strncmp(pCCTV->xConfig.pHash, pHashValue, sizeof(pHashValue)))
 				{
 					FTM_CATCHB_CCTV_setStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_NORMAL);
 				}

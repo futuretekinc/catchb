@@ -51,6 +51,121 @@ FTM_RET	FTM_SWITCH_CONFIG_destroy
 	return	xRet;
 }
 
+FTM_RET	FTM_SWITCH_CONFIG_loadList
+(	
+	FTM_LIST_PTR	pList,
+	cJSON _PTR_		pRoot
+)
+{
+	ASSERT(pList != NULL);
+	ASSERT(pRoot != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_UINT32	i, ulCount = 0;
+
+	if(pRoot->type != cJSON_Array)
+	{
+		xRet = FTM_RET_CONFIG_INVALID_OBJECT;	
+		ERROR(xRet, "Invalid json object!\n");
+		return	xRet;
+	}
+
+	ulCount = cJSON_GetArraySize(pRoot);
+	for(i = 0 ; i < ulCount ; i++)
+	{
+		cJSON _PTR_ pObject;
+
+		pObject = cJSON_GetArrayItem(pRoot, i);
+		if (pObject != NULL)
+		{
+			FTM_SWITCH_CONFIG_PTR	pConfig;
+
+			pConfig = FTM_MEM_malloc(sizeof(FTM_SWITCH_CONFIG));
+			if (pConfig != NULL)
+			{
+				xRet = FTM_SWITCH_CONFIG_load(pConfig, pObject);
+				if (xRet != FTM_RET_OK)
+				{
+					ERROR(xRet, "Failed to load switch!");
+					FTM_MEM_free(pConfig);
+				}
+				else
+				{
+					xRet = FTM_LIST_append(pList, pConfig);	
+					if (xRet != FTM_RET_OK)
+					{
+						ERROR(xRet, "Failed to append switch config!");
+						FTM_MEM_free(pConfig);
+					}
+				}
+			}
+		}
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_SWITCH_CONFIG_showList
+(
+	FTM_LIST_PTR	pList
+)
+{
+	ASSERT(pList != NULL);
+
+	FTM_RET		xRet;
+	FTM_UINT32	i, ulCount;
+
+	LOG("");
+	LOG("[ Switch List ]");
+	LOG("%4s   %24s %24s", "", "ID", "IP Address");
+	FTM_LIST_count(pList, &ulCount);
+	for(i = 0 ; i < ulCount ; i++)
+	{
+		FTM_SWITCH_CONFIG_PTR	pSwitchConfig;
+
+		xRet = FTM_LIST_getAt(pList, i, (FTM_VOID_PTR _PTR_)&pSwitchConfig);
+		if (xRet == FTM_RET_OK)
+		{
+			LOG("%4d : %24s %24s", i+1, pSwitchConfig->pID, pSwitchConfig->pIP);
+		}
+	
+	}
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_SWITCH_CONFIG_load
+(
+	FTM_SWITCH_CONFIG_PTR	pConfig,
+	cJSON _PTR_		pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+
+	cJSON _PTR_ pItem;
+
+	pItem = cJSON_GetObjectItem(pRoot, "ip");
+	if (pItem == NULL)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to get switch ip!\n");
+		return	xRet;
+	}
+
+	strncpy(pConfig->pIP, pItem->valuestring, sizeof(pConfig->pIP) - 1);					
+
+	pItem = cJSON_GetObjectItem(pRoot, "id");
+	if(pItem != NULL)
+	{
+		strncpy(pConfig->pID, pItem->valuestring, sizeof(pConfig->pID) - 1);					
+	}
+
+	return	xRet;
+}
+
 //////////////////////////////////////////////////////////////
 //	FTM_SWITCH functions
 //////////////////////////////////////////////////////////////

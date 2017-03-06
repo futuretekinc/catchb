@@ -7,12 +7,32 @@
 #include "ftm_db.h"
 #include "ftm_msgq.h"
 #include "ftm_lock.h"
+#include "cjson/cJSON.h"
 
 typedef	struct	FTM_ANALYZER_CONFIG_STRUCT
 {
 	FTM_UINT32		ulIPCheckInterval;
+	struct
+	{
+		FTM_BOOL	bEnable;
+		FTM_UINT32	ulErrorRate;
+	}	xTest;
 }	FTM_ANALYZER_CONFIG, _PTR_ FTM_ANALYZER_CONFIG_PTR;
 
+
+FTM_RET	FTM_ANALYZER_CONFIG_load
+(
+	FTM_ANALYZER_CONFIG_PTR	pConfig,
+	cJSON _PTR_ pRoot
+);
+
+FTM_RET	FTM_ANALYZER_CONFIG_show
+(
+	FTM_ANALYZER_CONFIG_PTR	pConfig
+);
+/***********************************************************
+ *
+ ***********************************************************/
 typedef	struct FTM_ANALYZER_STRUCT
 {
 	FTM_ANALYZER_CONFIG	xConfig;
@@ -39,6 +59,12 @@ FTM_RET	FTM_ANALYZER_create
 FTM_RET	FTM_ANALYZER_destroy
 (
 	FTM_ANALYZER_PTR _PTR_ ppAnalyzer
+);
+
+FTM_RET	FTM_ANALYZER_setConfig
+(
+	FTM_ANALYZER_PTR	pAnalyzer,
+	FTM_ANALYZER_CONFIG_PTR	pConfig
 );
 
 FTM_RET	FTM_ANALYZER_start

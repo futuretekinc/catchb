@@ -692,20 +692,19 @@ FTM_RET	FTM_DB_getAlarmCount
 
 FTM_RET	FTM_DB_addAlarm
 (
-	FTM_DB_PTR	pDB,
-	FTM_CHAR_PTR	pName,
-	FTM_CHAR_PTR	pEmail,
-	FTM_CHAR_PTR	pMessage
+	FTM_DB_PTR		pDB,
+	FTM_ALARM_PTR	pAlarm
 )
 {
 	ASSERT(pDB != NULL);
-	ASSERT(pName != NULL);
+	ASSERT(pAlarm != NULL);
+
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_NAME, _EMAIL, _MESSAGE) VALUES('%s', '%s', '%s');", pDB->pAlarmTableName, pName, pEmail, pMessage);
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_NAME, _EMAIL, _MESSAGE) VALUES('%s', '%s', '%s');", pDB->pAlarmTableName, pAlarm->pName, pAlarm->pEmail, pAlarm->pMessage);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{

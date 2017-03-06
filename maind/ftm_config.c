@@ -6,6 +6,7 @@
 #include "cjson/cJSON.h"
 #include "ftm_mem.h"
 #include "ftm_switch.h"
+#include "ftm_logger.h"
 
 //////////////////////////////////////////////////////////////
 //	FTM_CONFIG functions
@@ -36,12 +37,7 @@ FTM_RET	FTM_CONFIG_create
 		goto error;
 	}
 
-	xRet = FTM_LIST_create(&pConfig->pProcessList);
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to create switch list!\n");
-		goto error;
-	}
+	FTM_CONFIG_setDefault(pConfig);
 
 	*ppConfig = pConfig;
 
@@ -50,12 +46,6 @@ FTM_RET	FTM_CONFIG_create
 error:
 	if (pConfig != NULL)
 	{
-		if(pConfig->pProcessList != NULL)
-		{
-			FTM_LIST_destroy(&pConfig->pProcessList);
-			pConfig->pProcessList = NULL;
-		}
-
 		if(pConfig->pSwitchList != NULL)
 		{
 			FTM_LIST_destroy(&pConfig->pSwitchList);
@@ -79,24 +69,6 @@ FTM_RET	FTM_CONFIG_destroy
 	FTM_RET		xRet;
 	FTM_UINT32	i;
 	FTM_UINT32	count = 0;
-
-	FTM_LIST_count((*ppConfig)->pProcessList, &count);
-	for(i = 0 ; i < count ; i++)
-	{
-		FTM_CHAR_PTR	pProcessName;
-
-		xRet = FTM_LIST_getAt((*ppConfig)->pProcessList, i, (FTM_VOID_PTR _PTR_)&pProcessName);
-		if (xRet == FTM_RET_OK)
-		{
-			FTM_MEM_free(pProcessName);
-		}
-	}
-
-	xRet = FTM_LIST_destroy(&(*ppConfig)->pProcessList);
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to destroy process list!\n");	
-	}
 
 	FTM_LIST_count((*ppConfig)->pSwitchList, &count);
 	for(i = 0 ; i < count ; i++)
@@ -123,10 +95,26 @@ FTM_RET	FTM_CONFIG_destroy
 	return	xRet;
 }
 
+FTM_RET	FTM_CONFIG_setDefault
+(	
+	FTM_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	strncpy(pConfig->xNotifier.xMail.pServer, FTM_CATCHB_DEFAULT_SMTP_SERVER, FTM_HOST_NAME_LEN);
+	pConfig->xNotifier.xMail.usPort = FTM_CATCHB_DEFAULT_SMTP_PORT;
+	strncpy(pConfig->xNotifier.xMail.pUserID, FTM_CATCHB_DEFAULT_SMTP_USER_ID, FTM_ID_LEN);
+	strncpy(pConfig->xNotifier.xMail.pPasswd, FTM_CATCHB_DEFAULT_SMTP_PASSWD, FTM_PASSWD_LEN);
+	strncpy(pConfig->xNotifier.xMail.pFrom, FTM_CATCHB_DEFAULT_SMTP_SENDER, FTM_NAME_LEN);
+
+	return	FTM_RET_OK;
+}
+
 FTM_RET	FTM_CONFIG_load
 (
 	FTM_CONFIG_PTR 	pConfig, 
-	char* 				pFileName
+	char* 			pFileName
 )
 {
 	ASSERT(pConfig != NULL);
@@ -185,123 +173,32 @@ FTM_RET	FTM_CONFIG_load
 		goto finished;
 	}    
 
-	pSection = cJSON_GetObjectItem(pRoot, "log");
+	pSection = cJSON_GetObjectItem(pRoot, "analyzer");
 	if (pSection != NULL)
 	{
-		cJSON _PTR_ pItem;
-
-		pItem = cJSON_GetObjectItem(pSection, "retention");
-		if ((pItem != NULL) && (pItem->type == cJSON_Number))
-		{
-			pConfig->xLog.ulRetentionPeriod = pItem->valueint;
-		}
+		FTM_ANALYZER_CONFIG_load(&pConfig->xAnalyzer, pSection);
 	}
 
-	pSection = cJSON_GetObjectItem(pRoot, "processes");
+	pSection = cJSON_GetObjectItem(pRoot, "notifier");
 	if (pSection != NULL)
 	{
-		FTM_UINT32	i, ulCount = 0;
+		FTM_NOTIFIER_CONFIG_load(&pConfig->xNotifier, pSection);
+	}
 
-	TRACE_ENTRY();
-		if(pSection->type != cJSON_Array)
-		{
-			xRet = FTM_RET_CONFIG_INVALID_OBJECT;	
-			ERROR(xRet, "Invalid json object!\n");
-			goto finished;
-		}
-
-		ulCount = cJSON_GetArraySize(pSection);
-		for(i = 0 ; i < ulCount ; i++)
-		{
-			cJSON _PTR_ pObject;
-
-			pObject = cJSON_GetArrayItem(pSection, i);
-			if (pObject != NULL)
-			{
-				cJSON _PTR_ pItem;
-
-				pItem = cJSON_GetObjectItem(pObject, "name");
-				if (pItem == NULL)
-				{
-					ERROR(xRet, "Failed to get switch ip!\n");
-					goto finished;
-				}
-
-				FTM_CHAR_PTR	pProcessName = (FTM_CHAR_PTR)FTM_MEM_malloc(strlen(pItem->valuestring) + 1);
-				if (pProcessName != NULL)
-				{
-					strcpy(pProcessName, pItem->valuestring);
-					xRet = FTM_LIST_append(pConfig->pSwitchList, pProcessName);
-					if (xRet != FTM_RET_OK)
-					{
-						ERROR(xRet, "Failed to append config to list!\n");
-						goto finished;	
-					}
-				}
-			}
-		}
-		
+	pSection = cJSON_GetObjectItem(pRoot, "logger");
+	if (pSection != NULL)
+	{
+		FTM_LOGGER_CONFIG_load(&pConfig->xLogger, pSection);
 	}
 
 	pSection = cJSON_GetObjectItem(pRoot, "switches");
 	if (pSection != NULL)
 	{
-		FTM_UINT32	i, ulCount = 0;
-
-		if(pSection->type != cJSON_Array)
+		xRet = FTM_SWITCH_CONFIG_loadList(pConfig->pSwitchList, pSection);	
+		if (xRet != FTM_RET_OK)
 		{
-			xRet = FTM_RET_CONFIG_INVALID_OBJECT;	
-			ERROR(xRet, "Invalid json object!\n");
-			goto finished;
+			goto finished;	
 		}
-
-		ulCount = cJSON_GetArraySize(pSection);
-		for(i = 0 ; i < ulCount ; i++)
-		{
-			cJSON _PTR_ pObject;
-
-			pObject = cJSON_GetArrayItem(pSection, i);
-			if (pObject != NULL)
-			{
-				FTM_SWITCH_CONFIG_PTR	pSwitchConfig;
-				FTM_SWITCH_CONFIG	xSwitchConfig;
-				cJSON _PTR_ pItem;
-
-				memset(&xSwitchConfig, 0, sizeof(xSwitchConfig));
-
-				pItem = cJSON_GetObjectItem(pObject, "ip");
-				if (pItem == NULL)
-				{
-					ERROR(xRet, "Failed to get switch ip!\n");
-					goto finished;
-				}
-				strncpy(xSwitchConfig.pIP, pItem->valuestring, sizeof(xSwitchConfig.pIP) - 1);					
-				
-
-				pItem = cJSON_GetObjectItem(pObject, "id");
-				if(pItem != NULL)
-				{
-					strncpy(xSwitchConfig.pID, pItem->valuestring, sizeof(xSwitchConfig.pID) - 1);					
-				}
-			
-				xRet = FTM_SWITCH_CONFIG_create(&pSwitchConfig);
-				if (xRet != FTM_RET_OK)
-				{
-					ERROR(xRet, "Failed to create switch object!\n");				
-					goto finished;
-				}
-			
-				memcpy(pSwitchConfig, &xSwitchConfig, sizeof(xSwitchConfig));
-
-				xRet = FTM_LIST_append(pConfig->pSwitchList, pSwitchConfig);
-				if (xRet != FTM_RET_OK)
-				{
-					ERROR(xRet, "Failed to append config to list!\n");
-					goto finished;	
-				}
-			}
-		}
-		
 	}
 
 finished:
@@ -333,46 +230,15 @@ FTM_RET	FTM_CONFIG_show
 )
 {
 	ASSERT(pConfig != NULL);
-	FTM_RET		xRet;
-	FTM_UINT32	i, ulCount = 0;
 
-	printf("%16s : %u\n", "Retention Period", pConfig->xLog.ulRetentionPeriod);
+	FTM_ANALYZER_CONFIG_show(&pConfig->xAnalyzer);
 
-	printf("%4s   %s\n", "", "Process");
-	FTM_LIST_count(pConfig->pProcessList, &ulCount);
-	for(i = 0 ; i < ulCount ; i++)
-	{
-		FTM_CHAR_PTR	pProcessName;
+	FTM_NOTIFIER_CONFIG_show(&pConfig->xNotifier);
 
-		xRet = FTM_LIST_getAt(pConfig->pProcessList, i, (FTM_VOID_PTR _PTR_)&pProcessName);
-		if (xRet != FTM_RET_OK)
-		{
-			printf("Failed to get process config in list!\n");
-		}
-		else
-		{
-			printf("%4d : %s\n", i+1, pProcessName);
-		}
-	
-	}
+	FTM_LOGGER_CONFIG_show(&pConfig->xLogger);
 
-	printf("%4s   %24s %24s\n", "", "ID", "IP Address");
-	FTM_LIST_count(pConfig->pSwitchList, &ulCount);
-	for(i = 0 ; i < ulCount ; i++)
-	{
-		FTM_SWITCH_CONFIG_PTR	pSwitchConfig;
-
-		xRet = FTM_LIST_getAt(pConfig->pSwitchList, i, (FTM_VOID_PTR _PTR_)&pSwitchConfig);
-		if (xRet != FTM_RET_OK)
-		{
-			printf("Failed to get switch config in list!\n");
-		}
-		else
-		{
-			printf("%4d : %24s %24s\n", i+1, pSwitchConfig->pID, pSwitchConfig->pIP);
-		}
-	
-	}
+	FTM_SWITCH_CONFIG_showList(pConfig->pSwitchList);
 
 	return	FTM_RET_OK;
 }
+

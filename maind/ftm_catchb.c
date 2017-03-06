@@ -1,13 +1,14 @@
 #include <string.h>
 #include "ftm_mem.h"
 #include "ftm_detector.h"
+#include "ftm_analyzer.h"
 #include "ftm_message.h"
 #include "ftm_trace.h"
 #include "ftm_catchb.h"
 #include "ftm_mem.h"
 #include "ftm_timer.h"
 #include "ftm_cctv.h"
-#include "ftm_cctv.h"
+#include "ftm_config.h"
 
 #undef	__MODULE__
 #define	__MODULE__	"CATCHB"
@@ -215,6 +216,13 @@ FTM_RET	FTM_CATCHB_create
 		goto error;
 	}
 
+	xRet = FTM_NOTIFIER_create(pCatchB, &pCatchB->pNotifier);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create notifier!");
+		goto error;
+	}
+
 	xRet = FTM_EVENT_TIMER_MANAGER_create(&pCatchB->pEventManager);
 	if (xRet != FTM_RET_OK)
 	{
@@ -236,6 +244,11 @@ error:
 			{
 				ERROR(xRet, "Failed to destroy event timer manager!");
 			}
+		}
+
+		if (pCatchB->pNotifier != NULL)
+		{
+			FTM_NOTIFIER_destroy(&pCatchB->pNotifier);	
 		}
 
 		if (pCatchB->pDetector != NULL)
@@ -352,6 +365,11 @@ FTM_RET	FTM_CATCHB_destroy
 		FTM_DB_destroy(&(*ppCatchB)->pDB);
 	}
 
+	if ((*ppCatchB)->pNotifier != NULL)
+	{
+		FTM_NOTIFIER_destroy(&(*ppCatchB)->pNotifier);	
+	}
+
 	if ((*ppCatchB)->pDetector != NULL)
 	{
 		FTM_DETECTOR_destroy(&(*ppCatchB)->pDetector);	
@@ -376,6 +394,51 @@ FTM_RET	FTM_CATCHB_destroy
 	*ppCatchB = NULL;
 
 	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_CATCHB_setConfig
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pConfig != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_RET	xRet1;
+
+	if (pCatchB->pAnalyzer != NULL)
+	{
+		xRet1 = FTM_ANALYZER_setConfig(pCatchB->pAnalyzer, &pConfig->xAnalyzer);
+		if (xRet1 != FTM_RET_OK)
+		{
+			xRet = xRet1;
+			ERROR(xRet, "Failed to set analyzer configuration!");
+		}
+	}
+
+	if (pCatchB->pNotifier != NULL)
+	{
+		xRet1 = FTM_NOTIFIER_setConfig(pCatchB->pNotifier, &pConfig->xNotifier);
+		if (xRet != FTM_RET_OK)
+		{
+			xRet1 = xRet1;
+			ERROR(xRet, "Failed to set notifier configuration!");
+		}
+	}
+
+	if (pCatchB->pLogger != NULL)
+	{
+		xRet1 = FTM_LOGGER_setConfig(pCatchB->pLogger, &pConfig->xLogger);
+		if (xRet1 != FTM_RET_OK)
+		{
+			xRet = xRet1;
+			ERROR(xRet, "Failed to set logger configuration!");
+		}
+	}
+
+	return	xRet;
 }
 
 FTM_RET	FTM_CATCHB_start
@@ -723,6 +786,7 @@ FTM_VOID_PTR	FTM_CATCHB_process
 		xRet = 	FTM_MSGQ_timedPop(pCatchB->pMsgQ, 1000, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
 		if(xRet == FTM_RET_OK)
 		{
+			TRACE("Message : %s", FTM_MESSAGE_getString(pRcvdMsg->xType));
 			switch(pRcvdMsg->xType)
 			{
 			case	FTM_MSG_TYPE_CHECK_NEW_SWITCH:
@@ -886,6 +950,10 @@ FTM_RET	FTM_CATCHB_onCheckNewCCTV
 			{
 				ERROR(xRet, "Failed to alloc CCTV array!");
 			}
+		}
+		else
+		{
+			TRACE("CCTV count is 0!");	
 		}
 	}
 	else
@@ -1194,6 +1262,14 @@ FTM_RET	FTM_CATCHB_CCTV_onSetStat
 			if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
 			{
 				FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_FALSE);
+				if (pCatchB->pNotifier != NULL)
+				{
+					xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, pMsg->pID);
+					if (xRet != FTM_RET_OK)
+					{
+						ERROR(xRet, "Failed to notify!");	
+					}
+				}
 			}
 		}
 		else if (pMsg->xStat == FTM_CCTV_STAT_ABNORMAL)
@@ -1801,7 +1877,7 @@ FTM_RET	FTM_CATCHB_createAlarm
 		return	xRet;
 	}
 
-	xRet = FTM_DB_addAlarm(pCatchB->pDB, pAlarm->pName, pAlarm->pEmail, pAlarm->pMessage);
+	xRet = FTM_DB_addAlarm(pCatchB->pDB, pAlarm);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to add alarm to DB!");
@@ -1864,13 +1940,13 @@ FTM_RET	FTM_CATCHB_getAlarmCount
 FTM_RET	FTM_CATCHB_getAlarmList
 (
 	FTM_CATCHB_PTR	pCatchB,
-	FTM_ALARM_PTR	_PTR_ ppAlarms,
+	FTM_ALARM_PTR	pAlarms,
 	FTM_UINT32		ulMaxCount,
 	FTM_UINT32_PTR	pCount
 )
 {
 	ASSERT(pCatchB != NULL);
-	ASSERT(ppAlarms != NULL);
+	ASSERT(pAlarms != NULL);
 	ASSERT(pCount != NULL);
 	FTM_RET	xRet;
 	FTM_UINT32	i;
@@ -1878,11 +1954,14 @@ FTM_RET	FTM_CATCHB_getAlarmList
 	FTM_LIST_iteratorStart(pCatchB->pAlarmList);
 	for(i = 0 ; i < ulMaxCount ; i++)
 	{
-		xRet = FTM_LIST_iteratorNext(pCatchB->pAlarmList, (FTM_VOID_PTR _PTR_)&ppAlarms[i]);
+		FTM_ALARM_PTR	pAlarm;
+		xRet = FTM_LIST_iteratorNext(pCatchB->pAlarmList, (FTM_VOID_PTR _PTR_)&pAlarm);
 		if (xRet != FTM_RET_OK)
 		{
 			break;	
 		}
+
+		memcpy(&pAlarms[i], pAlarm, sizeof(FTM_ALARM));
 	}
 
 	*pCount = i;

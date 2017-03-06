@@ -96,6 +96,12 @@ FTM_RET	FTM_SMTPC_sendAuth
 	FTM_CHAR_PTR	pPasswd
 );
 
+FTM_RET	FTM_SMTPC_sendMessage
+(
+	FTM_SMTPC_PTR	pSMTPC,
+	FTM_CHAR_PTR	pMessage
+);
+
 FTM_RET	FTM_SMTPC_startBody
 (
 	FTM_SMTPC_PTR	pSMTPC

@@ -4,6 +4,7 @@
 #include "ftm_types.h"
 #include "ftm_lock.h"
 #include "ftm_list.h"
+#include "cjson/cJSON.h"
 
 typedef	enum	FTM_SWITCH_MODEL_ENUM
 {
@@ -45,6 +46,24 @@ FTM_RET	FTM_SWITCH_CONFIG_destroy
 (
 	FTM_SWITCH_CONFIG_PTR _PTR_ ppConfig
 );
+
+FTM_RET	FTM_SWITCH_CONFIG_load
+(
+	FTM_SWITCH_CONFIG_PTR	pConfig,
+	cJSON _PTR_		pRoot
+);
+
+FTM_RET	FTM_SWITCH_CONFIG_loadList
+(	
+	FTM_LIST_PTR	pList,
+	cJSON _PTR_		pRoot
+);
+
+FTM_RET	FTM_SWITCH_CONFIG_showList
+(
+	FTM_LIST_PTR	pList
+);
+
 
 typedef	struct	FTM_SWITCH_STRUCT
 {

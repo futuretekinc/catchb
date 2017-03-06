@@ -1,12 +1,15 @@
 #ifndef	FTM_CATCHB_H_
 #define	FTM_CATCHB_H_
 
+#include <pthread.h>
 #include "ftm_types.h"
 #include "ftm_msgq.h"
 #include "ftm_db.h"
-#include <pthread.h>
+#include "ftm_config.h"
 #include "ftm_detector.h"
 #include "ftm_analyzer.h"
+#include "ftm_notifier.h"
+#include "ftm_logger.h"
 #include "ftm_timer.h"
 
 typedef	struct 	FTM_CATCHB_CONFIG_STRUCT
@@ -20,6 +23,7 @@ typedef	struct 	FTM_CATCHB_CONFIG_STRUCT
 	{
 		FTM_UINT32	ulUpdateInterval;
 	}	xCCTV;
+
 }	FTM_CATCHB_CONFIG, _PTR_ FTM_CATCHB_CONFIG_PTR;
 
 typedef	struct	FTM_CATCHB_STRUCT
@@ -35,6 +39,9 @@ typedef	struct	FTM_CATCHB_STRUCT
 
 	FTM_ANALYZER_PTR	pAnalyzer;
 	FTM_DETECTOR_PTR	pDetector;
+	FTM_NOTIFIER_PTR	pNotifier;
+	FTM_LOGGER_PTR		pLogger;
+
 	FTM_EVENT_TIMER_MANAGER_PTR	pEventManager;
 		
 	pthread_t		xThread;
@@ -43,22 +50,28 @@ typedef	struct	FTM_CATCHB_STRUCT
 
 FTM_RET	FTM_CATCHB_create
 (
-	FTM_CATCHB_PTR _PTR_ ppCatchb
+	FTM_CATCHB_PTR _PTR_ ppCatchB
 );
 
 FTM_RET	FTM_CATCHB_destroy
 (
-	FTM_CATCHB_PTR _PTR_ ppCatchb
+	FTM_CATCHB_PTR _PTR_ ppCatchB
+);
+
+FTM_RET	FTM_CATCHB_setConfig
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CONFIG_PTR	pConfig
 );
 
 FTM_RET	FTM_CATCHB_start
 (
-	FTM_CATCHB_PTR	pCatchb
+	FTM_CATCHB_PTR	pCatchB
 );
 
 FTM_RET	FTM_CATCHB_stop
 (
-	FTM_CATCHB_PTR	pCatchb
+	FTM_CATCHB_PTR	pCatchB
 );
 
 FTM_RET	FTM_CATCHB_waitingForFinished
@@ -158,7 +171,7 @@ FTM_RET	FTM_CATCHB_getAlarmCount
 FTM_RET	FTM_CATCHB_getAlarmList
 (
 	FTM_CATCHB_PTR	pCatchB,
-	FTM_ALARM_PTR	_PTR_ ppAlarmes,
+	FTM_ALARM_PTR  	pAlarmes,
 	FTM_UINT32		ulMaxCount,
 	FTM_UINT32_PTR	pCount
 );

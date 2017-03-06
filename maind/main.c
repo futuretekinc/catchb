@@ -39,6 +39,9 @@ FTM_INT	main
 	FTM_CONFIG_PTR	pConfig = NULL;
 	FTM_CATCHB_PTR	pCatchB = NULL;
 
+	LOG("");
+	LOG("########################################");
+	LOG("[%s start]", program_invocation_short_name);
 	FTM_MEM_init();
 
 	xRet = FTM_setOptions(nArgc, ppArgv);
@@ -84,7 +87,14 @@ FTM_INT	main
 	xRet = FTM_CATCHB_create(&pCatchB);
 	if(xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to create catchb!\n");
+		ERROR(xRet, "Failed to create %s!\n", program_invocation_short_name);
+		goto finished;
+	}
+
+	xRet = FTM_CATCHB_setConfig(pCatchB, pConfig);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set %s configuration.", program_invocation_short_name);
 		goto finished;
 	}
 
