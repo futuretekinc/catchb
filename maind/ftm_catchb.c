@@ -126,7 +126,7 @@ FTM_BOOL	FTM_CATCHB_ALARM_seeker
 	const FTM_VOID_PTR pIndicator
 );
 
-FTM_RET	FTM_CATCHB_CONFIG_init
+FTM_RET	FTM_CATCHB_CONFIG_setDefault
 (
 	FTM_CATCHB_CONFIG_PTR	pConfig
 )
@@ -158,7 +158,7 @@ FTM_RET	FTM_CATCHB_create
 
 	strcpy(pCatchB->pName, __MODULE__);
 
-	xRet = FTM_CATCHB_CONFIG_init(&pCatchB->xConfig);
+	xRet = FTM_CATCHB_CONFIG_setDefault(&pCatchB->xConfig);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to init config!");

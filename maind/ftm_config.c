@@ -102,11 +102,10 @@ FTM_RET	FTM_CONFIG_setDefault
 {
 	ASSERT(pConfig != NULL);
 
-	strncpy(pConfig->xNotifier.xMail.pServer, FTM_CATCHB_DEFAULT_SMTP_SERVER, FTM_HOST_NAME_LEN);
-	pConfig->xNotifier.xMail.usPort = FTM_CATCHB_DEFAULT_SMTP_PORT;
-	strncpy(pConfig->xNotifier.xMail.pUserID, FTM_CATCHB_DEFAULT_SMTP_USER_ID, FTM_ID_LEN);
-	strncpy(pConfig->xNotifier.xMail.pPasswd, FTM_CATCHB_DEFAULT_SMTP_PASSWD, FTM_PASSWD_LEN);
-	strncpy(pConfig->xNotifier.xMail.pFrom, FTM_CATCHB_DEFAULT_SMTP_SENDER, FTM_NAME_LEN);
+	FTM_DB_CONFIG_setDefault(&pConfig->xDB);
+	FTM_ANALYZER_CONFIG_setDefault(&pConfig->xAnalyzer);
+	FTM_NOTIFIER_CONFIG_setDefault(&pConfig->xNotifier);
+	FTM_LOGGER_CONFIG_setDefault(&pConfig->xLogger);
 
 	return	FTM_RET_OK;
 }
@@ -173,6 +172,12 @@ FTM_RET	FTM_CONFIG_load
 		goto finished;
 	}    
 
+	pSection = cJSON_GetObjectItem(pRoot, "database");
+	if (pSection != NULL)
+	{
+		FTM_DB_CONFIG_load(&pConfig->xDB, pSection);
+	}
+
 	pSection = cJSON_GetObjectItem(pRoot, "analyzer");
 	if (pSection != NULL)
 	{
@@ -230,6 +235,8 @@ FTM_RET	FTM_CONFIG_show
 )
 {
 	ASSERT(pConfig != NULL);
+
+	FTM_DB_CONFIG_show(&pConfig->xDB);
 
 	FTM_ANALYZER_CONFIG_show(&pConfig->xAnalyzer);
 

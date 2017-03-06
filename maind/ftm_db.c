@@ -4,6 +4,9 @@
 #include "ftm_db.h"
 #include "ftm_trace.h"
 
+#undef	__MODULE__
+#define	__MODULE__	"database"
+
 typedef	FTM_INT	(*FTM_DB_GET_ELEMENT_LIST_CALLBACK)(FTM_VOID_PTR pData, FTM_INT nArgc, FTM_CHAR_PTR _PTR_ ppArgv, FTM_CHAR_PTR _PTR_ ppColumnName);
 
 FTM_RET	FTM_DB_getElementCount
@@ -21,6 +24,57 @@ FTM_RET	FTM_DB_getElementList
 	FTM_VOID_PTR	pData
 );
 
+FTM_RET	FTM_DB_CONFIG_setDefault
+(
+	FTM_DB_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	strncpy(pConfig->pFileName, FTM_CATCHB_DB_DEFAULT_FILE_NAME, sizeof(pConfig->pFileName) - 1);
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_DB_CONFIG_load
+(
+	FTM_DB_CONFIG_PTR	pConfig,
+	cJSON _PTR_ 		pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	cJSON _PTR_ pItem;
+
+	pItem = cJSON_GetObjectItem(pRoot, "file");
+	if (pItem != NULL)
+	{
+		if (pItem->type == cJSON_String)
+		{
+			strncpy(pConfig->pFileName, pItem->valuestring, sizeof(pConfig->pFileName) - 1);	
+		}
+	}
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_DB_CONFIG_show
+(
+	FTM_DB_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	LOG("[ Database Configuration ]");
+	LOG("%16s : %s", "File Name", pConfig->pFileName);
+
+	return	FTM_RET_OK;
+}
+
+/////////////////////////////////////////////////////////////////////
+//
+/////////////////////////////////////////////////////////////////////
 FTM_RET	FTM_DB_create
 (
 	FTM_DB_PTR _PTR_ ppDB

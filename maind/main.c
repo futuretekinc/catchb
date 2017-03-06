@@ -41,7 +41,7 @@ FTM_INT	main
 
 	LOG("");
 	LOG("########################################");
-	LOG("[%s start]", program_invocation_short_name);
+	LOG("%s started.", program_invocation_short_name);
 	FTM_MEM_init();
 
 	xRet = FTM_setOptions(nArgc, ppArgv);
@@ -118,8 +118,6 @@ FTM_INT	main
 	}
 
 finished:
-	TRACE_EXIT();
-
 	if (pCatchB != NULL)
 	{
 		xRet = FTM_CATCHB_destroy(&pCatchB);

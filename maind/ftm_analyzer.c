@@ -120,6 +120,7 @@ FTM_RET	FTM_ANALYZER_CONFIG_show
 {
 	ASSERT(pConfig != NULL);
 
+	LOG("");
 	LOG("[ Analyzer Configuration ]");
 	LOG("%16s : %d ms", "IP Check Interval", pConfig->ulIPCheckInterval);
 	LOG("%16s : %s", "Test Enabled", (pConfig->xTest.bEnable)?"yes":"no");

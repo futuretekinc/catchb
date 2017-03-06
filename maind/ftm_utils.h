@@ -67,9 +67,4 @@ FTM_RET	FTM_destroyPIDFile
 	FTM_CHAR_PTR	pProcessName
 );
 
-void FTM_SCORE_init
-(
-	FTM_SCORE_INFO_PTR	pScore
-);
-
 #endif

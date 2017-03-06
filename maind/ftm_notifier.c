@@ -34,6 +34,120 @@ FTM_RET	FTM_NOTIFIER_onSendAlarm
 	FTM_ALARM_PTR	pAlarm
 );
 
+////////////////////////////////////////////////////////////////////////
+FTM_RET	FTM_NOTIFIER_CONFIG_setDefault
+(
+	FTM_NOTIFIER_CONFIG_PTR	pConfig
+)
+{
+	return	FTM_NOTIFIER_MAIL_CONFIG_setDefault(&pConfig->xMail);
+}
+
+FTM_RET	FTM_NOTIFIER_CONFIG_load
+(
+	FTM_NOTIFIER_CONFIG_PTR	pConfig,
+	cJSON _PTR_		pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	cJSON _PTR_	pSection;
+
+	pSection = cJSON_GetObjectItem(pRoot, "mail");
+	if (pSection != NULL)
+	{
+		xRet = FTM_NOTIFIER_MAIL_CONFIG_load(&pConfig->xMail, pSection);
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_NOTIFIER_CONFIG_show
+(
+	FTM_NOTIFIER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	LOG("[ Notifier Configuration ]");
+	return	FTM_NOTIFIER_MAIL_CONFIG_show(&pConfig->xMail);
+
+}
+
+FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_setDefault
+(
+	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	strncpy(pConfig->pServer, FTM_CATCHB_DEFAULT_SMTP_SERVER, sizeof(pConfig->pServer) - 1);
+	pConfig->usPort = FTM_CATCHB_DEFAULT_SMTP_PORT;
+	strncpy(pConfig->pUserID, FTM_CATCHB_DEFAULT_SMTP_USER_ID, sizeof(pConfig->pUserID) - 1);
+	strncpy(pConfig->pPasswd, FTM_CATCHB_DEFAULT_SMTP_PASSWD, sizeof(pConfig->pPasswd) - 1);
+	strncpy(pConfig->pSender, FTM_CATCHB_DEFAULT_SMTP_SENDER, sizeof(pConfig->pSender) - 1);
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_load
+(
+	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig,
+	cJSON _PTR_		pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	cJSON _PTR_ pItem;
+
+	pItem = cJSON_GetObjectItem(pRoot, "server");
+	if (pItem != NULL)
+	{
+		strncpy(pConfig->pServer, pItem->valuestring, sizeof(pConfig->pServer) - 1);
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "port");
+	if (pItem != NULL)
+	{
+		pConfig->usPort = pItem->valueint;
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "userid");
+	if (pItem != NULL)
+	{
+		strncpy(pConfig->pUserID, pItem->valuestring, sizeof(pConfig->pUserID) - 1);
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "passwd");
+	if (pItem != NULL)
+	{
+		strncpy(pConfig->pPasswd, pItem->valuestring, sizeof(pConfig->pPasswd) - 1);
+	}
+
+	return	FTM_RET_OK;
+
+}
+
+FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_show
+(
+	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	LOG("");
+	LOG("%16s : %s", "Server", pConfig->pServer);
+	LOG("%16s : %d", "Port", 	pConfig->usPort);
+	LOG("%16s : %s", "user ID", pConfig->pUserID);
+	LOG("%16s : %s", "Password", pConfig->pPasswd);
+
+	return	FTM_RET_OK;
+}
+
+///////////////////////////////////////////////////////////////////
 FTM_RET	FTM_NOTIFIER_create
 (
 	struct FTM_CATCHB_STRUCT _PTR_ pCatchB,
@@ -322,7 +436,7 @@ FTM_RET	FTM_NOTIFIER_onSendAlarm
 
 
 	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "Date:%s\r\n", FTM_TIME_printfCurrent(NULL));
-	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "From:<%s>\r\n", pNotifier->xConfig.xMail.pFrom);
+	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "From:<%s>\r\n", pNotifier->xConfig.xMail.pSender);
 	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "To:<%s>\r\n", pAlarm->pEmail);
 	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "Subject:%s\r\n\r\n", "ALARM!");
 	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "%s\r\n\r\n", pAlarm->pMessage);
@@ -356,7 +470,7 @@ FTM_RET	FTM_NOTIFIER_onSendAlarm
 		goto finished;
 	}
 
-	xRet = FTM_SMTPC_sendFrom(pSMTPC, pNotifier->xConfig.xMail.pFrom);
+	xRet = FTM_SMTPC_sendFrom(pSMTPC, pNotifier->xConfig.xMail.pSender);
 	if (xRet != FTM_RET_OK)
 	{
 		TRACE_ENTRY();
@@ -391,94 +505,6 @@ finished:
 	}
 
 	return	xRet;
-
-	return	FTM_RET_OK;
-}
-
-FTM_RET	FTM_NOTIFIER_CONFIG_load
-(
-	FTM_NOTIFIER_CONFIG_PTR	pConfig,
-	cJSON _PTR_		pRoot
-)
-{
-	ASSERT(pConfig != NULL);
-	ASSERT(pRoot != NULL);
-
-	FTM_RET	xRet = FTM_RET_OK;
-	cJSON _PTR_	pSection;
-
-	pSection = cJSON_GetObjectItem(pRoot, "mail");
-	if (pSection != NULL)
-	{
-		xRet = FTM_NOTIFIER_MAIL_CONFIG_load(&pConfig->xMail, pSection);
-	}
-
-	return	xRet;
-}
-
-FTM_RET	FTM_NOTIFIER_CONFIG_show
-(
-	FTM_NOTIFIER_CONFIG_PTR	pConfig
-)
-{
-	ASSERT(pConfig != NULL);
-
-	LOG("[ Notifier Configuration ]");
-	return	FTM_NOTIFIER_MAIL_CONFIG_show(&pConfig->xMail);
-
-}
-
-FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_load
-(
-	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig,
-	cJSON _PTR_		pRoot
-)
-{
-	ASSERT(pConfig != NULL);
-	ASSERT(pRoot != NULL);
-
-	cJSON _PTR_ pItem;
-
-	pItem = cJSON_GetObjectItem(pRoot, "server");
-	if (pItem != NULL)
-	{
-		strncpy(pConfig->pServer, pItem->valuestring, sizeof(pConfig->pServer) - 1);
-	}
-
-	pItem = cJSON_GetObjectItem(pRoot, "port");
-	if (pItem != NULL)
-	{
-		pConfig->usPort = pItem->valueint;
-	}
-
-	pItem = cJSON_GetObjectItem(pRoot, "userid");
-	if (pItem != NULL)
-	{
-		strncpy(pConfig->pUserID, pItem->valuestring, sizeof(pConfig->pUserID) - 1);
-	}
-
-	pItem = cJSON_GetObjectItem(pRoot, "passwd");
-	if (pItem != NULL)
-	{
-		strncpy(pConfig->pPasswd, pItem->valuestring, sizeof(pConfig->pPasswd) - 1);
-	}
-
-	return	FTM_RET_OK;
-
-}
-
-FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_show
-(
-	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig
-)
-{
-	ASSERT(pConfig != NULL);
-
-	LOG("");
-	LOG("%16s : %s", "Server", pConfig->pServer);
-	LOG("%16s : %d", "Port", 	pConfig->usPort);
-	LOG("%16s : %s", "user ID", pConfig->pUserID);
-	LOG("%16s : %s", "Password", pConfig->pPasswd);
 
 	return	FTM_RET_OK;
 }

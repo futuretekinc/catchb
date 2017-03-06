@@ -6,9 +6,11 @@
 #include "ftm_analyzer.h"
 #include "ftm_notifier.h"
 #include "ftm_logger.h"
+#include "ftm_db.h"
 
 typedef	struct	FTM_CONFIG_STRUCT
 {
+	FTM_DB_CONFIG		xDB;
 	FTM_ANALYZER_CONFIG	xAnalyzer;
 	FTM_NOTIFIER_CONFIG	xNotifier;
 	FTM_LOGGER_CONFIG	xLogger;

@@ -13,6 +13,18 @@ FTM_VOID_PTR	FTM_LOGGER_threadMain
 	FTM_VOID_PTR	pData
 );
 
+FTM_RET	FTM_LOGGER_CONFIG_setDefault
+(
+	FTM_LOGGER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	pConfig->ulRetentionPeriod = FTM_CATCHB_LOGGER_DEFAULT_RETENTION;
+
+	return	FTM_RET_OK;
+}
+
 FTM_RET	FTM_LOGGER_CONFIG_load
 (
 	FTM_LOGGER_CONFIG_PTR	pConfig,

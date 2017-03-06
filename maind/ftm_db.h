@@ -6,9 +6,35 @@
 #include "ftm_cctv.h"
 #include "ftm_switch.h"
 #include "ftm_alarm.h"
+#include "ftm_log.h"
 
 #define	FTM_DB_QUERY_LEN	1024
 
+typedef	struct	FTM_DB_CONFIG_STRUCT
+{
+	FTM_CHAR	pFileName[FTM_PATH_LEN + FTM_NAME_LEN + 1];
+}	FTM_DB_CONFIG, _PTR_ FTM_DB_CONFIG_PTR;
+
+
+FTM_RET	FTM_DB_CONFIG_setDefault
+(
+	FTM_DB_CONFIG_PTR	pConfig
+);
+
+FTM_RET	FTM_DB_CONFIG_load
+(
+	FTM_DB_CONFIG_PTR	pConfig,
+	cJSON _PTR_ 		pRoot
+);
+
+FTM_RET	FTM_DB_CONFIG_show
+(
+	FTM_DB_CONFIG_PTR	pConfig
+);
+
+/////////////////////////////////////////////////////////////////
+//
+/////////////////////////////////////////////////////////////////
 typedef	struct	FTM_DB_STRUCT
 {
 	FTM_CHAR	pCCTVTableName[FTM_NAME_LEN+1];
