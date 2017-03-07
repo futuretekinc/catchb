@@ -203,12 +203,7 @@ FTM_RET	FTM_DB_getLogCount
 FTM_RET	FTM_DB_addLog
 (
 	FTM_DB_PTR		pDB,
-	FTM_CHAR_PTR	pID,
-	FTM_CHAR_PTR	pIP,
-	FTM_CHAR_PTR	pSign,
-	FTM_CHAR_PTR	pLog,
-	FTM_CHAR_PTR	pTime,
-	FTM_INT			nStatus
+	FTM_LOG_PTR		pLog
 );
 
 FTM_RET	FTM_DB_deleteLog

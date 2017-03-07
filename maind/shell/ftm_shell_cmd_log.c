@@ -7,7 +7,7 @@
 #include "ftm_mem.h"
 
 
-FTM_RET	FTM_SHELL_CMD_log
+FTM_RET	FTM_SHELL_CMD_logger
 (
 	FTM_SHELL_PTR pShell, 
 	FTM_INT nArgc, 
@@ -26,7 +26,7 @@ FTM_RET	FTM_SHELL_CMD_log
 	{
 	case	1:
 		{
-			FTM_ANALYZER_CONFIG_show(&pCatchB->pAnalyzer->xConfig, FTM_TRACE_LEVEL_CONSOLE);
+			FTM_LOGGER_CONFIG_show(&pCatchB->pLogger->xConfig, FTM_TRACE_LEVEL_CONSOLE);
 		}
 		break;
 

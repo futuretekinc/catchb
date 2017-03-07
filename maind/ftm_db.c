@@ -881,7 +881,7 @@ FTM_RET	FTM_DB_createLogTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pLogTableName, "TIME TEXT, _ID TEXT, _IP TEXT, HASH TEXT, STATUS TEXT, LOG TEXT");
+	return FTM_DB_createTable(pDB, pDB->pLogTableName, "_TIME TEXT, _TYPE INT, _DATA BLOB");
 }
 
 FTM_RET	FTM_DB_isLogTableExist
@@ -915,29 +915,40 @@ FTM_RET	FTM_DB_getLogCount
 FTM_RET	FTM_DB_addLog
 (
 	FTM_DB_PTR		pDB,
-	FTM_CHAR_PTR	pID,
-	FTM_CHAR_PTR	pIP,
-	FTM_CHAR_PTR	pHash,
-	FTM_CHAR_PTR	pLog,
-	FTM_CHAR_PTR	pTime,
-	FTM_INT			nStatus
+	FTM_LOG_PTR		pLog
 )
 {
 	ASSERT(pDB != NULL);
-	ASSERT(pID != NULL);
-	FTM_RET	xRet = FTM_RET_OK;
+	ASSERT(pLog != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_INT		nRet;
 	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
-	FTM_CHAR_PTR	pErrorMsg;
+	sqlite3_stmt _PTR_ pStmt;
+
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (TIME, _ID, _IP, HASH, STATUS, LOG) VALUES('%s', '%s', '%s', '%s', '%s', '%s');", 
-		pDB->pLogTableName, pTime, pID, pIP, pHash, FTM_CCTV_STAT_print(nStatus), pLog);
-	
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_TIME, _TYPE, _DATA) VALUES(?, ?, ?);", pDB->pLogTableName);
+
+	do 
 	{
-		xRet = FTM_RET_ERROR;
-		sqlite3_free(pErrorMsg);
-	}
+		nRet = sqlite3_prepare(pDB->pSQLite3, pQuery, -1, &pStmt, 0);
+		if( nRet != SQLITE_OK )
+		{
+			xRet = FTM_RET_ERROR;
+			return xRet;
+		}
+
+		sqlite3_bind_text(pStmt, 1, pLog->pTime, -1, SQLITE_STATIC);
+		sqlite3_bind_int(pStmt, 2, pLog->xType);
+		sqlite3_bind_blob(pStmt, 3, &pLog->xParams, sizeof(pLog->xParams), SQLITE_STATIC);
+
+		nRet = sqlite3_step(pStmt);
+		ASSERT( nRet != SQLITE_ROW );
+
+		nRet = sqlite3_finalize(pStmt);
+	} 
+	while( nRet == SQLITE_SCHEMA );
 
 	return	xRet;
 }
@@ -990,26 +1001,18 @@ FTM_INT	FTM_DB_getLogListCB
 
 		for(i = 0 ; i < nArgc ; i++) 
 		{    
-			if (strcmp(ppColName[i], "_ID") == 0)
-			{    
-				strcpy(pParams->pElements[pParams->ulCount].pID, ppArgv[i]);
-			}    
-			else if (strcmp(ppColName[i], "_IP") == 0)
-			{    
-				strcpy(pParams->pElements[pParams->ulCount].pIP, ppArgv[i]);
-			}    
-			else if (strcmp(ppColName[i], "LOG") == 0)
-			{    
-				strcpy(pParams->pElements[pParams->ulCount].pLog, ppArgv[i]);
-			}    
-			else if (strcmp(ppColName[i], "TIME") == 0)
+			if (strcmp(ppColName[i], "_TIME") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pTime, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "STATUS") == 0)
-			{
-				pParams->pElements[pParams->ulCount].nStatus = atoi(ppArgv[i]);
-			}
+			else if (strcmp(ppColName[i], "_TYPE") == 0)
+			{    
+				pParams->pElements[pParams->ulCount].xType = atoi(ppArgv[i]);
+			}    
+			else if (strcmp(ppColName[i], "_DATA") == 0)
+			{    
+				memcpy(&pParams->pElements[pParams->ulCount].xParams, ppArgv[i], sizeof(FTM_LOG_PARAMS));
+			}    
 		}    
 
 		pParams->ulCount++;

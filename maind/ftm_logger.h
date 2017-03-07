@@ -78,4 +78,5 @@ FTM_RET	FTM_LOGGER_stop
 (
 	FTM_LOGGER_PTR	pLogger
 );
+
 #endif

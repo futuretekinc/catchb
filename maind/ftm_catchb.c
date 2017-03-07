@@ -1564,11 +1564,13 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 
 		pCCTV->xConfig.xStat = pMsg->xStat;
 
+#if 0
 		xRet = FTM_DB_addLog(pCatchB->pDB, pCCTV->xConfig.pID, pCCTV->xConfig.pIP, pCCTV->xConfig.pHash, "", "", pCCTV->xConfig.xStat);
 		if (xRet != FTM_RET_OK)
 		{
 			ERROR(xRet, "Failed to set log");	
 		}
+#endif
 	}
 
 	return	xRet;
@@ -2250,3 +2252,50 @@ FTM_BOOL	FTM_CATCHB_ALARM_seeker
 	return	(strcmp(pAlarm->pName, pName) == 0);
 }
 
+////////////////////////////////////////////////////////////////////////
+
+FTM_RET	FTM_CATCHB_addLog
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_LOG_PTR		pLog
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pLog != NULL);
+
+	return	FTM_DB_addLog(pCatchB->pDB, pLog);
+}
+
+FTM_RET	FTM_CATCHB_delLog
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulCount
+);
+
+FTM_RET	FTM_CATCHB_getLogCount
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_CATCHB_LOG_addCCTV
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP
+)
+{	
+	ASSERT(pCatchB != NULL);
+	ASSERT(pID != NULL);
+	ASSERT(pIP != NULL);
+
+	FTM_LOG	xLog;
+
+	xLog.xType = FTM_LOG_TYPE_ADD_CCTV;
+	strcpy(xLog.pTime, FTM_TIME_printfCurrent(NULL));
+	strcpy(xLog.xParams.xAddCCTV.pID, pID);
+	strcpy(xLog.xParams.xAddCCTV.pIP, pIP);
+
+	return	FTM_DB_addLog(pCatchB->pDB, &xLog);
+}

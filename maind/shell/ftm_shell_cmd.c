@@ -10,7 +10,7 @@ FTM_RET	FTM_SHELL_CMD_alarm(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pA
 FTM_RET	FTM_SHELL_CMD_analyzer(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_db(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_cctv(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
-FTM_RET	FTM_SHELL_CMD_log(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
+FTM_RET	FTM_SHELL_CMD_logger(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_notifier(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_switch(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_trace(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
@@ -61,11 +61,11 @@ FTM_SHELL_CMD	pCatchBShellCmdList[] =
 		.pData		= NULL
 	},
 	{
-		.pString	= "log",
-		.function	= FTM_SHELL_CMD_log,
+		.pString	= "logger",
+		.function	= FTM_SHELL_CMD_logger,
 		.pShortHelp	= "Log management.",
 		.pHelp		= "<cmd>\n"
-					  "  LogDatabase  management.\n"
+					  "  Logger settings.\n"
 					  "COMMANDS:\n"
 					  "  list <COUNT>\n"
 					  "    - Show logs.\n",

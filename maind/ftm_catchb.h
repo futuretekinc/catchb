@@ -198,4 +198,29 @@ FTM_RET	FTM_CATCHB_getAlarmList
 	FTM_UINT32_PTR	pCount
 );
 
+FTM_RET	FTM_CATCHB_addLog
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_LOG_PTR		pLog
+);
+
+FTM_RET	FTM_CATCHB_delLog
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulCount
+);
+
+FTM_RET	FTM_CATCHB_getLogCount
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_CATCHB_LOG_addCCTV
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP
+);
 #endif
