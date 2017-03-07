@@ -5,6 +5,7 @@
 #include "ftm_lock.h"
 #include "ftm_list.h"
 #include "cjson/cJSON.h"
+#include "ftm_trace.h"
 
 typedef	enum	FTM_SWITCH_MODEL_ENUM
 {
@@ -61,7 +62,8 @@ FTM_RET	FTM_SWITCH_CONFIG_loadList
 
 FTM_RET	FTM_SWITCH_CONFIG_showList
 (
-	FTM_LIST_PTR	pList
+	FTM_LIST_PTR	pList,
+	FTM_TRACE_LEVEL	xLevel
 );
 
 

@@ -78,7 +78,7 @@ FTM_RET	FTM_CCTV_unlock
 	return	FTM_RET_OK;
 }
 
-FTM_CHAR_PTR	FTM_printCCTVStat
+FTM_CHAR_PTR	FTM_CCTV_STAT_print
 (
 	FTM_CCTV_STAT	xStat
 )

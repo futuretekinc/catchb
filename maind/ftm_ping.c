@@ -471,7 +471,7 @@ FTM_VOID	FTM_PING_sender(FTM_VOID)
 	{
         if (i < 0)
 		{
-			TRACE("Failed to send ping[%s]", strerror(errno));
+			INFO("Failed to send ping[%s]", strerror(errno));
 		}
     }
 

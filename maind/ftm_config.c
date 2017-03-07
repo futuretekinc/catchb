@@ -106,6 +106,7 @@ FTM_RET	FTM_CONFIG_setDefault
 	FTM_ANALYZER_CONFIG_setDefault(&pConfig->xAnalyzer);
 	FTM_NOTIFIER_CONFIG_setDefault(&pConfig->xNotifier);
 	FTM_LOGGER_CONFIG_setDefault(&pConfig->xLogger);
+	FTM_TRACE_CONFIG_setDefault(&pConfig->xTrace);
 
 	return	FTM_RET_OK;
 }
@@ -206,6 +207,12 @@ FTM_RET	FTM_CONFIG_load
 		}
 	}
 
+	pSection = cJSON_GetObjectItem(pRoot, "trace");
+	if (pSection != NULL)
+	{
+		FTM_TRACE_CONFIG_load(&pConfig->xTrace, pSection);
+	}
+
 finished:
 	if (pRoot != NULL)
 	{
@@ -231,20 +238,21 @@ finished:
 
 FTM_RET	FTM_CONFIG_show
 (
-	FTM_CONFIG_PTR 	pConfig
+	FTM_CONFIG_PTR 	pConfig,
+	FTM_TRACE_LEVEL	xLevel
 )
 {
 	ASSERT(pConfig != NULL);
 
-	FTM_DB_CONFIG_show(&pConfig->xDB);
+	FTM_DB_CONFIG_show(&pConfig->xDB, xLevel);
 
-	FTM_ANALYZER_CONFIG_show(&pConfig->xAnalyzer);
+	FTM_ANALYZER_CONFIG_show(&pConfig->xAnalyzer, xLevel);
 
-	FTM_NOTIFIER_CONFIG_show(&pConfig->xNotifier);
+	FTM_NOTIFIER_CONFIG_show(&pConfig->xNotifier, xLevel);
 
-	FTM_LOGGER_CONFIG_show(&pConfig->xLogger);
+	FTM_LOGGER_CONFIG_show(&pConfig->xLogger, xLevel);
 
-	FTM_SWITCH_CONFIG_showList(pConfig->pSwitchList);
+	FTM_SWITCH_CONFIG_showList(pConfig->pSwitchList, xLevel);
 
 	return	FTM_RET_OK;
 }

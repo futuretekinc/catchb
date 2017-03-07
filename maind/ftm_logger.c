@@ -67,14 +67,15 @@ FTM_RET	FTM_LOGGER_CONFIG_save
 
 FTM_RET	FTM_LOGGER_CONFIG_show
 (
-	FTM_LOGGER_CONFIG_PTR	pConfig
+	FTM_LOGGER_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL			xLevel
 )
 {
 	ASSERT(pConfig != NULL);
 
-	LOG("");
-	LOG("[ Logger Configuration ]");
-	LOG("%16s : %u", "Retention Period", pConfig->ulRetentionPeriod);
+	OUTPUT(xLevel, "");
+	OUTPUT(xLevel, "[ Logger Configuration ]");
+	OUTPUT(xLevel, "%16s : %u", "Retention Period", pConfig->ulRetentionPeriod);
 
 	return	FTM_RET_OK;
 }
@@ -187,14 +188,14 @@ FTM_RET	FTM_LOGGER_start
 	if (pLogger->xThread != 0)
 	{
 		xRet = FTM_RET_ALREADY_RUNNING;
-		TRACE("The %s is already running!", pLogger->pName);	
+		INFO("The %s is already running!", pLogger->pName);	
 		return	xRet;
 	}
 
 	if (pthread_create(&pLogger->xThread, NULL, FTM_LOGGER_threadMain, (FTM_VOID_PTR)pLogger) < 0)
 	{
 		xRet = FTM_RET_THREAD_CREATION_FAILED;
-		TRACE("Failed to start %s!", pLogger->pName);
+		INFO("Failed to start %s!", pLogger->pName);
 	}
 
     return xRet;
@@ -229,7 +230,7 @@ FTM_VOID_PTR	FTM_LOGGER_threadMain
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_LOGGER_PTR	pLogger = (FTM_LOGGER_PTR)pData;
 
-	TRACE("%s started", pLogger->pName);
+	INFO("%s started", pLogger->pName);
 
 	pLogger->bStop = FTM_FALSE;
 
@@ -244,13 +245,13 @@ FTM_VOID_PTR	FTM_LOGGER_threadMain
 			{
 			default:
 				{
-					TRACE("Unknown message[%s]", FTM_MESSAGE_getString(pRcvdMsg->xType));	
+					INFO("Unknown message[%s]", FTM_MESSAGE_getString(pRcvdMsg->xType));	
 				}
 			}
 		}
 	}
 
-	TRACE("%s stopped", pLogger->pName);
+	INFO("%s stopped", pLogger->pName);
 
 	return	0;
 }

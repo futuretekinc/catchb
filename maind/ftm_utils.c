@@ -92,11 +92,11 @@ FTM_RET	FTM_portScan
 				if(nRet < 0) 
 				{ 
 					xRet = FTM_RET_SOCKET_CONNECTION_FAILED;
-				//	TRACE("Failed to connect socket!");
+				//	INFO("Failed to connect socket!");
 				} 
 				else if (nRet == 0) 
 				{ 
-					TRACE("The connection was successful!");
+					INFO("The connection was successful!");
 					fcntl(xSocket, F_SETFL, nOriginStat); 
 					*pOpened = FTM_TRUE;
 				} 
@@ -258,7 +258,6 @@ FTM_RET	FTM_ARP_parsing
 	return xRet;
 }
 
-const FTM_UINT16		pPortList[PORT_NUM] = {80, 135, 139, 443, 445, 554, 4520, 49152};
 
 
 FTM_RET	FTM_getProcessCount
@@ -293,7 +292,7 @@ FTM_RET	FTM_getProcessCount
 		*pCount = nCount;
 	}
 
-	TRACE("Process : %d", nCount);
+	INFO("Process : %d", nCount);
 	return	xRet;
 }
 

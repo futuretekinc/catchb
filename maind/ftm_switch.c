@@ -107,7 +107,8 @@ FTM_RET	FTM_SWITCH_CONFIG_loadList
 
 FTM_RET	FTM_SWITCH_CONFIG_showList
 (
-	FTM_LIST_PTR	pList
+	FTM_LIST_PTR	pList,
+	FTM_TRACE_LEVEL	xLevel
 )
 {
 	ASSERT(pList != NULL);
@@ -115,9 +116,9 @@ FTM_RET	FTM_SWITCH_CONFIG_showList
 	FTM_RET		xRet;
 	FTM_UINT32	i, ulCount;
 
-	LOG("");
-	LOG("[ Switch List ]");
-	LOG("%4s   %24s %24s", "", "ID", "IP Address");
+	OUTPUT(xLevel, "");
+	OUTPUT(xLevel, "[ Switch List ]");
+	OUTPUT(xLevel, "%4s   %24s %24s", "", "ID", "IP Address");
 	FTM_LIST_count(pList, &ulCount);
 	for(i = 0 ; i < ulCount ; i++)
 	{
@@ -126,7 +127,7 @@ FTM_RET	FTM_SWITCH_CONFIG_showList
 		xRet = FTM_LIST_getAt(pList, i, (FTM_VOID_PTR _PTR_)&pSwitchConfig);
 		if (xRet == FTM_RET_OK)
 		{
-			LOG("%4d : %24s %24s", i+1, pSwitchConfig->pID, pSwitchConfig->pIP);
+			OUTPUT(xLevel, "%4d : %24s %24s", i+1, pSwitchConfig->pID, pSwitchConfig->pIP);
 		}
 	
 	}

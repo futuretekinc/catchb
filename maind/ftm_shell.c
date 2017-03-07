@@ -128,7 +128,7 @@ FTM_VOID_PTR	FTM_SHELL_process
 			nRet = FTM_SHELL_getCmd(pShell, pArgv[0], &pCmd);
 			if (nRet == FTM_RET_OK)
 			{
-				TRACE("Shell Command called[%s]\n", pArgv[0]);
+				INFO("Command : %s", pArgv[0]);
 				nRet = pCmd->function(pShell, nArgc, pArgv, (pCmd->pData != NULL)?pCmd->pData:pShell->pData);
 				switch(nRet)
 				{

@@ -123,7 +123,7 @@ FTM_RET	FTM_SMTPC_connect
 		return	xRet;	
 	}
 
-	TRACE("S : %s", pBuff);
+	INFO("S : %s", pBuff);
 
 	pSMTPC->nCode = atoi(pBuff);
 
@@ -143,7 +143,7 @@ FTM_RET	FTM_SMTPC_sendAndReceive
 
 	FTM_RET	xRet = FTM_RET_OK;
 
-	TRACE("C : %s", pData);
+	INFO("C : %s", pData);
 	xRet = FTM_SMTPC_CONNECTION_write(pSMTPC->xSock, pData, strlen(pData));
 	if (xRet != FTM_RET_OK)
 	{
@@ -158,7 +158,7 @@ FTM_RET	FTM_SMTPC_sendAndReceive
 		return	xRet;	
 	}
 
-	TRACE("S : %s", pBuff);
+	INFO("S : %s", pBuff);
 	pSMTPC->nCode = atoi(pBuff);
 
 	return FTM_RET_OK;
@@ -245,13 +245,13 @@ FTM_RET	FTM_SMTPC_sendAuth
 	{
 		if (pSMTPC->nCode != FTM_SMTP_RET_AUTHENTICATION_SUCCEEDED)
 		{
-			ERROR(xRet, "Failed to send PW and receive!");
+			xRet = FTM_RET_SMTPC_ERROR;
 		}
 	}
 
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to send ID and receive!");
+		ERROR(xRet, "Failed to send PW and receive!");
 	}
 
 	return	xRet;

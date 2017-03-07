@@ -159,8 +159,8 @@ FTM_RET	FTM_SMTP_send
 	{
 		xRet = FTM_RET_SEND_MAIL_ERROR;
 		ERROR(xRet, "Send mail error[%s]", curl_easy_strerror(res));
-		TRACE("%s", pBuff);
-		TRACE("%s", pParams->pPayload);
+		INFO("%s", pBuff);
+		INFO("%s", pParams->pPayload);
 	}
 
 	/* Free the list of recipients */ 

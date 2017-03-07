@@ -48,11 +48,11 @@ FTM_RET			FTM_MEM_final(void)
 	{
 		FTM_MEM_BLOCK_PTR	pMB;
 
-		TRACE("Memory leak detected : %lu\n", ulLeakedBlockCount);	
+		INFO("Memory leak detected : %lu\n", ulLeakedBlockCount);	
 		for(i = 0 ; i < ulLeakedBlockCount ; i++)
 		{
 			FTM_LIST_getAt(pMemList, i, (FTM_VOID_PTR _PTR_)&pMB);
-			TRACE("%3lu : %s[%3lu] - %08x(%lu)\n", i, pMB->pFile, pMB->ulLine, pMB->pMem, (FTM_UINT32)pMB->xSize);
+			INFO("%3lu : %s[%3lu] - %08x(%lu)\n", i, pMB->pFile, pMB->ulLine, pMB->pMem, (FTM_UINT32)pMB->xSize);
 			if (pMB->pFile != NULL)
 			{
 				free(pMB->pFile);	
@@ -89,7 +89,7 @@ FTM_VOID_PTR	FTM_MEM_TRACE_malloc(size_t xSize, const char *pFile, unsigned long
 
 	if (bTrace)
 	{
-		TRACE("Memory allocated.- %08lx(%3d) \n", pMB->pMem, xSize);
+		INFO("Memory allocated.- %08lx(%3d) \n", pMB->pMem, xSize);
 	}
 	return	pMB->pMem;
 }
@@ -121,7 +121,7 @@ FTM_VOID_PTR	FTM_MEM_TRACE_calloc(size_t xNumber, size_t xSize, const char *pFil
 
 	if (bTrace)
 	{
-		TRACE("Memory allocated.- %08lx(%3d) \n", pMB->pMem, xSize);
+		INFO("Memory allocated.- %08lx(%3d) \n", pMB->pMem, xSize);
 	}
 	return	pMB->pMem;
 }
@@ -146,7 +146,7 @@ FTM_RET	FTM_MEM_TRACE_free(FTM_VOID_PTR pMem, const char *pFile, unsigned long u
 	
 		if (bTrace)
 		{
-			TRACE("%s[%3lu] - %08x(%lu)\n", pMB->pFile, pMB->ulLine, pMB->pMem, (FTM_UINT32)pMB->xSize);
+			INFO("%s[%3lu] - %08x(%lu)\n", pMB->pFile, pMB->ulLine, pMB->pMem, (FTM_UINT32)pMB->xSize);
 		}
 		FTM_LIST_remove(pMemList, pMB);
 		if (pMB->pFile != NULL)

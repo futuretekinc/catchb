@@ -6,6 +6,7 @@
 #include "ftm_analyzer.h"
 #include "ftm_notifier.h"
 #include "ftm_logger.h"
+#include "ftm_trace.h"
 #include "ftm_db.h"
 
 typedef	struct	FTM_CONFIG_STRUCT
@@ -15,6 +16,7 @@ typedef	struct	FTM_CONFIG_STRUCT
 	FTM_NOTIFIER_CONFIG	xNotifier;
 	FTM_LOGGER_CONFIG	xLogger;
 
+	FTM_TRACE_CONFIG	xTrace;
 	FTM_LIST_PTR		pSwitchList;
 }	FTM_CONFIG, _PTR_ FTM_CONFIG_PTR;
 
@@ -24,6 +26,6 @@ FTM_RET	FTM_CONFIG_destroy(FTM_CONFIG_PTR _PTR_ ppConfig);
 FTM_RET	FTM_CONFIG_setDefault(FTM_CONFIG_PTR pConfig);
 
 FTM_RET	FTM_CONFIG_load(FTM_CONFIG_PTR pConfig, char* pFileName);
-FTM_RET	FTM_CONFIG_show(FTM_CONFIG_PTR 	pConfig);
+FTM_RET	FTM_CONFIG_show(FTM_CONFIG_PTR 	pConfig, FTM_TRACE_LEVEL xLevel);
 
 #endif

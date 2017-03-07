@@ -61,8 +61,10 @@ FTM_RET	FTM_SHELL_CMD_alarm
 		{
 			FTM_CHAR_PTR	pHost = "smtp.cafe24.com";
 			FTM_UINT16		usPort = 587;
-			FTM_CHAR_PTR	pUserId = "inhyun.cho@futuretek.co.kr";
-			FTM_CHAR_PTR	pPasswd = "seaandriver0118";
+			//FTM_CHAR_PTR	pUserId = "inhyun.cho@futuretek.co.kr";
+			//FTM_CHAR_PTR	pPasswd = "seaandriver0118";
+			FTM_CHAR_PTR	pUserId = "devweb@futuretek.co.kr";
+			FTM_CHAR_PTR	pPasswd = "futuretek1204";
 			FTM_CHAR_PTR	pTo = "xtra72@gmail.com";
 			FTM_CHAR_PTR	pFrom="inhyun.cho@futuretek.co.kr";
 			FTM_CHAR_PTR	pSubject="Send-Mail-Test";
@@ -222,70 +224,60 @@ FTM_RET	FTM_SHELL_CMD_testSendMail
 	xRet = FTM_SMTPC_create(pServer, usPort, &pSMTPC);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		return	xRet;	
 	}
 
 	xRet = FTM_SMTPC_connect(pSMTPC);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	xRet = FTM_SMTPC_sendGreeting(pSMTPC);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	xRet = FTM_SMTPC_sendAuth(pSMTPC, pUserID, pPasswd);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	xRet = FTM_SMTPC_sendFrom(pSMTPC, pFrom);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	xRet = FTM_SMTPC_sendTo(pSMTPC, pTo);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	xRet = FTM_SMTPC_startBody(pSMTPC);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	xRet = FTM_SMTPC_sendRawBody(pSMTPC, pBody);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	xRet = FTM_SMTPC_endBody(pSMTPC);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	
 	xRet = FTM_SMTPC_disconnect(pSMTPC);
 	if (xRet != FTM_RET_OK)
-		TRACE_ENTRY();
 	{
 		goto finished;
 	}

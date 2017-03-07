@@ -5,14 +5,31 @@
 #include "ftm_types.h"
 #include "cjson/cJSON.h"
 
+typedef	enum	FTM_TRACE_LEVEL_ENUM
+{
+	FTM_TRACE_LEVEL_CONSOLE,
+	FTM_TRACE_LEVEL_LOG,
+	FTM_TRACE_LEVEL_INFO,
+	FTM_TRACE_LEVEL_WARN,
+	FTM_TRACE_LEVEL_ERROR
+}	FTM_TRACE_LEVEL, _PTR_ FTM_TRACE_LEVEL_PTR;
+
+FTM_CHAR_PTR	FTM_TRACE_LEVEL_string
+(
+	FTM_TRACE_LEVEL	xLevel
+);
+
+/////////////////////////////////////////////////////////////////////////////
 typedef struct FTM_TRACE_FIELD_CONFIG_STRUCT
 {
 	FTM_BOOL	bEnable;
+	FTM_BOOL	bDynamic;
 	FTM_UINT32	ulSize;
 }	FTM_TRACE_FIELD_CONFIG, _PTR_ FTM_TRACE_FIELD_CONFIG_PTR;
 
 typedef	struct	FTM_TRACE_TYPE_CONFIG_STRUCT
 {
+	FTM_BOOL				bEnable;
 	FTM_TRACE_FIELD_CONFIG	xTime;
 	FTM_TRACE_FIELD_CONFIG	xFunction;
 	FTM_TRACE_FIELD_CONFIG	xLine;
@@ -23,8 +40,10 @@ typedef	struct	FTM_TRACE_TYPE_CONFIG_STRUCT
 
 typedef	struct	FTM_TRACE_CONFIG_STRUCT
 {
+	FTM_TRACE_TYPE_CONFIG	xConsole;
 	FTM_TRACE_TYPE_CONFIG	xLog;
-	FTM_TRACE_TYPE_CONFIG	xTrace;
+	FTM_TRACE_TYPE_CONFIG	xInfo;
+	FTM_TRACE_TYPE_CONFIG	xWarn;
 	FTM_TRACE_TYPE_CONFIG	xError;
 }	FTM_TRACE_CONFIG, _PTR_ FTM_TRACE_CONFIG_PTR;
 
@@ -52,22 +71,24 @@ FTM_VOID	FTM_TRACE_SystemError
 
 FTM_VOID	FTM_TRACE_Out
 (
-		  FTM_UINT32	ulOutput,
-	const char *		pFunctionName,
-		  FTM_UINT32	ulLine,
-	const FTM_CHAR_PTR	pModuleName,
-	const FTM_CHAR_PTR 	pTitle,
-	const FTM_CHAR_PTR 	pFormat,
+		  FTM_TRACE_LEVEL	xLevel,
+	const FTM_CHAR _PTR_ 	pFunctionName,
+		  FTM_UINT32		ulLine,
+	const FTM_CHAR_PTR		pModuleName,
+	const FTM_CHAR_PTR 		pTitle,
+	const FTM_CHAR_PTR 		pFormat,
 	...
 );
 
 #define	__MODULE__				NULL
 
-#define	LOG(format, ...)			FTM_TRACE_Out(0, __func__, __LINE__, __MODULE__, "LOG", format, ## __VA_ARGS__)
-#define	TRACE(format, ...)			FTM_TRACE_Out(1, __func__, __LINE__, __MODULE__, "TRACE", format, ## __VA_ARGS__)
-#define	TRACE_ENTRY()				FTM_TRACE_Out(1, __func__, __LINE__, __MODULE__, "TRACE", "ENTRY")
-#define	TRACE_EXIT()				FTM_TRACE_Out(1, __func__, __LINE__, __MODULE__, "TRACE", "EXIT")
-#define	ERROR(errno, format, ...)	FTM_TRACE_Out(2, __func__, __LINE__, __MODULE__, "ERROR", format, ## __VA_ARGS__)
+#define	OUTPUT(level, format, ...)	FTM_TRACE_Out(level, 	__func__, __LINE__, __MODULE__, "", format, ## __VA_ARGS__)
+#define	LOG(format, ...)			FTM_TRACE_Out(FTM_TRACE_LEVEL_LOG, 	__func__, __LINE__, __MODULE__, "", format, ## __VA_ARGS__)
+#define	INFO(format, ...)			FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, __func__, __LINE__, __MODULE__, "", format, ## __VA_ARGS__)
+#define	INFO_ENTRY()				FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, __func__, __LINE__, __MODULE__, "", "ENTRY")
+#define	INFO_EXIT()					FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, __func__, __LINE__, __MODULE__, "", "EXIT")
+#define	WARN(errno, format, ...)	FTM_TRACE_Out(FTM_TRACE_LEVEL_WARN,__func__, __LINE__, __MODULE__,  "", format, ## __VA_ARGS__)
+#define	ERROR(errno, format, ...)	FTM_TRACE_Out(FTM_TRACE_LEVEL_ERROR,__func__, __LINE__, __MODULE__, "", format, ## __VA_ARGS__)
 
 #define	ASSERT(x)					{ if (!(x)) { printf("ASSERTED[%s:%d] - %s\n", __func__, __LINE__, #x);}; }
 #endif

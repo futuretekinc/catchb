@@ -179,14 +179,14 @@ FTM_RET	FTM_DETECTOR_start
 	if (pDetector->xThread != 0)
 	{
 		xRet = FTM_RET_ALREADY_RUNNING;
-		TRACE("The notifier is already running!\n");	
+		INFO("The notifier is already running!\n");	
 		return	xRet;
 	}
 
 	if (pthread_create(&pDetector->xThread, NULL, FTM_DETECTOR_process, (FTM_VOID_PTR)pDetector) < 0)
 	{
 		xRet = FTM_RET_THREAD_CREATION_FAILED;
-		TRACE("Failed to start notifier!");
+		INFO("Failed to start notifier!");
 	}
 
 	return	xRet;
@@ -220,7 +220,7 @@ FTM_VOID_PTR	FTM_DETECTOR_process
 	FTM_RET	xRet;
 	FTM_DETECTOR_PTR	pDetector = (FTM_DETECTOR_PTR)pData;
 
-	TRACE("%s started.", pDetector->pName);
+	INFO("%s started.", pDetector->pName);
 
 	pDetector->bStop = FTM_FALSE;
 	while(!pDetector->bStop)
@@ -240,7 +240,7 @@ FTM_VOID_PTR	FTM_DETECTOR_process
 
 			default:
 				{
-					TRACE("Unknown command[%x]", pRcvdMsg->xType);
+					INFO("Unknown command[%x]", pRcvdMsg->xType);
 				}
 			}
 
@@ -248,7 +248,7 @@ FTM_VOID_PTR	FTM_DETECTOR_process
 		}
 	}
 
-	TRACE("%s stopped.", pDetector->pName);
+	INFO("%s stopped.", pDetector->pName);
 
 	return	0;
 }

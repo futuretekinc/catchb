@@ -7,6 +7,7 @@
 #include "ftm_switch.h"
 #include "ftm_alarm.h"
 #include "ftm_log.h"
+#include "ftm_trace.h"
 
 #define	FTM_DB_QUERY_LEN	1024
 
@@ -29,7 +30,8 @@ FTM_RET	FTM_DB_CONFIG_load
 
 FTM_RET	FTM_DB_CONFIG_show
 (
-	FTM_DB_CONFIG_PTR	pConfig
+	FTM_DB_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL		xLevel
 );
 
 /////////////////////////////////////////////////////////////////
@@ -96,6 +98,7 @@ FTM_RET	FTM_DB_addCCTV
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID,
 	FTM_CHAR_PTR	pIP,
+	FTM_CHAR_PTR	pSwitchID,
 	FTM_CHAR_PTR	pComment,
 	FTM_CHAR_PTR	pTime
 );

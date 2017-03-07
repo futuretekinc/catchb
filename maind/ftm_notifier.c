@@ -66,13 +66,14 @@ FTM_RET	FTM_NOTIFIER_CONFIG_load
 
 FTM_RET	FTM_NOTIFIER_CONFIG_show
 (
-	FTM_NOTIFIER_CONFIG_PTR	pConfig
+	FTM_NOTIFIER_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL			xLevel
 )
 {
 	ASSERT(pConfig != NULL);
 
-	LOG("[ Notifier Configuration ]");
-	return	FTM_NOTIFIER_MAIL_CONFIG_show(&pConfig->xMail);
+	OUTPUT(xLevel, "[ Notifier Configuration ]");
+	return	FTM_NOTIFIER_MAIL_CONFIG_show(&pConfig->xMail, xLevel);
 
 }
 
@@ -133,16 +134,17 @@ FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_load
 
 FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_show
 (
-	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig
+	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL					xLevel
 )
 {
 	ASSERT(pConfig != NULL);
 
-	LOG("");
-	LOG("%16s : %s", "Server", pConfig->pServer);
-	LOG("%16s : %d", "Port", 	pConfig->usPort);
-	LOG("%16s : %s", "user ID", pConfig->pUserID);
-	LOG("%16s : %s", "Password", pConfig->pPasswd);
+	OUTPUT(xLevel, "");
+	OUTPUT(xLevel, "%16s : %s", "Server", pConfig->pServer);
+	OUTPUT(xLevel, "%16s : %d", "Port", 	pConfig->usPort);
+	OUTPUT(xLevel, "%16s : %s", "user ID", pConfig->pUserID);
+	OUTPUT(xLevel, "%16s : %s", "Password", pConfig->pPasswd);
 
 	return	FTM_RET_OK;
 }
@@ -256,14 +258,14 @@ FTM_RET	FTM_NOTIFIER_start
 	if (pNotifier->xThread != 0)
 	{
 		xRet = FTM_RET_ALREADY_RUNNING;
-		TRACE("The notifier is already running!\n");	
+		INFO("The notifier is already running!\n");	
 		return	xRet;
 	}
 
 	if (pthread_create(&pNotifier->xThread, NULL, FTM_NOTIFIER_process, (FTM_VOID_PTR)pNotifier) < 0)
 	{
 		xRet = FTM_RET_THREAD_CREATION_FAILED;
-		TRACE("Failed to start notifier!");
+		INFO("Failed to start notifier!");
 	}
 
 	return	xRet;
@@ -299,7 +301,7 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 	FTM_RET	xRet;
 	FTM_NOTIFIER_PTR	pNotifier = (FTM_NOTIFIER_PTR)pData;
 
-	TRACE("%s started.", pNotifier->pName);
+	INFO("%s started.", pNotifier->pName);
 
 	pNotifier->bStop = FTM_FALSE;
 
@@ -353,7 +355,7 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 
 				default:
 				{
-					TRACE("Unknown command[%x]", pRcvdMsg->xType);
+					INFO("Unknown command[%x]", pRcvdMsg->xType);
 				}
 			}
 
@@ -361,7 +363,7 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 		}
 	}
 
-	TRACE("%s stopped.", pNotifier->pName);
+	INFO("%s stopped.", pNotifier->pName);
 
 	return	NULL;
 }
@@ -435,6 +437,8 @@ FTM_RET	FTM_NOTIFIER_onSendAlarm
 	FTM_UINT32		ulBodyLen = 0;
 
 
+	INFO("##################################################");
+	INFO("Send mail to %s", pAlarm->pEmail);
 	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "Date:%s\r\n", FTM_TIME_printfCurrent(NULL));
 	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "From:<%s>\r\n", pNotifier->xConfig.xMail.pSender);
 	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "To:<%s>\r\n", pAlarm->pEmail);
@@ -445,55 +449,48 @@ FTM_RET	FTM_NOTIFIER_onSendAlarm
 	xRet = FTM_SMTPC_create(pNotifier->xConfig.xMail.pServer, pNotifier->xConfig.xMail.usPort, &pSMTPC);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		return	xRet;	
 	}
 
 	xRet = FTM_SMTPC_connect(pSMTPC);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	xRet = FTM_SMTPC_sendGreeting(pSMTPC);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
+	INFO("AUTH %s %s", pNotifier->xConfig.xMail.pUserID, pNotifier->xConfig.xMail.pPasswd);
 	xRet = FTM_SMTPC_sendAuth(pSMTPC, pNotifier->xConfig.xMail.pUserID, pNotifier->xConfig.xMail.pPasswd);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	xRet = FTM_SMTPC_sendFrom(pSMTPC, pNotifier->xConfig.xMail.pSender);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	xRet = FTM_SMTPC_sendTo(pSMTPC, pAlarm->pEmail);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 
 	xRet = FTM_SMTPC_sendMessage(pSMTPC, pBody);
 	if (xRet != FTM_RET_OK)
 	{
-		TRACE_ENTRY();
 		goto finished;
 	}
 	
 	xRet = FTM_SMTPC_disconnect(pSMTPC);
 	if (xRet != FTM_RET_OK)
-		TRACE_ENTRY();
 	{
 		goto finished;
 	}

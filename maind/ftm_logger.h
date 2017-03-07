@@ -4,6 +4,7 @@
 #include "ftm_types.h"
 #include "cjson/cJSON.h"
 #include "ftm_msgq.h"
+#include "ftm_trace.h"
 
 struct FTM_CATCHB_STRUCT;
 
@@ -33,7 +34,8 @@ FTM_RET	FTM_LOGGER_CONFIG_save
 
 FTM_RET	FTM_LOGGER_CONFIG_show
 (
-	FTM_LOGGER_CONFIG_PTR	pConfig
+	FTM_LOGGER_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL			xLevel
 );
 
 //////////////////////////////////////////////////////////////////

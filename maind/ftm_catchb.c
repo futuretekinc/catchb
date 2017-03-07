@@ -24,6 +24,18 @@ FTM_VOID_PTR	FTM_CATCHB_process
 	FTM_VOID_PTR	pData
 );
 
+FTM_RET	FTM_CATCHB_onCreateCCTV
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_CREATE_CCTV_PTR	pMsg
+);
+
+FTM_RET	FTM_CATCHB_onDeleteCCTV
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_DELETE_CCTV_PTR	pMsg
+);
+
 FTM_RET	FTM_CATCHB_onCheckNewCCTV
 (
 	FTM_CATCHB_PTR	pCatchB,
@@ -54,13 +66,13 @@ FTM_RET		FTM_CATCHB_onRemovedCCTVInDB
 	FTM_MSG_REMOVED_CCTV_IN_DB_PTR	pMsg
 );
 
-FTM_RET		FTM_CATCHB_onCCTVHashUpdated
+FTM_RET		FTM_CATCHB_onSetCCTVHash
 (
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_MSG_CCTV_HASH_UPDATED_PTR	pMsg
 );
 
-FTM_RET	FTM_CATCHB_CCTV_onSetStat
+FTM_RET	FTM_CATCHB_onSetCCTVStat
 (
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_MSG_CCTV_SET_STAT_PTR	pMsg
@@ -72,7 +84,7 @@ FTM_RET		FTM_CATCHB_onCCTVRegister
 	FTM_MSG_CCTV_REGISTER_PTR	pMsg
 );
 
-FTM_BOOL	FTM_CATCHB_CCTV_seeker
+FTM_BOOL	FTM_CATCHB_CCTVSeeker
 (
 	const FTM_VOID_PTR pElement, 
 	const FTM_VOID_PTR pIndicator
@@ -172,7 +184,7 @@ FTM_RET	FTM_CATCHB_create
 		goto error;
 	}
 
-	FTM_LIST_setSeeker(pCatchB->pCCTVList, FTM_CATCHB_CCTV_seeker);
+	FTM_LIST_setSeeker(pCatchB->pCCTVList, FTM_CATCHB_CCTVSeeker);
 
 	xRet = FTM_LIST_create(&pCatchB->pSwitchList);
 	if (xRet != FTM_RET_OK)
@@ -471,14 +483,14 @@ FTM_RET	FTM_CATCHB_start
 	if (pCatchB->xThread != 0)
 	{
 		xRet = FTM_RET_ALREADY_RUNNING;
-		TRACE("The notifier is already running!");	
+		INFO("The notifier is already running!");	
 		return	xRet;
 	}
 
 	if (pthread_create(&pCatchB->xThread, NULL, FTM_CATCHB_process, (FTM_VOID_PTR)pCatchB) < 0)
 	{
 		xRet = FTM_RET_THREAD_CREATION_FAILED;
-		TRACE("Failed to start notifier!");
+		INFO("Failed to start notifier!");
 	}
 
 	return	xRet;
@@ -766,7 +778,7 @@ FTM_VOID_PTR	FTM_CATCHB_process
 	FTM_RET	xRet;
 	FTM_CATCHB_PTR	pCatchB = (FTM_CATCHB_PTR)pData;
 
-	TRACE("%s started.", pCatchB->pName);
+	INFO("%s started.", pCatchB->pName);
 
 	xRet = FTM_CATCHB_initProcess(pCatchB);
 	if (xRet != FTM_RET_OK)
@@ -792,6 +804,12 @@ FTM_VOID_PTR	FTM_CATCHB_process
 		ERROR(xRet, "Failed to start detector!");
 	}
 
+	xRet = FTM_NOTIFIER_start(pCatchB->pNotifier);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to start notifier!");
+	}
+
 	xRet = FTM_EVENT_TIMER_MANAGER_start(pCatchB->pEventManager);
 	if (xRet != FTM_RET_OK)
 	{
@@ -813,9 +831,21 @@ FTM_VOID_PTR	FTM_CATCHB_process
 		xRet = 	FTM_MSGQ_timedPop(pCatchB->pMsgQ, 1000, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
 		if(xRet == FTM_RET_OK)
 		{
-			TRACE("Message : %s", FTM_MESSAGE_getString(pRcvdMsg->xType));
+			INFO("Message : %s", FTM_MESSAGE_getString(pRcvdMsg->xType));
 			switch(pRcvdMsg->xType)
 			{
+			case	FTM_MSG_TYPE_CREATE_CCTV:
+				{
+					xRet = FTM_CATCHB_onCreateCCTV(pCatchB, (FTM_MSG_CREATE_CCTV_PTR)pRcvdMsg);
+				}
+				break;
+
+			case	FTM_MSG_TYPE_DELETE_CCTV:
+				{
+					xRet = FTM_CATCHB_onDeleteCCTV(pCatchB, (FTM_MSG_DELETE_CCTV_PTR)pRcvdMsg);
+				}
+				break;
+
 			case	FTM_MSG_TYPE_CHECK_NEW_SWITCH:
 				{
 					xRet = FTM_CATCHB_onCheckNewSwitch(pCatchB, (FTM_MSG_CHECK_NEW_SWITCH_PTR)pRcvdMsg);
@@ -854,13 +884,13 @@ FTM_VOID_PTR	FTM_CATCHB_process
 
 			case	FTM_MSG_TYPE_CCTV_HASH_UPDATED:
 				{
-					xRet = FTM_CATCHB_onCCTVHashUpdated(pCatchB, (FTM_MSG_CCTV_HASH_UPDATED_PTR)pRcvdMsg);
+					xRet = FTM_CATCHB_onSetCCTVHash(pCatchB, (FTM_MSG_CCTV_HASH_UPDATED_PTR)pRcvdMsg);
 				}
 				break;
 
 			case	FTM_MSG_TYPE_CCTV_SET_STAT:
 				{
-					xRet = FTM_CATCHB_CCTV_onSetStat(pCatchB, (FTM_MSG_CCTV_SET_STAT_PTR)pRcvdMsg);
+					xRet = FTM_CATCHB_onSetCCTVStat(pCatchB, (FTM_MSG_CCTV_SET_STAT_PTR)pRcvdMsg);
 				}
 				break;
 
@@ -881,16 +911,183 @@ FTM_VOID_PTR	FTM_CATCHB_process
 	}
 
 	FTM_EVENT_TIMER_MANAGER_stop(pCatchB->pEventManager);
+	FTM_NOTIFIER_stop(pCatchB->pNotifier);
 	FTM_DETECTOR_stop(pCatchB->pDetector);
 	FTM_ANALYZER_stop(pCatchB->pAnalyzer);
 	FTM_LOGGER_stop(pCatchB->pLogger);
 	
-	TRACE("%s stopped.", pCatchB->pName);
+	INFO("%s stopped.", pCatchB->pName);
 
 	return	0;
 }
 
+FTM_RET	FTM_CATCHB_createCCTV
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CCTV_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pConfig != NULL);
 
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_MSG_CREATE_CCTV_PTR	pMsg  = (FTM_MSG_CREATE_CCTV_PTR)FTM_MEM_malloc(sizeof(FTM_MSG_CREATE_CCTV));
+
+	pMsg->xHead.xType = FTM_MSG_TYPE_CREATE_CCTV;
+	pMsg->xHead.ulLen = sizeof(FTM_MSG_CREATE_CCTV);
+	memcpy(&pMsg->xConfig, pConfig, sizeof(FTM_CCTV_CONFIG));
+	
+	xRet = FTM_MSGQ_push(pCatchB->pMsgQ, pMsg);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to push message!");
+		FTM_MEM_free(pMsg);	
+	}
+
+	
+	return	xRet;
+}
+
+
+FTM_RET	FTM_CATCHB_onCreateCCTV
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_CREATE_CCTV_PTR	pMsg
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pMsg != NULL);
+
+	FTM_RET			xRet = FTM_RET_OK;
+	FTM_CCTV_PTR	pCCTV = NULL;
+
+	xRet = FTM_LIST_get(pCatchB->pCCTVList, pMsg->xConfig.pID, (FTM_VOID_PTR _PTR_)&pCCTV);
+	if (xRet == FTM_RET_OK)
+	{
+		pCCTV = NULL;
+		xRet = FTM_RET_OBJECT_ALREADY_EXIST;
+		ERROR(xRet, "Failed to create CCTV!");
+		goto finished;
+	}
+
+	xRet = FTM_CCTV_create(&pMsg->xConfig, &pCCTV);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create CCTV!");
+		goto finished;
+	}
+
+	xRet = FTM_LIST_append(pCatchB->pCCTVList, pCCTV);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to append list!");
+		goto finished;
+	}
+
+	xRet = FTM_DB_addCCTV(pCatchB->pDB, pMsg->xConfig.pID, pMsg->xConfig.pIP, pMsg->xConfig.pSwitchID, pMsg->xConfig.pComment, pMsg->xConfig.pTime);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to insert cctv[%s] to DB!\n", pMsg->xConfig.pID);
+		FTM_LIST_remove(pCatchB->pCCTVList, pCCTV);
+		goto finished;
+	}
+	
+	xRet = FTM_ANALYZER_CCTV_attach(pCatchB->pAnalyzer, pCCTV->xConfig.pID);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet,	"Failed to append CCTV to scheduler!");
+	}
+
+finished:
+	if (xRet != FTM_RET_OK)
+	{
+		if (pCCTV != NULL)
+		{
+			FTM_CCTV_destroy(&pCCTV);
+		}
+	
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CATCHB_destroyCCTV
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pID
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pID != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_MSG_DELETE_CCTV_PTR	pMsg  = (FTM_MSG_DELETE_CCTV_PTR)FTM_MEM_malloc(sizeof(FTM_MSG_DELETE_CCTV));
+
+	pMsg->xHead.xType = FTM_MSG_TYPE_DELETE_CCTV;
+	pMsg->xHead.ulLen = sizeof(FTM_MSG_DELETE_CCTV);
+	strncpy(pMsg->pID, pID, sizeof(pMsg->pID) - 1);
+
+	xRet = FTM_MSGQ_push(pCatchB->pMsgQ, pMsg);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to push message!");
+		FTM_MEM_free(pMsg);	
+	}
+	
+	return	xRet;
+}
+
+FTM_RET	FTM_CATCHB_onDeleteCCTV
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_MSG_DELETE_CCTV_PTR	pMsg
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pMsg != NULL);
+
+	FTM_RET			xRet = FTM_RET_OK;
+	FTM_CCTV_PTR	pCCTV = NULL;
+
+	xRet = FTM_LIST_get(pCatchB->pCCTVList, pMsg->pID, (FTM_VOID_PTR _PTR_)&pCCTV);
+	if (xRet != FTM_RET_OK)
+	{
+		xRet = FTM_RET_OBJECT_NOT_FOUND;
+		ERROR(xRet, "Failed to delete CCTV[%s]!", pMsg->pID);
+		goto finished;
+	}
+
+	xRet = FTM_ANALYZER_CCTV_detach(pCatchB->pAnalyzer, pMsg->pID);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet,	"Failed to remove CCTV to scheduler!");
+	}
+
+	xRet = FTM_LIST_remove(pCatchB->pCCTVList, pCCTV);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to remove CCTV from list!");
+		goto finished;
+	}
+
+	xRet = FTM_DB_deleteCCTV(pCatchB->pDB, pMsg->pID);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to remove cctv[%s] to DB!\n", pMsg->pID);
+	}
+	
+
+	xRet = FTM_CCTV_destroy(&pCCTV);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to destroy CCTV!");	
+	}
+
+finished:
+	return	xRet;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
 FTM_RET	FTM_CATCHB_EVENT_checkNewCCTV
 (
 	FTM_TIMER_PTR pTimer, 
@@ -983,7 +1180,7 @@ FTM_RET	FTM_CATCHB_onCheckNewCCTV
 		}
 		else
 		{
-			TRACE("CCTV count is 0!");	
+			INFO("CCTV count is 0!");	
 		}
 	}
 	else
@@ -1047,7 +1244,7 @@ FTM_RET		FTM_CATCHB_onFoundCCTVInDB
 		}
 		else
 		{
-			xRet = FTM_ANALYZER_CCTV_add(pCatchB->pAnalyzer, pCCTV->xConfig.pID);
+			xRet = FTM_ANALYZER_CCTV_attach(pCatchB->pAnalyzer, pCCTV->xConfig.pID);
 			if (xRet != FTM_RET_OK)
 			{
 				ERROR(xRet,	"Failed to append CCTV to scheduler!");
@@ -1094,7 +1291,7 @@ FTM_RET		FTM_CATCHB_onRemovedCCTVInDB
 	FTM_RET			xRet;
 	FTM_CCTV_PTR	pCCTV;
 
-	TRACE("On Removed CCTV In DB : %s", pMsg->pID);
+	INFO("On Removed CCTV In DB : %s", pMsg->pID);
 
 	xRet = FTM_LIST_get(pCatchB->pCCTVList, pMsg->pID, (FTM_VOID_PTR _PTR_)&pCCTV);
 	if (xRet != FTM_RET_OK)
@@ -1110,7 +1307,7 @@ FTM_RET		FTM_CATCHB_onRemovedCCTVInDB
 		return	xRet;
 	}
 
-	xRet = FTM_ANALYZER_CCTV_delete(pCatchB->pAnalyzer, pCCTV->xConfig.pID);
+	xRet = FTM_ANALYZER_CCTV_detach(pCatchB->pAnalyzer, pCCTV->xConfig.pID);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet,	"Failed to delete CCTV from analyzer!");
@@ -1121,7 +1318,7 @@ FTM_RET		FTM_CATCHB_onRemovedCCTVInDB
 	return	xRet;
 }
 
-FTM_BOOL	FTM_CATCHB_CCTV_seeker
+FTM_BOOL	FTM_CATCHB_CCTVSeeker
 (
 	const FTM_VOID_PTR pElement, 
 	const FTM_VOID_PTR pIndicator
@@ -1133,7 +1330,7 @@ FTM_BOOL	FTM_CATCHB_CCTV_seeker
 	return	(strcmp(pCCTV->xConfig.pID, pID) == 0);
 }
 
-FTM_RET	FTM_CATCHB_CCTV_get
+FTM_RET	FTM_CATCHB_getCCTV
 (
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_CHAR_PTR	pID,
@@ -1147,7 +1344,7 @@ FTM_RET	FTM_CATCHB_CCTV_get
 	return	FTM_LIST_get(pCatchB->pCCTVList, pID, (FTM_VOID_PTR _PTR_)ppCCTV);
 }
 
-FTM_RET	FTM_CATCHB_CCTV_count
+FTM_RET	FTM_CATCHB_getCCTVCount
 (
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_UINT32_PTR	pCount
@@ -1159,7 +1356,40 @@ FTM_RET	FTM_CATCHB_CCTV_count
 	return	FTM_LIST_count(pCatchB->pCCTVList, pCount);
 }
 
-FTM_RET	FTM_CATCHB_CCTV_hashUpdated
+FTM_RET	FTM_CATCHB_getCCTVList
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CCTV_PTR	pCCTVList,
+	FTM_UINT32		ulMaxCount,
+	FTM_UINT32_PTR	pCount
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pCCTVList != NULL);
+	ASSERT(pCount != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_UINT32	i;
+
+	for(i = 0 ; i < ulMaxCount ; i++)
+	{
+		FTM_CCTV_PTR	pCCTV = NULL;
+
+		xRet = FTM_LIST_getAt(pCatchB->pCCTVList, i, (FTM_VOID_PTR _PTR_)&pCCTV);
+		if (xRet != FTM_RET_OK)
+		{
+			break;	
+		}
+
+		memcpy(&pCCTVList[i], pCCTV, sizeof(FTM_CCTV));
+	}
+
+	*pCount = i;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_CATCHB_setCCTVHash
 (
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_CHAR_PTR	pID,
@@ -1197,7 +1427,7 @@ FTM_RET	FTM_CATCHB_CCTV_hashUpdated
 	return	xRet;
 }
 
-FTM_RET		FTM_CATCHB_onCCTVHashUpdated
+FTM_RET		FTM_CATCHB_onSetCCTVHash
 (
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_MSG_CCTV_HASH_UPDATED_PTR	pMsg
@@ -1209,7 +1439,7 @@ FTM_RET		FTM_CATCHB_onCCTVHashUpdated
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CCTV_PTR	pCCTV;
 
-	TRACE("On CCTV Hash Updated : %s[%s]", pMsg->pID, pMsg->pHash);
+	INFO("On CCTV Hash Updated : %s[%s]", pMsg->pID, pMsg->pHash);
 
 	xRet = FTM_LIST_get(pCatchB->pCCTVList, pMsg->pID, (FTM_VOID_PTR _PTR_)&pCCTV);
 	if (xRet != FTM_RET_OK)
@@ -1228,7 +1458,7 @@ FTM_RET		FTM_CATCHB_onCCTVHashUpdated
 		else
 		{
 		
-			xRet = FTM_ANALYZER_CCTV_add(pCatchB->pAnalyzer, pCCTV->xConfig.pID);
+			xRet = FTM_ANALYZER_CCTV_attach(pCatchB->pAnalyzer, pCCTV->xConfig.pID);
 			if (xRet != FTM_RET_OK)
 			{
 				ERROR(xRet, "Failed to add CCTV[%s] to analyzer!", pCCTV->xConfig.pID);	
@@ -1239,7 +1469,7 @@ FTM_RET		FTM_CATCHB_onCCTVHashUpdated
 	return	xRet;
 }
 
-FTM_RET		FTM_CATCHB_CCTV_setStat
+FTM_RET		FTM_CATCHB_setCCTVStat
 (	
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_CHAR_PTR	pID,
@@ -1266,7 +1496,7 @@ FTM_RET		FTM_CATCHB_CCTV_setStat
 	return	xRet;
 }
 
-FTM_RET	FTM_CATCHB_CCTV_onSetStat
+FTM_RET	FTM_CATCHB_onSetCCTVStat
 (
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_MSG_CCTV_SET_STAT_PTR	pMsg
@@ -1278,7 +1508,7 @@ FTM_RET	FTM_CATCHB_CCTV_onSetStat
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CCTV_PTR	pCCTV;
 
-	TRACE("CCTV[%s] stat is %d", pMsg->pID, pMsg->xStat);
+	INFO("CCTV[%s] stat is %s", pMsg->pID, FTM_CCTV_STAT_print(pMsg->xStat));
 
 	xRet = FTM_LIST_get(pCatchB->pCCTVList, pMsg->pID, (FTM_VOID_PTR _PTR_)&pCCTV);
 	if (xRet != FTM_RET_OK)
@@ -1306,20 +1536,30 @@ FTM_RET	FTM_CATCHB_CCTV_onSetStat
 		{
 			if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
 			{
-				FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
+				if (pCatchB->pDetector != NULL)
+				{
+					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
+				}
 			}
 		}
 		else 
 		{
-			if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
+			if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
 			{
 				FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
 			}
-			else
+			else if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
 			{
 				FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_FALSE);
+				if (pCatchB->pNotifier != NULL)
+				{
+					xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, pMsg->pID);
+					if (xRet != FTM_RET_OK)
+					{
+						ERROR(xRet, "Failed to notify!");	
+					}
+				}
 			}
-		
 		}
 
 		pCCTV->xConfig.xStat = pMsg->xStat;
@@ -1334,7 +1574,7 @@ FTM_RET	FTM_CATCHB_CCTV_onSetStat
 	return	xRet;
 }
 
-FTM_RET	FTM_CATCHB_CCTV_register
+FTM_RET	FTM_CATCHB_registerCCTV
 (
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_CHAR_PTR	pID,
@@ -1347,7 +1587,7 @@ FTM_RET	FTM_CATCHB_CCTV_register
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_MSG_CCTV_REGISTER_PTR	pMsg;
 
-	TRACE("The CCTV[%s] register!", pID);
+	INFO("The CCTV[%s] register!", pID);
 	pMsg = (FTM_MSG_CCTV_REGISTER_PTR)FTM_MEM_malloc(sizeof(FTM_MSG_CCTV_REGISTER));
 	if (pMsg == NULL)
 	{
@@ -1385,7 +1625,7 @@ FTM_RET		FTM_CATCHB_onCCTVRegister
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CCTV_PTR	pCCTV;
 
-	TRACE("On CCTV register : %s[%s]", pMsg->pID, pMsg->pHash);
+	INFO("On CCTV register : %s[%s]", pMsg->pID, pMsg->pHash);
 
 	xRet = FTM_LIST_get(pCatchB->pCCTVList, pMsg->pID, (FTM_VOID_PTR _PTR_)&pCCTV);
 	if (xRet != FTM_RET_OK)
@@ -1543,7 +1783,7 @@ FTM_RET		FTM_CATCHB_onRemovedSwitchInDB
 	FTM_RET			xRet;
 	FTM_SWITCH_PTR	pSwitch;
 
-	TRACE("On Removed SWITCH In DB : %s", pMsg->pID);
+	INFO("On Removed SWITCH In DB : %s", pMsg->pID);
 
 	xRet = FTM_LIST_get(pCatchB->pSwitchList, pMsg->pID, (FTM_VOID_PTR _PTR_)&pSwitch);
 	if (xRet != FTM_RET_OK)
@@ -1700,7 +1940,7 @@ FTM_RET	FTM_CATCHB_destroySwitch
 	}
 	else
 	{
-		TRACE("The switch[%s] has been successfully removed.", pID);
+		INFO("The switch[%s] has been successfully removed.", pID);
 	}
 
 	return	xRet;
@@ -1761,7 +2001,7 @@ FTM_RET	FTM_CATCHB_getSwitchList
 			break;	
 		}
 
-		TRACE("Switch[%x:%s]", ppSwitch[i], ppSwitch[i]->xConfig.pID);
+		INFO("Switch[%x:%s]", ppSwitch[i], ppSwitch[i]->xConfig.pID);
 	}
 
 	*pCount = i;
@@ -1805,7 +2045,7 @@ FTM_RET	FTM_CATCHB_onCheckNewSwitch
 	FTM_RET			xRet;
 	FTM_UINT32		ulCount;
 
-	TRACE("Check New Switch!");
+	INFO("Check New Switch!");
 	xRet = FTM_DB_getSwitchCount(pCatchB->pDB, &ulCount);
 	if (xRet == FTM_RET_OK)
 	{

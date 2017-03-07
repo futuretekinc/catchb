@@ -77,12 +77,14 @@ FTM_INT	main
 		goto finished;
 	}
 
-	FTM_CONFIG_show(pConfig);
+	FTM_CONFIG_show(pConfig, FTM_TRACE_LEVEL_LOG);
 	
     if (!bDebugMode)
 	{
         daemon(0, 0);
 	}
+
+	FTM_TRACE_setConfig(&pConfig->xTrace);
 
 	xRet = FTM_CATCHB_create(&pCatchB);
 	if(xRet != FTM_RET_OK)

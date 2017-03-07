@@ -8,9 +8,12 @@
 #include "ftm_msgq.h"
 #include "ftm_lock.h"
 #include "cjson/cJSON.h"
+#include "ftm_trace.h"
 
 typedef	struct	FTM_ANALYZER_CONFIG_STRUCT
 {
+	FTM_UINT16		pPortList[FTM_CATCHB_ANALYZER_MAX_PORT_COUNT];
+	FTM_UINT32		ulPortCount;
 	FTM_UINT32		ulIPCheckInterval;
 	struct
 	{
@@ -32,7 +35,8 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 
 FTM_RET	FTM_ANALYZER_CONFIG_show
 (
-	FTM_ANALYZER_CONFIG_PTR	pConfig
+	FTM_ANALYZER_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL	xLevel
 );
 /***********************************************************
  *
@@ -81,13 +85,27 @@ FTM_RET	FTM_ANALYZER_stop
 	FTM_ANALYZER_PTR pAnalyzer
 );
 
-FTM_RET	FTM_ANALYZER_CCTV_add
+FTM_RET	FTM_ANALYZER_getPortCount
+(
+	FTM_ANALYZER_PTR	pAnalyzer,
+	FTM_UINT32_PTR		pCount
+);
+
+FTM_RET	FTM_ANALYZER_getPortList
+(
+	FTM_ANALYZER_PTR	pAnalyzer,
+	FTM_UINT16_PTR		pPortList,
+	FTM_UINT32			ulMaxCount,
+	FTM_UINT32_PTR		pCount
+);
+
+FTM_RET	FTM_ANALYZER_CCTV_attach
 (
 	FTM_ANALYZER_PTR	pAnalyzer,
 	FTM_CHAR_PTR		pID
 );
 
-FTM_RET	FTM_ANALYZER_CCTV_delete
+FTM_RET	FTM_ANALYZER_CCTV_detach
 (
 	FTM_ANALYZER_PTR	pAnalyzer,
 	FTM_CHAR_PTR		pID

@@ -13,9 +13,9 @@ typedef	enum	FTM_CCTV_STAT_ENUM
 
 typedef	struct	FTM_CCTV_CONFIG_STRUCT
 {
-	FTM_INT			nIndex;
 	FTM_CHAR		pID[FTM_ID_LEN+1];
 	FTM_CHAR		pIP[FTM_IP_LEN+1];
+	FTM_CHAR		pSwitchID[FTM_ID_LEN+1];
 	FTM_CHAR		pComment[FTM_COMMENT_LEN+1];
 	FTM_CHAR		pTime[FTM_TIME_LEN+1];
 	FTM_CHAR		pHash[FTM_HASH_LEN+1];
@@ -29,6 +29,10 @@ typedef	struct	FTM_CCTV_STRUCT
 	FTM_UINT32		ulReferenceCount;
 	FTM_LOCK		xLock;
 	FTM_TIMER		xExpiredTimer;
+
+	FTM_UINT16		pPortList[16];
+	FTM_BOOL		pPortStat[16];
+	FTM_UINT32		ulPortCount;
 }	FTM_CCTV, _PTR_ FTM_CCTV_PTR;
 
 FTM_RET	FTM_CCTV_create
@@ -52,7 +56,7 @@ FTM_RET	FTM_CCTV_unlock
 	FTM_CCTV_PTR	pCCTV
 );
 
-FTM_CHAR_PTR	FTM_printCCTVStat
+FTM_CHAR_PTR	FTM_CCTV_STAT_print
 (
 	FTM_CCTV_STAT	xStat
 );

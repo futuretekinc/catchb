@@ -33,7 +33,8 @@ FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_load
 
 FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_show
 (
-	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig
+	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL			xLevel
 );
 
 /******************************************************************
@@ -57,7 +58,8 @@ FTM_RET	FTM_NOTIFIER_CONFIG_load
 
 FTM_RET	FTM_NOTIFIER_CONFIG_show
 (
-	FTM_NOTIFIER_CONFIG_PTR	pConfig
+	FTM_NOTIFIER_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL			xLevel
 );
 
 

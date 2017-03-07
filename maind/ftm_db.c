@@ -61,13 +61,14 @@ FTM_RET	FTM_DB_CONFIG_load
 
 FTM_RET	FTM_DB_CONFIG_show
 (
-	FTM_DB_CONFIG_PTR	pConfig
+	FTM_DB_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL		xLevel
 )
 {
 	ASSERT(pConfig != NULL);
 
-	LOG("[ Database Configuration ]");
-	LOG("%16s : %s", "File Name", pConfig->pFileName);
+	OUTPUT(xLevel, "[ Database Configuration ]");
+	OUTPUT(xLevel, "%16s : %s", "File Name", pConfig->pFileName);
 
 	return	FTM_RET_OK;
 }
@@ -145,7 +146,7 @@ FTM_RET	FTM_DB_open
 		}
 		else
 		{
-			TRACE("The database[%s] opened successfully.", pFileName);
+			INFO("The database[%s] opened successfully.", pFileName);
 		}
 	}
 
@@ -195,7 +196,7 @@ FTM_RET	FTM_DB_createTable
 		memset(pQuery, 0, sizeof(pQuery));
 
 		snprintf(pQuery, sizeof(pQuery) - 1, "CREATE TABLE %s (%s)", pTableName, pFields);
-		TRACE("Query : %s", pQuery);
+		INFO("Query : %s", pQuery);
 		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
 		{
 			xRet = FTM_RET_DB_EXEC_ERROR;
@@ -204,7 +205,7 @@ FTM_RET	FTM_DB_createTable
 		}
 	}
 		
-	TRACE("The tables[%s] created.", pTableName);
+	INFO("The tables[%s] created.", pTableName);
 	return	xRet;
 }
 
@@ -401,7 +402,7 @@ FTM_RET	FTM_DB_createCCTVTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pCCTVTableName, "_ID TEXT PRIMARY KEY, _IP TEXT, _COMMENT TEXT, TIME TEXT, HASH TEXT, STAT INT");
+	return FTM_DB_createTable(pDB, pDB->pCCTVTableName, "_ID TEXT PRIMARY KEY, _IP TEXT, _SWITCH_ID TEXT, _COMMENT TEXT, TIME TEXT, HASH TEXT, STAT INT");
 }
 
 FTM_RET	FTM_DB_isCCTVTableExist
@@ -427,6 +428,7 @@ FTM_RET	FTM_DB_addCCTV
 	FTM_DB_PTR	pDB,
 	FTM_CHAR_PTR	pID,
 	FTM_CHAR_PTR	pIP,
+	FTM_CHAR_PTR	pSwitchID,
 	FTM_CHAR_PTR	pComment,
 	FTM_CHAR_PTR	pTime
 )
@@ -438,8 +440,8 @@ FTM_RET	FTM_DB_addCCTV
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_ID, _IP, _COMMENT, TIME, HASH, STAT) VALUES('%s', '%s', '%s', '%s', '', 0);", 
-		pDB->pCCTVTableName, pID, pIP, (pComment != NULL)?pComment:"", pTime);
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_ID, _IP, _SWITCH_ID, _COMMENT, TIME, HASH, STAT) VALUES('%s', '%s', '%s', '%s', '%s', '', 0);", 
+		pDB->pCCTVTableName, pID, pIP, pSwitchID, (pComment != NULL)?pComment:"", pTime);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
@@ -449,7 +451,7 @@ FTM_RET	FTM_DB_addCCTV
 	}
 	else
 	{
-		TRACE("DB[%s] inserted(%s, %s, %s, %s, '')", pDB->pCCTVTableName, pID, pIP, (pComment != NULL)?pComment:"", pTime);
+		INFO("DB[%s] inserted(%s, %s, %s %s, %s, '')", pDB->pCCTVTableName, pID, pIP, pSwitchID, (pComment != NULL)?pComment:"", pTime);
 	}
 
 	return	xRet;
@@ -563,6 +565,10 @@ FTM_INT	FTM_DB_getCCTVListCB
 			else if (strcmp(ppColName[i], "_IP") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pIP, ppArgv[i]);
+			}    
+			else if (strcmp(ppColName[i], "_SWITCH_ID") == 0)
+			{    
+				strcpy(pParams->pElements[pParams->ulCount].pSwitchID, ppArgv[i]);
 			}    
 			else if (strcmp(ppColName[i], "_COMMENT") == 0)
 			{    
@@ -925,7 +931,7 @@ FTM_RET	FTM_DB_addLog
 
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (TIME, _ID, _IP, HASH, STATUS, LOG) VALUES('%s', '%s', '%s', '%s', '%s', '%s');", 
-		pDB->pLogTableName, pTime, pID, pIP, pHash, FTM_printCCTVStat(nStatus), pLog);
+		pDB->pLogTableName, pTime, pID, pIP, pHash, FTM_CCTV_STAT_print(nStatus), pLog);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
@@ -1101,7 +1107,7 @@ FTM_RET	FTM_DB_addSwitch
 	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_ID, _MODEL, _IP, _USERID, _PASSWD, _COMMENT) VALUES('%s', %d, '%s', '%s', '%s', '%s');", 
 		pDB->pSwitchTableName, pID, xModel, (pIP)?pIP:"", (pUser)?pUser:"", (pPasswd)?pPasswd:"", (pComment)?pComment:"");
 
-	TRACE("QUERY : %s", pQuery);
+	INFO("QUERY : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;

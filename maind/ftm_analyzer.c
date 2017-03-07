@@ -11,6 +11,7 @@
 #undef	__MODULE__
 #define	__MODULE__	"analyzer"
 
+
 FTM_BOOL	FTM_ANALYZER_seeker
 (
 	const FTM_VOID_PTR pElement, 
@@ -27,18 +28,6 @@ FTM_VOID_PTR	FTM_ANALYZER_threadMain
 	FTM_VOID_PTR	pParam
 );
 
-FTM_RET	FTM_ANALYZER_onAddCCTV
-(
-	FTM_ANALYZER_PTR		pAnalyzer,
-	FTM_MSG_ADD_CCTV_PTR	pMsg
-);
-
-FTM_RET	FTM_ANALYZER_onDeleteCCTV
-(
-	FTM_ANALYZER_PTR		pAnalyzer,
-	FTM_MSG_DELETE_CCTV_PTR	pMsg
-);
-
 /*****************************************************************
  *
  *****************************************************************/
@@ -49,11 +38,21 @@ FTM_RET	FTM_ANALYZER_CONFIG_setDefault
 {
 	ASSERT(pConfig != NULL);
 
-	
-	pConfig->xTest.bEnable 		= FTM_CATCHB_ANALYZER_DEFAULT_TEST_ENABLE;
-	pConfig->xTest.ulErrorRate 	= FTM_CATCHB_ANALYZER_DEFAULT_TEST_ERROR_RATE;
+
+	pConfig->ulPortCount = 0;
+	pConfig->pPortList[pConfig->ulPortCount++] = 80;
+	pConfig->pPortList[pConfig->ulPortCount++] = 135;
+	pConfig->pPortList[pConfig->ulPortCount++] = 139;
+	pConfig->pPortList[pConfig->ulPortCount++] = 443; 
+	pConfig->pPortList[pConfig->ulPortCount++] = 445; 
+	pConfig->pPortList[pConfig->ulPortCount++] = 554; 
+	pConfig->pPortList[pConfig->ulPortCount++] = 4520; 
+	pConfig->pPortList[pConfig->ulPortCount++] = 49152;
 
 	pConfig->ulIPCheckInterval 	= FTM_CATCHB_ANALYZER_DEFAULT_IP_CHECK_INTERVAL;
+
+	pConfig->xTest.bEnable 		= FTM_CATCHB_ANALYZER_DEFAULT_TEST_ENABLE;
+	pConfig->xTest.ulErrorRate 	= FTM_CATCHB_ANALYZER_DEFAULT_TEST_ERROR_RATE;
 
 	return	FTM_RET_OK;
 }
@@ -69,6 +68,27 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 
 	cJSON _PTR_ pSection;
 	cJSON _PTR_ pItem;
+
+	pSection = cJSON_GetObjectItem(pRoot, "port");
+	if (pSection != NULL)
+	{
+		if(pSection->type == cJSON_Array)
+		{
+			FTM_INT32	ulCount, i;
+
+			pConfig->ulPortCount = 0;
+
+			ulCount = cJSON_GetArraySize(pSection);
+			for(i = 0 ; i < ulCount && i < sizeof(pConfig->pPortList) / sizeof(pConfig->pPortList[0]) ; i++)
+			{
+				pItem = cJSON_GetArrayItem(pSection, i);
+				if (pItem != NULL)
+				{
+					pConfig->pPortList[pConfig->ulPortCount++] = pItem->valueint;		
+				}
+			}	
+		}
+	}
 
 	pItem = cJSON_GetObjectItem(pRoot, "interval");
 	if (pItem != NULL)
@@ -115,16 +135,26 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 
 FTM_RET	FTM_ANALYZER_CONFIG_show
 (
-	FTM_ANALYZER_CONFIG_PTR	pConfig
+	FTM_ANALYZER_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL	xLevel
 )
 {
 	ASSERT(pConfig != NULL);
+	FTM_CHAR	pBuffer[2048];
+	FTM_INT32	i, ulLen = 0;
 
-	LOG("");
-	LOG("[ Analyzer Configuration ]");
-	LOG("%16s : %d ms", "IP Check Interval", pConfig->ulIPCheckInterval);
-	LOG("%16s : %s", "Test Enabled", (pConfig->xTest.bEnable)?"yes":"no");
-	LOG("%16s : %d %", "Test Error Rate", pConfig->xTest.ulErrorRate);
+	memset(pBuffer, 0, sizeof(pBuffer));
+	for(i = 0 ; i < pConfig->ulPortCount ; i++)
+	{
+		ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "%5d ", pConfig->pPortList[i]);
+	}
+
+	OUTPUT(xLevel, "");
+	OUTPUT(xLevel, "[ Analyzer Configuration ]");
+	OUTPUT(xLevel, "%16s : %d ms", 	"Interval", pConfig->ulIPCheckInterval);
+	OUTPUT(xLevel, "%16s : %s", "Port", pBuffer);
+	OUTPUT(xLevel, "%16s : %s", 	"Test Enabled", (pConfig->xTest.bEnable)?"yes":"no");
+	OUTPUT(xLevel, "%16s : %d %", 	"Test Error Rate", pConfig->xTest.ulErrorRate);
 
 	return	FTM_RET_OK;
 }
@@ -283,14 +313,14 @@ FTM_RET	FTM_ANALYZER_start
 	if (pAnalyzer->xThread != 0)
 	{
 		xRet = FTM_RET_ALREADY_RUNNING;
-		TRACE("The %s is already running!", pAnalyzer->pName);	
+		INFO("The %s is already running!", pAnalyzer->pName);	
 		return	xRet;
 	}
 
 	if (pthread_create(&pAnalyzer->xThread, NULL, FTM_ANALYZER_threadMain, (FTM_VOID_PTR)pAnalyzer) < 0)
 	{
 		xRet = FTM_RET_THREAD_CREATION_FAILED;
-		TRACE("Failed to start %s!", pAnalyzer->pName);
+		INFO("Failed to start %s!", pAnalyzer->pName);
 	}
 
     return xRet;
@@ -323,7 +353,7 @@ FTM_VOID_PTR FTM_ANALYZER_threadMain
 	FTM_RET				xRet;
 	FTM_ANALYZER_PTR	pAnalyzer = (FTM_ANALYZER_PTR)pData;
 
-	TRACE("%s started.", pAnalyzer->pName);
+	INFO("%s started.", pAnalyzer->pName);
 
 	pAnalyzer->bStop = FTM_FALSE;
 
@@ -336,20 +366,14 @@ FTM_VOID_PTR FTM_ANALYZER_threadMain
 		{
 			switch(pRcvdMsg->xType)
 			{
-			case	FTM_MSG_TYPE_ADD_CCTV:
-					xRet = FTM_ANALYZER_onAddCCTV(pAnalyzer, (FTM_MSG_ADD_CCTV_PTR)pRcvdMsg);
-				break;
-
-			case	FTM_MSG_TYPE_DELETE_CCTV:
-					xRet = FTM_ANALYZER_onDeleteCCTV(pAnalyzer, (FTM_MSG_DELETE_CCTV_PTR)pRcvdMsg);
-				break;
-
 			default:
+				INFO("Unknown message[%s]", FTM_MESSAGE_getString(pRcvdMsg->xType));
 				break;
 			}
 				
 			FTM_MEM_free(pRcvdMsg);
 		}
+
 
 		xRet = FTM_ANALYZER_process(pAnalyzer);
 		if (xRet != FTM_RET_OK)
@@ -358,7 +382,7 @@ FTM_VOID_PTR FTM_ANALYZER_threadMain
 		}
 	}
 
-	TRACE("%s stopped.", pAnalyzer->pName);
+	INFO("%s stopped.", pAnalyzer->pName);
 
 	return	0;
 }
@@ -369,35 +393,39 @@ FTM_RET	FTM_ANALYZER_process
 	FTM_ANALYZER_PTR	pAnalyzer
 )
 {
+	ASSERT(pAnalyzer != NULL);
+
 	FTM_RET			xRet;
 	FTM_UINT32		ulCount = 0;
+	FTM_CHAR_PTR	pID;
+
+	FTM_LOCK_set(pAnalyzer->pLock);
 
 	xRet = FTM_LIST_count(pAnalyzer->pList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get cctv count from DB!\n");
-		return	xRet;	
+		goto finished;
 	}
 	else if (ulCount == 0)
 	{
-		return	FTM_RET_OK;
+		xRet = FTM_RET_OK;
+		goto finished;
 	}
-
-	FTM_CHAR_PTR	pID;
 
 	xRet = FTM_LIST_getAt(pAnalyzer->pList, 0, (FTM_VOID_PTR _PTR_)&pID);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get CCTV ID from scheduler!");
-		return	xRet;
+		goto finished;
 	}
 
 	FTM_CCTV_PTR	pCCTV = NULL;
-	xRet = FTM_CATCHB_CCTV_get(pAnalyzer->pCatchB, pID, &pCCTV);
+	xRet = FTM_CATCHB_getCCTV(pAnalyzer->pCatchB, pID, &pCCTV);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get CCTV[%s] from CatchB!", pID);
-		return	xRet;
+		goto finished;
 	}
 
 	FTM_CCTV_lock(pCCTV);
@@ -412,16 +440,16 @@ FTM_RET	FTM_ANALYZER_process
 		memset(pHashData, 0, sizeof(pHashData));
 		memset(pHashValue, 0, sizeof(pHashValue));
 
-		TRACE("CCTV[%s] analyzing!", pCCTV->xConfig.pID);
+		INFO("CCTV[%s] : Start status analysis!", pID);
 
 		FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);
 
 		if(ulReplyCount == 0)
 		{ 
-			TRACE("CCTV[%s] not responsed!", pCCTV->xConfig.pID);
+			INFO("CCTV[%s] : No response!", pCCTV->xConfig.pID);
 			if (pCCTV->xConfig.xStat != FTM_CCTV_STAT_UNREGISTERED)
 			{
-				FTM_CATCHB_CCTV_setStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_UNUSED);
+				FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_UNUSED);
 
 			}
 		}
@@ -435,18 +463,22 @@ FTM_RET	FTM_ANALYZER_process
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen , "[ip : %s, mac : %s]", pCCTV->xConfig.pIP, pMAC);
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, " [port :");
 
-			for(j =0 ;j < PORT_NUM ; j++)
+			pCCTV->ulPortCount = 0;
+			for(j =0 ;j < FTM_CATCHB_ANALYZER_MAX_PORT_COUNT ; j++)
 			{
 				FTM_BOOL	bOpened = FTM_FALSE;
 
-				FTM_portScan(pCCTV->xConfig.pIP, pPortList[j], &bOpened);
+				FTM_portScan(pCCTV->xConfig.pIP, pAnalyzer->xConfig.pPortList[j], &bOpened);
 				if (j != 0)
 				{
 					ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, ", ");
 				}
 
-				TRACE("Port %5d : %s", pPortList[j], (bOpened)?"open":"close"); 
-				ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, "%d - %s", pPortList[j], (bOpened)?"open":"close"); 
+				pCCTV->pPortList[pCCTV->ulPortCount] = pAnalyzer->xConfig.pPortList[j];
+				pCCTV->pPortStat[pCCTV->ulPortCount] = bOpened;
+				pCCTV->ulPortCount++;
+
+				ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, "%d - %s", pAnalyzer->xConfig.pPortList[j], (bOpened)?"open":"close"); 
 			}
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, "]");
 
@@ -454,7 +486,7 @@ FTM_RET	FTM_ANALYZER_process
 
 			if (strlen(pCCTV->xConfig.pHash) == 0)
 			{
-				FTM_CATCHB_CCTV_register(pAnalyzer->pCatchB, pCCTV->xConfig.pID, pHashValue);
+				FTM_CATCHB_registerCCTV(pAnalyzer->pCatchB, pCCTV->xConfig.pID, pHashValue);
 			}
 			else
 			{
@@ -462,7 +494,9 @@ FTM_RET	FTM_ANALYZER_process
 
 				if (pAnalyzer->xConfig.xTest.bEnable)
 				{
-					if (pAnalyzer->xConfig.xTest.ulErrorRate > (rand() % 100))
+					FTM_UINT32	ulErrorProbability = rand() % 100;
+					INFO("Error probability : %u", ulErrorProbability);
+					if (pAnalyzer->xConfig.xTest.ulErrorRate > ulErrorProbability)
 					{
 						bTestFailed = FTM_TRUE;	
 					}
@@ -470,19 +504,21 @@ FTM_RET	FTM_ANALYZER_process
 
 				if(!bTestFailed && !strncmp(pCCTV->xConfig.pHash, pHashValue, sizeof(pHashValue)))
 				{
-					FTM_CATCHB_CCTV_setStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_NORMAL);
+					FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_NORMAL);
 				}
 				else
 				{
-					TRACE("CCTV[%s] hash is abnormal.", pCCTV->xConfig.pID);
-					TRACE("Original Hash : %s", pCCTV->xConfig.pHash);
-					TRACE(" Current Hash : %s", pHashValue);
+					INFO("CCTV[%s] hash is abnormal.", pCCTV->xConfig.pID);
+					INFO("Original Hash : %s", pCCTV->xConfig.pHash);
+					INFO(" Current Hash : %s", pHashValue);
 					
-					FTM_CATCHB_CCTV_setStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_ABNORMAL);
+					FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_ABNORMAL);
 				}
 
 			}
 		}
+
+		INFO("CCTV[%s] : Status analysis completed!", pID);
 
 		FTM_TIMER_addMS(&pCCTV->xExpiredTimer, pAnalyzer->xConfig.ulIPCheckInterval);
 
@@ -493,11 +529,53 @@ FTM_RET	FTM_ANALYZER_process
 	FTM_CCTV_unlock(pCCTV);
 
 
+finished:
+
+	FTM_LOCK_reset(pAnalyzer->pLock);
+
+	return	xRet;
+}
+
+FTM_RET	FTM_ANALYZER_getPortCount
+(
+	FTM_ANALYZER_PTR	pAnalyzer,
+	FTM_UINT32_PTR		pCount
+)
+{
+	ASSERT(pAnalyzer != NULL);
+	ASSERT(pCount != NULL);
+
+	*pCount = pAnalyzer->xConfig.ulPortCount;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_ANALYZER_getPortList
+(
+	FTM_ANALYZER_PTR	pAnalyzer,
+	FTM_UINT16_PTR		pPortList,
+	FTM_UINT32			ulMaxCount,
+	FTM_UINT32_PTR		pCount
+)
+{
+	ASSERT(pAnalyzer != NULL);
+	ASSERT(pPortList != NULL);
+	ASSERT(pCount != NULL);
+
+	FTM_INT32	i;
+
+	for(i = 0 ; i < ulMaxCount && i < pAnalyzer->xConfig.ulPortCount ; i++)
+	{
+		pPortList[i] = pAnalyzer->xConfig.pPortList[i];	
+	}
+
+	*pCount = i;
+
 	return	FTM_RET_OK;
 }
 
 
-FTM_RET	FTM_ANALYZER_CCTV_add
+FTM_RET	FTM_ANALYZER_CCTV_attach
 (
 	FTM_ANALYZER_PTR	pAnalyzer,
 	FTM_CHAR_PTR		pID
@@ -506,69 +584,35 @@ FTM_RET	FTM_ANALYZER_CCTV_add
 	ASSERT(pAnalyzer != NULL);
 	ASSERT(pID != NULL);
 
-	FTM_RET	xRet = FTM_RET_OK;
-	FTM_MSG_ADD_CCTV_PTR pMsg;
-
-	TRACE("Request CCTV[%s] add.", pID);
-	pMsg = (FTM_MSG_ADD_CCTV_PTR)FTM_MEM_malloc(sizeof(FTM_MSG_ADD_CCTV));
-	if(pMsg == NULL)
-	{
-		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
-		ERROR(xRet, "Failed to create CCTV!\n");
-	}
-	else
-	{
-		pMsg->xHead.xType = FTM_MSG_TYPE_ADD_CCTV;	
-		pMsg->xHead.ulLen = sizeof(FTM_MSG_ADD_CCTV);
-		strncpy(pMsg->pID, pID, sizeof(pMsg->pID) - 1);
-
-		xRet = FTM_MSGQ_push(pAnalyzer->pMsgQ, pMsg);
-		if (xRet != FTM_RET_OK)
-		{
-			ERROR(xRet, "Failed to send message!\n");
-			FTM_MEM_free(pMsg);	
-		}
-	}
-	
-	return	xRet;
-}
-
-FTM_RET	FTM_ANALYZER_onAddCCTV
-(
-	FTM_ANALYZER_PTR		pAnalyzer,
-	FTM_MSG_ADD_CCTV_PTR	pMsg
-)
-{
-	ASSERT(pAnalyzer != NULL);
-	ASSERT(pMsg != NULL);
-
 	FTM_RET			xRet;
-	FTM_CHAR_PTR	pID = NULL;
-
-	TRACE("ADD CCTV : %s", pMsg->pID);
+	FTM_CHAR_PTR	pSavedID = NULL;
 
 	FTM_LOCK_set(pAnalyzer->pLock);
 
-	xRet = FTM_LIST_get(pAnalyzer->pList, pMsg->pID, (FTM_VOID_PTR _PTR_)&pID);
+	xRet = FTM_LIST_get(pAnalyzer->pList, pID, (FTM_VOID_PTR _PTR_)&pSavedID);
 	if (xRet == FTM_RET_OK)
 	{
 		ERROR(xRet, "Already exist!");	
 	}
 	else
 	{
-		pID = (FTM_CHAR_PTR)FTM_MEM_malloc(sizeof(FTM_ID));
-		if (pID == NULL)
+		pSavedID = (FTM_CHAR_PTR)FTM_MEM_malloc(sizeof(FTM_ID));
+		if (pSavedID == NULL)
 		{
 			ERROR(xRet, "Failed to create ID!");
 		}
 		else
 		{
-			strncpy(pID, pMsg->pID, sizeof(FTM_ID) - 1);
-			xRet = FTM_LIST_append(pAnalyzer->pList, pID);
+			strncpy(pSavedID, pID, sizeof(FTM_ID) - 1);
+			xRet = FTM_LIST_append(pAnalyzer->pList, pSavedID);
 			if (xRet != FTM_RET_OK)
 			{
-				FTM_MEM_free(pID);
-				ERROR(xRet, "Failed to append CCTV!");
+				FTM_MEM_free(pSavedID);
+				ERROR(xRet, "Failed to attach CCTV!");
+			}
+			else
+			{
+				INFO("CCTV[%s] has been attached to the analyzer for analysis.", pSavedID);
 			}
 		}
 	}
@@ -578,7 +622,7 @@ FTM_RET	FTM_ANALYZER_onAddCCTV
 	return	xRet;
 }
 
-FTM_RET	FTM_ANALYZER_CCTV_delete
+FTM_RET	FTM_ANALYZER_CCTV_detach
 (
 	FTM_ANALYZER_PTR	pAnalyzer,
 	FTM_CHAR_PTR		pID
@@ -587,61 +631,27 @@ FTM_RET	FTM_ANALYZER_CCTV_delete
 	ASSERT(pAnalyzer != NULL);
 	ASSERT(pID != NULL);
 
-	FTM_RET	xRet = FTM_RET_OK;
-	FTM_MSG_DELETE_CCTV_PTR pMsg;
-	
-	pMsg = (FTM_MSG_DELETE_CCTV_PTR)FTM_MEM_malloc(sizeof(FTM_MSG_DELETE_CCTV));
-	if(pMsg == NULL)
-	{
-		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
-		ERROR(xRet, "Failed to create message!\n");
-	}
-	else
-	{
-		pMsg->xHead.xType = FTM_MSG_TYPE_DELETE_CCTV;	
-		pMsg->xHead.ulLen = sizeof(FTM_MSG_DELETE_CCTV);
-		strncpy(pMsg->pID, pID, FTM_ID_LEN);
-
-		xRet = FTM_MSGQ_push(pAnalyzer->pMsgQ, pMsg);
-		if (xRet != FTM_RET_OK)
-		{
-			ERROR(xRet, "Failed to send message!\n");
-			FTM_MEM_free(pMsg);	
-		}
-	}
-	
-	return	xRet;
-}
-
-FTM_RET	FTM_ANALYZER_onDeleteCCTV
-(
-	FTM_ANALYZER_PTR	pAnalyzer,
-	FTM_MSG_DELETE_CCTV_PTR	pMsg
-)
-{
-	ASSERT(pAnalyzer != NULL);
-	ASSERT(pMsg != NULL);
-
 	FTM_RET			xRet = FTM_RET_OK;
-	FTM_CHAR_PTR	pID = NULL;
+	FTM_CHAR_PTR	pSavedID = NULL;
 
 	FTM_LOCK_set(pAnalyzer->pLock);
 
-	xRet = FTM_LIST_get(pAnalyzer->pList, pMsg->pID, (FTM_VOID_PTR _PTR_)&pID);
+	xRet = FTM_LIST_get(pAnalyzer->pList, pID, (FTM_VOID_PTR _PTR_)&pSavedID);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to get CCTV[%s]!", pMsg->pID);
+		ERROR(xRet, "Failed to get CCTV[%s]!", pID);
 	}
 	else
 	{
-		xRet = FTM_LIST_remove(pAnalyzer->pList, pID);
+		xRet = FTM_LIST_remove(pAnalyzer->pList, pSavedID);
 		if (xRet != FTM_RET_OK)
 		{
-			ERROR(xRet, "Failed to remove CCTV[%s]!", pMsg->pID);
+			ERROR(xRet, "Failed to remove CCTV[%s]!", pID);
 		}
 		else
 		{
-			FTM_MEM_free(pID);
+			INFO("CCTV[%s] has been removed from the analyzer.", pSavedID);
+			FTM_MEM_free(pSavedID);
 		}
 	}
 
