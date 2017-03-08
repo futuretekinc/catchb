@@ -320,7 +320,7 @@ FTM_RET	FTM_ANALYZER_start
 	if (pthread_create(&pAnalyzer->xThread, NULL, FTM_ANALYZER_threadMain, (FTM_VOID_PTR)pAnalyzer) < 0)
 	{
 		xRet = FTM_RET_THREAD_CREATION_FAILED;
-		INFO("Failed to start %s!", pAnalyzer->pName);
+		ERROR(xRet, "Failed to start %s!", pAnalyzer->pName);
 	}
 
     return xRet;
@@ -436,6 +436,8 @@ FTM_RET	FTM_ANALYZER_process
 		FTM_UINT32		ulHashDataLen = 0;
 		FTM_CHAR		pHashValue[64];
 		FTM_UINT32		ulReplyCount = 0;
+		FTM_UINT32		ulTime;
+
 
 		memset(pHashData, 0, sizeof(pHashData));
 		memset(pHashValue, 0, sizeof(pHashValue));
@@ -444,13 +446,15 @@ FTM_RET	FTM_ANALYZER_process
 
 		FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);
 
+		FTM_TIME_getCurrentSecs(&ulTime);
+
+
 		if(ulReplyCount == 0)
 		{ 
 			INFO("CCTV[%s] : No response!", pCCTV->xConfig.pID);
 			if (pCCTV->xConfig.xStat != FTM_CCTV_STAT_UNREGISTERED)
 			{
-				FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_UNUSED);
-
+				FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_UNUSED, ulTime);
 			}
 		}
 		else
@@ -486,6 +490,7 @@ FTM_RET	FTM_ANALYZER_process
 
 			if (strlen(pCCTV->xConfig.pHash) == 0)
 			{
+				INFO("CCTV[%s] : Hash has been created.", pCCTV->xConfig.pID);
 				FTM_CATCHB_registerCCTV(pAnalyzer->pCatchB, pCCTV->xConfig.pID, pHashValue);
 			}
 			else
@@ -504,15 +509,16 @@ FTM_RET	FTM_ANALYZER_process
 
 				if(!bTestFailed && !strncmp(pCCTV->xConfig.pHash, pHashValue, sizeof(pHashValue)))
 				{
-					FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_NORMAL);
+					INFO("CCTV[%s] : Hash is normal.", pCCTV->xConfig.pID);
+					FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_NORMAL, ulTime);
 				}
 				else
 				{
-					INFO("CCTV[%s] hash is abnormal.", pCCTV->xConfig.pID);
+					INFO("CCTV[%s] : Hash is abnormal.", pCCTV->xConfig.pID);
 					INFO("Original Hash : %s", pCCTV->xConfig.pHash);
 					INFO(" Current Hash : %s", pHashValue);
 					
-					FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_ABNORMAL);
+					FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_ABNORMAL, ulTime);
 				}
 
 			}
@@ -612,7 +618,7 @@ FTM_RET	FTM_ANALYZER_CCTV_attach
 			}
 			else
 			{
-				INFO("CCTV[%s] has been attached to the analyzer for analysis.", pSavedID);
+				INFO("CCTV[%s] : Attached to the analyzer for analysis.", pSavedID);
 			}
 		}
 	}
@@ -650,7 +656,7 @@ FTM_RET	FTM_ANALYZER_CCTV_detach
 		}
 		else
 		{
-			INFO("CCTV[%s] has been removed from the analyzer.", pSavedID);
+			INFO("CCTV[%s] : Removed from the analyzer.", pSavedID);
 			FTM_MEM_free(pSavedID);
 		}
 	}

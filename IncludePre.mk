@@ -12,11 +12,13 @@ CFLAGS:= -fPIC -c -g -Wall \
 				-I.\
 				-I$(TOPDIR)/include\
 				-I$(TOPDIR)/lib\
+				-I$(TOPDIR)/libtelnet\
 				-I$(TOPDIR)/maind
 
 LDFLAGS:= -Wl,--no-as-needed\
 				-L.\
-				-L$(TOPDIR)/lib
+				-L$(TOPDIR)/lib\
+				-L$(TOPDIR)/libtelnet
 
 CC=gcc
 #CC=armv5-linux-gcc

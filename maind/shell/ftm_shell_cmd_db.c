@@ -76,7 +76,11 @@ FTM_RET	FTM_SHELL_CMD_db
 		{
 			if ((strcasecmp(pArgv[2], "add") == 0) && (nArgc == 6))
 			{
-				xRet = FTM_DB_addCCTV(pCatchB->pDB, pArgv[3], pArgv[4], pArgv[5], "", FTM_TIME_printfCurrent(NULL));
+				FTM_UINT32	ulTime;
+
+				FTM_TIME_getCurrentSecs(&ulTime);
+
+				xRet = FTM_DB_addCCTV(pCatchB->pDB, pArgv[3], pArgv[4], pArgv[5], "", ulTime);
 				if (xRet != FTM_RET_OK)
 				{
 					printf("Failed to insert cctv[%s] to DB!\n", pArgv[3]);

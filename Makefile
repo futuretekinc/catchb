@@ -1,5 +1,5 @@
 TOPDIR=$(shell pwd)
-SUBDIR=lib libssh maind
+SUBDIR=lib libssh libtelnet maind
 
 export TOPDIR
 

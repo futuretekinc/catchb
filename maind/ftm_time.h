@@ -24,6 +24,11 @@ FTM_RET	FTM_TIME_getCurrent
 	FTM_TIME_PTR pTime
 );
 
+FTM_RET	FTM_TIME_getCurrentSecs
+(
+	FTM_UINT32_PTR	pSecs
+);
+
 FTM_RET	FTM_TIME_set
 (
 	FTM_TIME_PTR 	pTime, 

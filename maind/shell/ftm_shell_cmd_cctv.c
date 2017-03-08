@@ -158,7 +158,7 @@ FTM_RET	FTM_SHELL_CMD_showCCTVList
 
 	for(i = 0; i < ulCount ; i++)
 	{
-		printf("%4d : %16s %24s %16s %16s %24s ", i+1, pCCTVes[i].xConfig.pID, pCCTVes[i].xConfig.pIP, FTM_CCTV_STAT_print(pCCTVes[i].xConfig.xStat), pCCTVes[i].xConfig.pSwitchID, pCCTVes[i].xConfig.pTime);
+		printf("%4d : %16s %24s %16s %16s %24s ", i+1, pCCTVes[i].xConfig.pID, pCCTVes[i].xConfig.pIP, FTM_CCTV_STAT_print(pCCTVes[i].xConfig.xStat), pCCTVes[i].xConfig.pSwitchID, FTM_TIME_printf2(pCCTVes[i].xConfig.ulTime, NULL));
 		for(j = 0 ; j < pCCTVes[i].ulPortCount ; j++)
 		{
 			printf(" %8s", pCCTVes[i].pPortStat[j]?"open":"closed");

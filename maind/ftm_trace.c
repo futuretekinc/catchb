@@ -581,10 +581,10 @@ FTM_VOID	FTM_TRACE_SystemError
 FTM_VOID	FTM_TRACE_Out
 (
 		  FTM_TRACE_LEVEL	xLevel,
+		  FTM_BOOL		bEnable,
 	const char *		pFunctionName,
 		  FTM_UINT32	ulLine,
 	const FTM_CHAR_PTR	pModuleName,
-	const FTM_CHAR_PTR 	pTitle,
 	const FTM_CHAR_PTR 	pFormat,
 	...
 )
@@ -596,6 +596,11 @@ FTM_VOID	FTM_TRACE_Out
 	FTM_CHAR	pBuffer[2048];	
 	FTM_UINT32	ulLen = 0;
 	FTM_TRACE_TYPE_CONFIG_PTR	pConfig;
+
+	if (!bEnable)
+	{
+		return;
+	}
 
 	switch(xLevel)
 	{

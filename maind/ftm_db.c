@@ -402,7 +402,7 @@ FTM_RET	FTM_DB_createCCTVTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pCCTVTableName, "_ID TEXT PRIMARY KEY, _IP TEXT, _SWITCH_ID TEXT, _COMMENT TEXT, TIME TEXT, HASH TEXT, STAT INT");
+	return FTM_DB_createTable(pDB, pDB->pCCTVTableName, "_ID TEXT PRIMARY KEY, _IP TEXT, _SWITCH_ID TEXT, _COMMENT TEXT, _TIME INT, HASH TEXT, STAT INT");
 }
 
 FTM_RET	FTM_DB_isCCTVTableExist
@@ -430,7 +430,7 @@ FTM_RET	FTM_DB_addCCTV
 	FTM_CHAR_PTR	pIP,
 	FTM_CHAR_PTR	pSwitchID,
 	FTM_CHAR_PTR	pComment,
-	FTM_CHAR_PTR	pTime
+	FTM_UINT32		ulTime
 )
 {
 	ASSERT(pDB != NULL);
@@ -440,8 +440,8 @@ FTM_RET	FTM_DB_addCCTV
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_ID, _IP, _SWITCH_ID, _COMMENT, TIME, HASH, STAT) VALUES('%s', '%s', '%s', '%s', '%s', '', 0);", 
-		pDB->pCCTVTableName, pID, pIP, pSwitchID, (pComment != NULL)?pComment:"", pTime);
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_ID, _IP, _SWITCH_ID, _COMMENT, _TIME, HASH, STAT) VALUES('%s', '%s', '%s', '%s', %d, '', 0);", 
+		pDB->pCCTVTableName, pID, pIP, pSwitchID, (pComment != NULL)?pComment:"", ulTime);
 	
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
@@ -451,7 +451,7 @@ FTM_RET	FTM_DB_addCCTV
 	}
 	else
 	{
-		INFO("DB[%s] inserted(%s, %s, %s %s, %s, '')", pDB->pCCTVTableName, pID, pIP, pSwitchID, (pComment != NULL)?pComment:"", pTime);
+		INFO("DB[%s] inserted(%s, %s, %s %s, %d, '')", pDB->pCCTVTableName, pID, pIP, pSwitchID, (pComment != NULL)?pComment:"", ulTime);
 	}
 
 	return	xRet;
@@ -574,9 +574,9 @@ FTM_INT	FTM_DB_getCCTVListCB
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pComment, ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "TIME") == 0)
+			else if (strcmp(ppColName[i], "_TIME") == 0)
 			{    
-				strcpy(pParams->pElements[pParams->ulCount].pTime, ppArgv[i]);
+				pParams->pElements[pParams->ulCount].ulTime = strtoul(ppArgv[i], 0, 10);
 			}    
 			else if (strcmp(ppColName[i], "HASH") == 0)
 			{    
@@ -881,7 +881,7 @@ FTM_RET	FTM_DB_createLogTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pLogTableName, "_TIME TEXT, _TYPE INT, _DATA BLOB");
+	return FTM_DB_createTable(pDB, pDB->pLogTableName, "_TYPE INT, _TIME TEXT, _ID TEXT, _IP TEXT, _STAT INT, _HASH TEXT");
 }
 
 FTM_RET	FTM_DB_isLogTableExist
@@ -915,40 +915,29 @@ FTM_RET	FTM_DB_getLogCount
 FTM_RET	FTM_DB_addLog
 (
 	FTM_DB_PTR		pDB,
-	FTM_LOG_PTR		pLog
+	FTM_LOG_TYPE	xType,
+	FTM_UINT32		ulTime,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xStat,
+	FTM_CHAR_PTR	pHash
 )
 {
 	ASSERT(pDB != NULL);
-	ASSERT(pLog != NULL);
-
-	FTM_RET		xRet = FTM_RET_OK;
-	FTM_INT		nRet;
+	ASSERT(pID != NULL);
+	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
-	sqlite3_stmt _PTR_ pStmt;
-
+	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_TIME, _TYPE, _DATA) VALUES(?, ?, ?);", pDB->pLogTableName);
-
-	do 
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_TYPE, _TIME, _ID, _IP, _STAT, _HASH) VALUES(%d, %d, '%s', '%s', %d, '%s');", 
+		pDB->pLogTableName, xType, ulTime, pID, pIP, xStat, pHash);
+	
+	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
-		nRet = sqlite3_prepare(pDB->pSQLite3, pQuery, -1, &pStmt, 0);
-		if( nRet != SQLITE_OK )
-		{
-			xRet = FTM_RET_ERROR;
-			return xRet;
-		}
-
-		sqlite3_bind_text(pStmt, 1, pLog->pTime, -1, SQLITE_STATIC);
-		sqlite3_bind_int(pStmt, 2, pLog->xType);
-		sqlite3_bind_blob(pStmt, 3, &pLog->xParams, sizeof(pLog->xParams), SQLITE_STATIC);
-
-		nRet = sqlite3_step(pStmt);
-		ASSERT( nRet != SQLITE_ROW );
-
-		nRet = sqlite3_finalize(pStmt);
-	} 
-	while( nRet == SQLITE_SCHEMA );
+		xRet = FTM_RET_ERROR;
+		sqlite3_free(pErrorMsg);
+	}
 
 	return	xRet;
 }
@@ -1001,17 +990,21 @@ FTM_INT	FTM_DB_getLogListCB
 
 		for(i = 0 ; i < nArgc ; i++) 
 		{    
-			if (strcmp(ppColName[i], "_TIME") == 0)
+			if (strcmp(ppColName[i], "_ID") == 0)
 			{    
-				strcpy(pParams->pElements[pParams->ulCount].pTime, ppArgv[i]);
+				strcpy(pParams->pElements[pParams->ulCount].pID, ppArgv[i]);
+			}    
+			else if (strcmp(ppColName[i], "_IP") == 0)
+			{    
+				strcpy(pParams->pElements[pParams->ulCount].pIP, ppArgv[i]);
 			}    
 			else if (strcmp(ppColName[i], "_TYPE") == 0)
 			{    
 				pParams->pElements[pParams->ulCount].xType = atoi(ppArgv[i]);
 			}    
-			else if (strcmp(ppColName[i], "_DATA") == 0)
+			else if (strcmp(ppColName[i], "_TIME") == 0)
 			{    
-				memcpy(&pParams->pElements[pParams->ulCount].xParams, ppArgv[i], sizeof(FTM_LOG_PARAMS));
+				pParams->pElements[pParams->ulCount].ulTime = strtoul(ppArgv[i], 0, 10);
 			}    
 		}    
 

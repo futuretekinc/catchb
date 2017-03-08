@@ -1,10 +1,13 @@
+#include <ctype.h>
 #include <string.h>
+#include <unistd.h>
 #include "ftm_types.h"
 #include "ftm_trace.h"
 #include "ftm_catchb.h"
 #include "ftm_shell.h"
 #include "ftm_db.h"
 #include "ftm_mem.h"
+#include "ftm_telnet.h"
 
 FTM_RET	FTM_SHELL_CMD_showSwitchList
 (
@@ -36,6 +39,7 @@ FTM_RET	FTM_SHELL_CMD_switch
 	case	1:
 		{
 			xRet = FTM_SHELL_CMD_showSwitchList(pCatchB);
+
 		}
 		break;
 
@@ -65,6 +69,30 @@ FTM_RET	FTM_SHELL_CMD_switch
 					xRet = FTM_SHELL_CMD_showSwitchACList(pSwitch);
 				}
 			
+			}
+		}
+		break;
+
+	case	5:
+		{
+			if (strcasecmp(pArgv[1], "ac") == 0)
+			{
+				FTM_SWITCH_PTR	pSwitch = NULL;
+				xRet = FTM_CATCHB_getSwitch(pCatchB, pArgv[2], &pSwitch);
+				if (xRet != FTM_RET_OK)
+				{
+					printf("Failed to get switch[%s]\n", pArgv[2]);	
+					break;
+				}
+
+				if (strcasecmp(pArgv[4], "allow") == 0)
+				{
+					FTM_SWITCH_NST_accessControl(pSwitch, pArgv[3], FTM_TRUE);
+				}
+				else if (strcasecmp(pArgv[4], "block") == 0)
+				{
+					FTM_SWITCH_NST_accessControl(pSwitch, pArgv[3], FTM_FALSE);
+				}
 			}
 		}
 		break;

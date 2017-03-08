@@ -18,6 +18,22 @@ FTM_RET	FTM_TIME_getCurrent
 	return	FTM_RET_OK;
 }
 
+FTM_RET	FTM_TIME_getCurrentSecs
+(
+	FTM_UINT32_PTR	pSecs
+)
+{
+	ASSERT(pSecs != NULL);
+
+	FTM_TIME	xTime;
+
+	FTM_TIME_getCurrent(&xTime);
+
+	*pSecs = xTime.xTimeval.tv_sec;
+
+	return	FTM_RET_OK;
+}
+
 FTM_BOOL	FTM_TIME_isZero
 (
 	FTM_TIME_PTR 	pTime

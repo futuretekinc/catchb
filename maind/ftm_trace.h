@@ -72,23 +72,24 @@ FTM_VOID	FTM_TRACE_SystemError
 FTM_VOID	FTM_TRACE_Out
 (
 		  FTM_TRACE_LEVEL	xLevel,
+		  FTM_BOOL			bEnable,
 	const FTM_CHAR _PTR_ 	pFunctionName,
 		  FTM_UINT32		ulLine,
 	const FTM_CHAR_PTR		pModuleName,
-	const FTM_CHAR_PTR 		pTitle,
 	const FTM_CHAR_PTR 		pFormat,
 	...
 );
 
 #define	__MODULE__				NULL
 
-#define	OUTPUT(level, format, ...)	FTM_TRACE_Out(level, 	__func__, __LINE__, __MODULE__, "", format, ## __VA_ARGS__)
-#define	LOG(format, ...)			FTM_TRACE_Out(FTM_TRACE_LEVEL_LOG, 	__func__, __LINE__, __MODULE__, "", format, ## __VA_ARGS__)
-#define	INFO(format, ...)			FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, __func__, __LINE__, __MODULE__, "", format, ## __VA_ARGS__)
-#define	INFO_ENTRY()				FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, __func__, __LINE__, __MODULE__, "", "ENTRY")
-#define	INFO_EXIT()					FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, __func__, __LINE__, __MODULE__, "", "EXIT")
-#define	WARN(errno, format, ...)	FTM_TRACE_Out(FTM_TRACE_LEVEL_WARN,__func__, __LINE__, __MODULE__,  "", format, ## __VA_ARGS__)
-#define	ERROR(errno, format, ...)	FTM_TRACE_Out(FTM_TRACE_LEVEL_ERROR,__func__, __LINE__, __MODULE__, "", format, ## __VA_ARGS__)
+#define	OUTPUT(level, format, ...)	FTM_TRACE_Out(level, 				FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
+#define	LOG(format, ...)			FTM_TRACE_Out(FTM_TRACE_LEVEL_LOG, 	FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
+#define	INFO(format, ...)			FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
+#define	INFO2(enable, format, ...)	FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, enable,   __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
+#define	INFO_ENTRY()				FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, FTM_TRUE, __func__, __LINE__, __MODULE__, "ENTRY")
+#define	INFO_EXIT()					FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, FTM_TRUE, __func__, __LINE__, __MODULE__, "EXIT")
+#define	WARN(errno, format, ...)	FTM_TRACE_Out(FTM_TRACE_LEVEL_WARN,	FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
+#define	ERROR(errno, format, ...)	FTM_TRACE_Out(FTM_TRACE_LEVEL_ERROR,FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
 
 #define	ASSERT(x)					{ if (!(x)) { printf("ASSERTED[%s:%d] - %s\n", __func__, __LINE__, #x);}; }
 #endif

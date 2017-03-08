@@ -145,7 +145,7 @@ FTM_RET	FTM_CATCHB_CONFIG_setDefault
 {
 	ASSERT(pConfig != NULL);
 
-	sprintf(pConfig->xDB.pFileName, "./catchb.db");
+	sprintf(pConfig->xDB.pFileName, FTM_CATCHB_DB_DEFAULT_FILE_NAME);
 	pConfig->xCCTV.ulUpdateInterval = 10000;
 
 	return	FTM_RET_OK;
@@ -831,7 +831,7 @@ FTM_VOID_PTR	FTM_CATCHB_process
 		xRet = 	FTM_MSGQ_timedPop(pCatchB->pMsgQ, 1000, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
 		if(xRet == FTM_RET_OK)
 		{
-			INFO("Message : %s", FTM_MESSAGE_getString(pRcvdMsg->xType));
+			//INFO("Message : %s", FTM_MESSAGE_getString(pRcvdMsg->xType));
 			switch(pRcvdMsg->xType)
 			{
 			case	FTM_MSG_TYPE_CREATE_CCTV:
@@ -984,7 +984,7 @@ FTM_RET	FTM_CATCHB_onCreateCCTV
 		goto finished;
 	}
 
-	xRet = FTM_DB_addCCTV(pCatchB->pDB, pMsg->xConfig.pID, pMsg->xConfig.pIP, pMsg->xConfig.pSwitchID, pMsg->xConfig.pComment, pMsg->xConfig.pTime);
+	xRet = FTM_DB_addCCTV(pCatchB->pDB, pMsg->xConfig.pID, pMsg->xConfig.pIP, pMsg->xConfig.pSwitchID, pMsg->xConfig.pComment, pMsg->xConfig.ulTime);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to insert cctv[%s] to DB!\n", pMsg->xConfig.pID);
@@ -1473,7 +1473,8 @@ FTM_RET		FTM_CATCHB_setCCTVStat
 (	
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_CHAR_PTR	pID,
-	FTM_CCTV_STAT	xStat
+	FTM_CCTV_STAT	xStat,
+	FTM_UINT32		ulTime
 )
 {
 	ASSERT(pCatchB != NULL);
@@ -1485,6 +1486,7 @@ FTM_RET		FTM_CATCHB_setCCTVStat
 	pMsg->xHead.ulLen = sizeof(FTM_MSG_CCTV_SET_STAT);
 	strncpy(pMsg->pID, pID, sizeof(pMsg->pID) - 1);
 	pMsg->xStat = xStat;
+	pMsg->ulTime= ulTime;
 
 	xRet = FTM_MSGQ_push(pCatchB->pMsgQ, pMsg);
 	if (xRet != FTM_RET_OK)
@@ -1507,8 +1509,9 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CCTV_PTR	pCCTV;
+	FTM_LOG_TYPE	xLogType;
 
-	INFO("CCTV[%s] stat is %s", pMsg->pID, FTM_CCTV_STAT_print(pMsg->xStat));
+	INFO("CCTV[%s] : Stat is %s", pMsg->pID, FTM_CCTV_STAT_print(pMsg->xStat));
 
 	xRet = FTM_LIST_get(pCatchB->pCCTVList, pMsg->pID, (FTM_VOID_PTR _PTR_)&pCCTV);
 	if (xRet != FTM_RET_OK)
@@ -1517,60 +1520,72 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 	}
 	else
 	{
-		if (pMsg->xStat == FTM_CCTV_STAT_NORMAL)
+		switch(pMsg->xStat)
 		{
-			if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
+		case	FTM_CCTV_STAT_NORMAL:
 			{
-				FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_FALSE);
-				if (pCatchB->pNotifier != NULL)
+				if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
 				{
-					xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, pMsg->pID);
-					if (xRet != FTM_RET_OK)
+					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
+					if (pCatchB->pNotifier != NULL)
 					{
-						ERROR(xRet, "Failed to notify!");	
+						xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, pMsg->pID);
+						if (xRet != FTM_RET_OK)
+						{
+							ERROR(xRet, "Failed to notify!");	
+						}
 					}
 				}
+
+				xLogType = FTM_LOG_TYPE_NORMAL;
 			}
-		}
-		else if (pMsg->xStat == FTM_CCTV_STAT_ABNORMAL)
-		{
-			if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
+			break;
+
+		case	FTM_CCTV_STAT_ABNORMAL:
 			{
-				if (pCatchB->pDetector != NULL)
+				if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
+				{
+					if (pCatchB->pDetector != NULL)
+					{
+						FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_FALSE);
+					}
+				}
+
+				xLogType = FTM_LOG_TYPE_ERROR;
+			}
+			break;
+
+		case	FTM_CCTV_STAT_UNREGISTERED:
+		case	FTM_CCTV_STAT_UNUSED:
+			{
+				if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
 				{
 					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
 				}
-			}
-		}
-		else 
-		{
-			if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
-			{
-				FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
-			}
-			else if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
-			{
-				FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_FALSE);
-				if (pCatchB->pNotifier != NULL)
+				else if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
 				{
-					xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, pMsg->pID);
-					if (xRet != FTM_RET_OK)
+					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_FALSE);
+					if (pCatchB->pNotifier != NULL)
 					{
-						ERROR(xRet, "Failed to notify!");	
+						xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, pMsg->pID);
+						if (xRet != FTM_RET_OK)
+						{
+							ERROR(xRet, "Failed to notify!");	
+						}
 					}
 				}
+				xLogType = FTM_LOG_TYPE_ERROR;
 			}
+			break;
 		}
 
 		pCCTV->xConfig.xStat = pMsg->xStat;
 
-#if 0
-		xRet = FTM_DB_addLog(pCatchB->pDB, pCCTV->xConfig.pID, pCCTV->xConfig.pIP, pCCTV->xConfig.pHash, "", "", pCCTV->xConfig.xStat);
+		xRet = FTM_DB_addLog(pCatchB->pDB, xLogType, pMsg->ulTime, pCCTV->xConfig.pID, pCCTV->xConfig.pIP, pCCTV->xConfig.xStat, pCCTV->xConfig.pHash);
 		if (xRet != FTM_RET_OK)
 		{
 			ERROR(xRet, "Failed to set log");	
 		}
-#endif
 	}
 
 	return	xRet;
@@ -1589,7 +1604,7 @@ FTM_RET	FTM_CATCHB_registerCCTV
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_MSG_CCTV_REGISTER_PTR	pMsg;
 
-	INFO("The CCTV[%s] register!", pID);
+	INFO("CCTV[%s] : register!", pID);
 	pMsg = (FTM_MSG_CCTV_REGISTER_PTR)FTM_MEM_malloc(sizeof(FTM_MSG_CCTV_REGISTER));
 	if (pMsg == NULL)
 	{
@@ -2252,50 +2267,3 @@ FTM_BOOL	FTM_CATCHB_ALARM_seeker
 	return	(strcmp(pAlarm->pName, pName) == 0);
 }
 
-////////////////////////////////////////////////////////////////////////
-
-FTM_RET	FTM_CATCHB_addLog
-(
-	FTM_CATCHB_PTR	pCatchB,
-	FTM_LOG_PTR		pLog
-)
-{
-	ASSERT(pCatchB != NULL);
-	ASSERT(pLog != NULL);
-
-	return	FTM_DB_addLog(pCatchB->pDB, pLog);
-}
-
-FTM_RET	FTM_CATCHB_delLog
-(
-	FTM_CATCHB_PTR	pCatchB,
-	FTM_UINT32		ulIndex,
-	FTM_UINT32		ulCount
-);
-
-FTM_RET	FTM_CATCHB_getLogCount
-(
-	FTM_CATCHB_PTR	pCatchB,
-	FTM_UINT32_PTR	pCount
-);
-
-FTM_RET	FTM_CATCHB_LOG_addCCTV
-(
-	FTM_CATCHB_PTR	pCatchB,
-	FTM_CHAR_PTR	pID,
-	FTM_CHAR_PTR	pIP
-)
-{	
-	ASSERT(pCatchB != NULL);
-	ASSERT(pID != NULL);
-	ASSERT(pIP != NULL);
-
-	FTM_LOG	xLog;
-
-	xLog.xType = FTM_LOG_TYPE_ADD_CCTV;
-	strcpy(xLog.pTime, FTM_TIME_printfCurrent(NULL));
-	strcpy(xLog.xParams.xAddCCTV.pID, pID);
-	strcpy(xLog.xParams.xAddCCTV.pIP, pIP);
-
-	return	FTM_DB_addLog(pCatchB->pDB, &xLog);
-}

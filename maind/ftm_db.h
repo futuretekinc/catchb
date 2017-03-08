@@ -100,7 +100,7 @@ FTM_RET	FTM_DB_addCCTV
 	FTM_CHAR_PTR	pIP,
 	FTM_CHAR_PTR	pSwitchID,
 	FTM_CHAR_PTR	pComment,
-	FTM_CHAR_PTR	pTime
+	FTM_UINT32		ulTime
 );
 
 FTM_RET	FTM_DB_updateCCTV
@@ -203,7 +203,12 @@ FTM_RET	FTM_DB_getLogCount
 FTM_RET	FTM_DB_addLog
 (
 	FTM_DB_PTR		pDB,
-	FTM_LOG_PTR		pLog
+	FTM_LOG_TYPE	xType,
+	FTM_UINT32		ulTime,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xStat,
+	FTM_CHAR_PTR	pSign
 );
 
 FTM_RET	FTM_DB_deleteLog

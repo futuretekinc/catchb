@@ -56,6 +56,7 @@
 #define	FTM_RET_SEND_MAIL_ERROR					122
 #define	FTM_RET_BUFFER_TOO_SMALL				123	
 #define	FTM_RET_SMTPC_ERROR						124
+#define	FTM_RET_SOCKET_CLOSED					125
 
 #endif
 
