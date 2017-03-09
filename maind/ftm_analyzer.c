@@ -504,6 +504,7 @@ FTM_RET	FTM_ANALYZER_process
 					if (pAnalyzer->xConfig.xTest.ulErrorRate > ulErrorProbability)
 					{
 						bTestFailed = FTM_TRUE;	
+						pAnalyzer->xConfig.xTest.ulErrorRate = 100 - pAnalyzer->xConfig.xTest.ulErrorRate;
 					}
 				}
 

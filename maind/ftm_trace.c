@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <liblogs.h>
@@ -18,9 +17,29 @@
 #include "ftm_trace.h"
 #include "ftm_time.h"
 
+extern	
+FTM_CHAR_PTR	program_invocation_short_name;
+
+static
+FTM_RET	FTM_TRACE_getFileSize
+(
+	FTM_CHAR_PTR	pFileName,
+	FTM_UINT32_PTR	pSize
+);
+
+static
+FTM_RET	FTM_TRACE_writeToFile
+(
+	FTM_CHAR_PTR	pFileName,
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen
+);
+
 static const 
 FTM_TRACE_CONFIG	xDefaultConfig =
 {
+	.pPath = "/var/log",
+	.ulFileSize = FTM_CATCHB_TRACE_LOG_SIZE,
 	.xConsole =
 	{
 		.bEnable = FTM_TRUE,
@@ -54,7 +73,7 @@ FTM_TRACE_CONFIG	xDefaultConfig =
 			.bDynamic	= FTM_FALSE,
 			.ulSize 	= FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName="stdout"
+		.pFileName = "console"
 	},
 	.xLog =
 	{
@@ -89,7 +108,7 @@ FTM_TRACE_CONFIG	xDefaultConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "/var/log/catchb.log"
+		.pFileName = "catchb.log",
 	},
 	.xInfo =
 	{
@@ -124,7 +143,7 @@ FTM_TRACE_CONFIG	xDefaultConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "/var/log/catchb.trace"
+		.pFileName = "catchb.log",
 	},
 	.xWarn =
 	{
@@ -159,7 +178,7 @@ FTM_TRACE_CONFIG	xDefaultConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "/var/log/catchb.trace"
+		.pFileName = "catchb.log",
 	},
 	.xError =
 	{
@@ -194,12 +213,14 @@ FTM_TRACE_CONFIG	xDefaultConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "/var/log/catchb.trace"
+		.pFileName = "catchb.log",
 	}
 };
 
 FTM_TRACE_CONFIG	xTraceConfig =
 {
+	.pPath = "/var/log",
+	.ulFileSize = FTM_CATCHB_TRACE_LOG_SIZE,
 	.xConsole =
 	{
 		.bEnable = FTM_TRUE,
@@ -233,7 +254,7 @@ FTM_TRACE_CONFIG	xTraceConfig =
 			.bDynamic	= FTM_FALSE,
 			.ulSize 	= FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName="stdout"
+		.pFileName = "coneole",
 	},
 	.xLog =
 	{
@@ -268,7 +289,7 @@ FTM_TRACE_CONFIG	xTraceConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "/var/log/catchb.log"
+		.pFileName = "catchb.log",
 	},
 	.xInfo =
 	{
@@ -303,7 +324,7 @@ FTM_TRACE_CONFIG	xTraceConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "/var/log/catchb.trace"
+		.pFileName = "catchb.log",
 	},
 	.xWarn =
 	{
@@ -338,7 +359,7 @@ FTM_TRACE_CONFIG	xTraceConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "/var/log/catchb.trace"
+		.pFileName = "catchb.log",
 	},
 	.xError =
 	{
@@ -373,7 +394,7 @@ FTM_TRACE_CONFIG	xTraceConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "/var/log/catchb.trace"
+		.pFileName = "catchb.log",
 	}
 };
 
@@ -385,6 +406,10 @@ FTM_RET		FTM_TRACE_CONFIG_setDefault
 	ASSERT(pConfig != NULL);
 
 	memcpy(pConfig, &xDefaultConfig, sizeof(FTM_TRACE_CONFIG));
+	sprintf(pConfig->xLog.pFileName, "%s.log", program_invocation_short_name);
+	sprintf(pConfig->xInfo.pFileName, "%s.log", program_invocation_short_name);
+	sprintf(pConfig->xWarn.pFileName, "%s.log", program_invocation_short_name);
+	sprintf(pConfig->xError.pFileName, "%s.log", program_invocation_short_name);
 
 	return	FTM_RET_OK;
 }
@@ -590,7 +615,6 @@ FTM_VOID	FTM_TRACE_Out
 )
 {
 
-    FILE*		pFile;
     va_list 	xArgs;
 	FTM_CHAR	pOutputFormat[256];
 	FTM_CHAR	pBuffer[2048];	
@@ -759,21 +783,105 @@ FTM_VOID	FTM_TRACE_Out
 	pBuffer[ulLen++] = '\n';
 	pBuffer[ulLen] = '\0';
 
-	if (strcmp(pConfig->pFileName, "stdout") == 0)
+	if (strcmp(pConfig->pFileName, "console") == 0)
 	{
         printf("%s", pBuffer);
 	}
 	else
 	{
-   		pFile = fopen(pConfig->pFileName, "a");
-		if(pFile)
+		FTM_RET		xRet;
+		FTM_CHAR	pFileName[FTM_PATH_LEN + FTM_FILE_NAME_LEN + 1];
+		FTM_UINT32	ulBufferLen = strlen(pBuffer);
+		FTM_UINT32	ulOffset = 0;
+		FTM_UINT32	ulFileSize = 0;
+
+		sprintf(pFileName, "%s/%s", xTraceConfig.pPath, pConfig->pFileName);
+
+		xRet = FTM_TRACE_getFileSize(pFileName, &ulFileSize);
+		if (xRet == FTM_RET_OK)
 		{
-			fprintf(pFile, "%s", pBuffer);
-			fclose(pFile);
+			if (ulFileSize >= xTraceConfig.ulFileSize)
+			{
+				FTM_INT32	i;
+				FTM_CHAR	pCommand[128];
+				FILE* 		pFP;
+
+				for(i = 10 ; i > 0 ; i--)
+				{
+
+					sprintf(pCommand, "mv -f %s.%d %s.%d > /dev/null 2>&1 ", pFileName, i-1, pFileName, i);
+					pFP = popen(pCommand, "r");
+					if (pFP != NULL)
+					{
+						pclose(pFP);
+					}
+				}
+
+				sprintf(pCommand, "mv -f %s %s.0 > /dev/null 2>&1 ", pFileName, pFileName);
+				pFP = popen(pCommand, "r");
+				if (pFP != NULL)
+				{
+					pclose(pFP);
+				}
+			}
+
+			FTM_TRACE_writeToFile(pFileName, &pBuffer[ulOffset], ulBufferLen);
 		}
 	}
 }
 
+FTM_RET	FTM_TRACE_writeToFile
+(
+	FTM_CHAR_PTR	pFileName,
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen
+)
+{
+	ASSERT(pFileName != NULL);
+	ASSERT(pBuffer != NULL);
+
+	FILE _PTR_	pFile;
+	FTM_RET		xRet = FTM_RET_OK;	
+
+	pFile = fopen(pFileName, "a");
+	if(pFile == NULL)
+	{
+		xRet = FTM_RET_ERROR;
+		fprintf(stderr, "Failed to open file[%s]", pFileName);
+		return	xRet;
+	}
+
+	fwrite(pBuffer, 1, ulBufferLen, pFile);
+	fclose(pFile);
+
+	return	xRet;
+}
+
+FTM_RET	FTM_TRACE_getFileSize
+(
+	FTM_CHAR_PTR	pFileName,
+	FTM_UINT32_PTR	pSize
+)
+{
+	ASSERT(pFileName != NULL);
+	ASSERT(pSize != NULL);
+
+	FILE _PTR_	pFile;
+
+	pFile = fopen(pFileName, "a");
+	if(pFile == NULL)
+	{
+		*pSize = 0;
+	}
+	else
+	{
+		fseek(pFile, 0, SEEK_END);
+		*pSize = ftell(pFile);
+		fclose(pFile);
+	}
+
+	return	FTM_RET_OK;
+}
 
 FTM_CHAR_PTR	FTM_TRACE_LEVEL_string
 (

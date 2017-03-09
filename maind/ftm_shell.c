@@ -397,6 +397,7 @@ FTM_RET FTM_SHELL_getCmd
 	return	FTM_RET_INVALID_COMMAND;
 }
 
+#if 0
 FTM_RET	FTM_SHELL_parseLine
 (
 	FTM_CHAR_PTR 	pLine, 
@@ -414,6 +415,67 @@ FTM_RET	FTM_SHELL_parseLine
 	{
 		pArgv[nCount++] = pWord;
 		pWord = strtok(NULL, pSeperator);
+	}
+
+	*pArgc = nCount;
+
+	return	FTM_RET_OK;
+}
+#endif
+FTM_RET	FTM_SHELL_parseLine
+(
+	FTM_CHAR_PTR 	pLine, 
+	FTM_CHAR_PTR 	pArgv[], 
+	FTM_INT 		nMaxArgs, 
+	FTM_INT_PTR 	pArgc
+)
+{
+	FTM_INT			nCount = 0;
+
+	while(*pLine != '\0')
+	{
+		if (nMaxArgs <= nCount)
+		{
+			break;
+		}
+
+		if ((*pLine != '\t') && (*pLine != ' ') && (*pLine != '\n') && (*pLine != '\r'))
+		{
+			if (*pLine == '"')
+			{
+				FTM_CHAR_PTR	pEnd;
+
+				pEnd = strchr(pLine+1, '"');
+				if (pEnd == NULL)
+				{
+					return	FTM_RET_INVALID_ARGUMENTS;
+				}
+
+				pArgv[nCount++] = pLine+1;
+				*pEnd = '\0';
+
+				pLine = pEnd+1;
+			}
+			else
+			{
+				pArgv[nCount++] = pLine;
+				while((*pLine != '\0') && (*pLine != '\t') && (*pLine != ' ') && (*pLine != '\n') && (*pLine != '\r'))
+				{
+					pLine++;
+				}
+
+				if (*pLine != '\0')
+				{
+					*pLine = '\0';	
+					pLine++;
+				}
+			}
+		}
+		else
+		{
+			pLine++;	
+		}
+
 	}
 
 	*pArgc = nCount;

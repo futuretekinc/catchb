@@ -2,6 +2,7 @@
 #define	FTM_LOG_H_
 
 #include "ftm_types.h"
+#include "ftm_cctv.h"
 
 typedef	enum	FTM_LOG_TYPE_ENUM
 {
@@ -18,5 +19,10 @@ typedef	struct	FTM_LOG_STRUCT
 	FTM_CHAR		pHash[FTM_HASH_LEN+1];
 	FTM_CCTV_STAT	xStat;
 }	FTM_LOG, _PTR_ FTM_LOG_PTR;
+
+FTM_CHAR_PTR	FTM_LOG_TYPE_print
+(
+	FTM_LOG_TYPE	xType
+);
 
 #endif

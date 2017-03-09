@@ -87,11 +87,11 @@ FTM_RET	FTM_SHELL_CMD_switch
 
 				if (strcasecmp(pArgv[4], "allow") == 0)
 				{
-					FTM_SWITCH_NST_accessControl(pSwitch, pArgv[3], FTM_TRUE);
+					FTM_SWITCH_NST_setAC(pSwitch, pArgv[3], FTM_SWITCH_AC_POLICY_ALLOW);
 				}
 				else if (strcasecmp(pArgv[4], "block") == 0)
 				{
-					FTM_SWITCH_NST_accessControl(pSwitch, pArgv[3], FTM_FALSE);
+					FTM_SWITCH_NST_setAC(pSwitch, pArgv[3], FTM_SWITCH_AC_POLICY_DENY);
 				}
 			}
 		}

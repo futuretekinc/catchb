@@ -199,4 +199,10 @@ FTM_RET	FTM_CATCHB_getAlarmList
 	FTM_UINT32_PTR	pCount
 );
 
+FTM_RET	FTM_CATCHB_removeExpiredLog
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulRetentionPeriod
+);
+
 #endif

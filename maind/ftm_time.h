@@ -4,6 +4,8 @@
 #include <sys/time.h>
 #include "ftm_types.h"
 
+#define	FTM_TIME_SECONDS_OF_DAY	(24*60*60)
+
 typedef	enum
 {
 	FTM_TIME_ALIGN_1S,
@@ -18,6 +20,16 @@ typedef	struct
 {
 	struct timeval	xTimeval;
 }	FTM_TIME, _PTR_ FTM_TIME_PTR;
+
+typedef	struct
+{
+	FTM_UINT32	ulYear;
+	FTM_UINT32	ulMon;
+	FTM_UINT32	ulDay;
+	FTM_UINT32	ulHour;
+	FTM_UINT32	ulMin;
+	FTM_UINT32	ulSec;
+}	FTM_DATE, _PTR_ FTM_DATE_PTR;
 
 FTM_RET	FTM_TIME_getCurrent
 (
@@ -179,4 +191,20 @@ FTM_CHAR_PTR	FTM_TIME_printfCurrent
 	FTM_CHAR_PTR	pFormat
 );
 
+FTM_RET	FTM_TIME_toDate
+(
+	FTM_TIME_PTR	pTime,
+	FTM_DATE_PTR	pDate
+);
+
+FTM_RET	FTM_DATE_getCurrent
+(
+	FTM_DATE_PTR	pDate
+);
+
+FTM_RET	FTM_DATE_toTime
+(
+	FTM_DATE_PTR	pDate,
+	FTM_TIME_PTR	pTime
+);
 #endif

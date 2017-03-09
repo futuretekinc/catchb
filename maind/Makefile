@@ -10,5 +10,5 @@ include $(TOPDIR)/IncludePre.mk
 
 BIN_TARGET=catchb
 BIN_OBJS=$(patsubst %.c,%.o,$(wildcard *.c) $(wildcard shell/*.c))
-BIN_LDFLAGS=$(LDFLAGS) -L$(TOPDIR)/lib -lcatchb -ltelnet -lcurl -lsqlite3 -lcjson -pthread -lm -ldl
+BIN_LDFLAGS=$(LDFLAGS) -L$(TOPDIR)/lib -lssh -lcrypto -lcatchb -lcurl -lsqlite3 -lcjson -pthread -lm -ldl
 include $(TOPDIR)/IncludePost.mk

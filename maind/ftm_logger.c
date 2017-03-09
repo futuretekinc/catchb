@@ -1,9 +1,12 @@
 #include <string.h>
 #include <pthread.h>
+#include "ftm_catchb.h"
 #include "ftm_logger.h"
 #include "ftm_trace.h"
 #include "ftm_mem.h"
 #include "ftm_message.h"
+#include "ftm_time.h"
+#include "ftm_timer.h"
 
 #undef	__MODULE__
 #define	__MODULE__	"logger"
@@ -114,6 +117,7 @@ FTM_RET	FTM_LOGGER_create
 	}
 
 	pLogger->bStop = FTM_TRUE;
+	pLogger->pCatchB = pCatchB;
 
 	*ppLogger = pLogger;
 
@@ -229,8 +233,27 @@ FTM_VOID_PTR	FTM_LOGGER_threadMain
 
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_LOGGER_PTR	pLogger = (FTM_LOGGER_PTR)pData;
+	FTM_DATE	xDate;
+	FTM_TIME	xCurrentTime;
+	FTM_TIME	xTime;
+	FTM_TIME	xDiffTime;
+	FTM_TIMER	xLogExpireTimer;
 
 	INFO("%s started", pLogger->pName);
+
+	FTM_CATCHB_removeExpiredLog(pLogger->pCatchB, pLogger->xConfig.ulRetentionPeriod);
+
+	FTM_TIME_getCurrent(&xCurrentTime);
+	FTM_DATE_getCurrent(&xDate);
+
+	xDate.ulHour = 0;
+	xDate.ulMin = 0;
+	xDate.ulSec = 0;
+	FTM_DATE_toTime(&xDate, &xTime);
+	FTM_TIME_addSecs(&xTime, FTM_TIME_SECONDS_OF_DAY, &xTime);
+	FTM_TIME_sub(&xTime, &xCurrentTime, &xDiffTime);
+
+	FTM_TIMER_initTime(&xLogExpireTimer, &xDiffTime);
 
 	pLogger->bStop = FTM_FALSE;
 
@@ -248,6 +271,12 @@ FTM_VOID_PTR	FTM_LOGGER_threadMain
 					INFO("Unknown message[%s]", FTM_MESSAGE_getString(pRcvdMsg->xType));	
 				}
 			}
+		}
+
+		if (FTM_TIMER_isExpired(&xLogExpireTimer) == FTM_TRUE)
+		{
+			FTM_CATCHB_removeExpiredLog(pLogger->pCatchB, pLogger->xConfig.ulRetentionPeriod);
+			FTM_TIMER_addS(&xLogExpireTimer, FTM_TIME_SECONDS_OF_DAY);
 		}
 	}
 

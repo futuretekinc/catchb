@@ -97,7 +97,15 @@ FTM_RET	FTM_TIMER_addMS
 	FTM_UINT32 		ulTimeMS
 )
 {
-	return	FTM_TIMER_addUS(pTimer, ulTimeMS * 1000);
+	ASSERT(pTimer != NULL);
+	struct timeval	xTimeout;
+
+	xTimeout.tv_sec = ulTimeMS / 1000;
+	xTimeout.tv_usec = ulTimeMS % 1000 * 1000000;
+
+	timeradd(&pTimer->xTime, &xTimeout, &pTimer->xTime);
+	
+	return	FTM_RET_OK;
 }
 
 FTM_RET	FTM_TIMER_addS
@@ -106,7 +114,15 @@ FTM_RET	FTM_TIMER_addS
 	FTM_UINT32 		ulTimeS
 )
 {
-	return	FTM_TIMER_addUS(pTimer, ulTimeS * 1000000);
+	ASSERT(pTimer != NULL);
+	struct timeval	xTimeout;
+
+	xTimeout.tv_sec = ulTimeS;
+	xTimeout.tv_usec = 0;
+
+	timeradd(&pTimer->xTime, &xTimeout, &pTimer->xTime);
+
+	return	FTM_RET_OK;
 }
 
 FTM_RET		FTM_TIMER_addTime

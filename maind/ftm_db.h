@@ -211,18 +211,59 @@ FTM_RET	FTM_DB_addLog
 	FTM_CHAR_PTR	pSign
 );
 
-FTM_RET	FTM_DB_deleteLog
+FTM_RET	FTM_DB_deleteLogOfID
 (
 	FTM_DB_PTR		pDB,
 	FTM_CHAR_PTR	pID
 );
 
+FTM_RET	FTM_DB_deleteLog
+(
+	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xStat,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32		ulCount
+);
+
 FTM_RET	FTM_DB_getLogList
 (
 	FTM_DB_PTR		pDB,
-	FTM_LOG_PTR		pLogs,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xStat,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
 	FTM_UINT32		ulMaxCount,
+	FTM_LOG_PTR		pLogs,
 	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_DB_getLogListFrom
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulMaxCount,
+	FTM_LOG_PTR		pLogs,
+	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_DB_getLogListOfTimePeriod
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32		ulMaxCount,
+	FTM_LOG_PTR		pLogs,
+	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_DB_removeExpiredLog
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulExpirationDate
 );
 
 FTM_RET	FTM_DB_createSwitchTable

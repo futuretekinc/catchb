@@ -18,6 +18,7 @@ CFLAGS:= -fPIC -c -g -Wall \
 LDFLAGS:= -Wl,--no-as-needed\
 				-L.\
 				-L$(TOPDIR)/lib\
+				-L$(TOPDIR)/libssh\
 				-L$(TOPDIR)/libtelnet
 
 CC=gcc

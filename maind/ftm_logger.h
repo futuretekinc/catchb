@@ -47,6 +47,7 @@ typedef	struct	FTM_LOGGER_STRUCT
 
 	FTM_LOGGER_CONFIG	xConfig;
 
+	struct	FTM_CATCHB_STRUCT _PTR_	pCatchB;
 	FTM_MSGQ_PTR		pMsgQ;
 	FTM_BOOL			bStop;
 	pthread_t			xThread;

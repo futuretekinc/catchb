@@ -605,3 +605,78 @@ FTM_RET	FTM_TIME_toSecs
 
 	return	FTM_RET_OK;
 }
+
+FTM_RET	FTM_TIME_toDate
+(
+	FTM_TIME_PTR	pTime,
+	FTM_DATE_PTR	pDate
+)
+{
+	ASSERT(pTime != NULL);
+	ASSERT(pDate != NULL);
+
+	time_t	xTime;
+	struct tm xTM;
+	
+	xTime = pTime->xTimeval.tv_sec;
+	localtime_r(&xTime, &xTM);
+
+	pDate->ulYear 	= xTM.tm_year;
+	pDate->ulMon 	= xTM.tm_mon;
+	pDate->ulDay	= xTM.tm_mday;
+	pDate->ulHour	= xTM.tm_hour;
+	pDate->ulMin	= xTM.tm_min;
+	pDate->ulSec	= xTM.tm_sec;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_DATE_getCurrent
+(
+	FTM_DATE_PTR	pDate
+)
+{
+	ASSERT(pDate != NULL);
+
+	time_t	xTime;
+	struct tm xTM;
+	
+	xTime = time(NULL);
+	localtime_r(&xTime, &xTM);
+
+	pDate->ulYear 	= xTM.tm_year;
+	pDate->ulMon 	= xTM.tm_mon;
+	pDate->ulDay	= xTM.tm_mday;
+	pDate->ulHour	= xTM.tm_hour;
+	pDate->ulMin	= xTM.tm_min;
+	pDate->ulSec	= xTM.tm_sec;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_DATE_toTime
+(
+	FTM_DATE_PTR	pDate,
+	FTM_TIME_PTR	pTime
+)
+{
+	ASSERT(pDate != NULL);
+	ASSERT(pTime != NULL);
+
+	struct tm xTM;
+
+	memset(&xTM, 0, sizeof(struct tm));
+
+	xTM.tm_year = pDate->ulYear;
+	xTM.tm_mon 	= pDate->ulMon;
+	xTM.tm_mday	= pDate->ulDay;
+	xTM.tm_hour	= pDate->ulHour;
+	xTM.tm_min	= pDate->ulMin;
+	xTM.tm_sec	= pDate->ulSec;
+
+	pTime->xTimeval.tv_sec = mktime(&xTM);
+	pTime->xTimeval.tv_usec = 0;
+
+	return	FTM_RET_OK;
+}
+

@@ -970,6 +970,11 @@ FTM_RET	FTM_CATCHB_onCreateCCTV
 		goto finished;
 	}
 
+	if (pMsg->xConfig.ulTime == 0)
+	{
+		FTM_TIME_getCurrentSecs(&pMsg->xConfig.ulTime);	
+	}
+
 	xRet = FTM_CCTV_create(&pMsg->xConfig, &pCCTV);
 	if (xRet != FTM_RET_OK)
 	{
@@ -2267,3 +2272,19 @@ FTM_BOOL	FTM_CATCHB_ALARM_seeker
 	return	(strcmp(pAlarm->pName, pName) == 0);
 }
 
+FTM_RET	FTM_CATCHB_removeExpiredLog
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulRetentionPeriod
+)
+{
+	ASSERT(pCatchB != NULL);
+
+	if (pCatchB->pDB == NULL)
+	{
+		return	FTM_RET_OK;
+	}
+
+
+	return	FTM_DB_removeExpiredLog(pCatchB->pDB, ulRetentionPeriod);
+}

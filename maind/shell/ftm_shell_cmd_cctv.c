@@ -26,11 +26,65 @@ FTM_RET	FTM_SHELL_CMD_cctv
 
 	FTM_CATCHB_PTR	pCatchB = (FTM_CATCHB_PTR)pData;
 
+	printf("nArgc : %d\n", nArgc);
 	switch(nArgc)
 	{
-	case	1:
+	case	2:
 		{
-			xRet = FTM_SHELL_CMD_showCCTVList(pCatchB);
+			if (strcasecmp(pArgv[1], "list") == 0)
+			{
+				xRet = FTM_SHELL_CMD_showCCTVList(pCatchB);
+			}
+			else
+			{
+				FTM_CCTV_PTR	pCCTV;
+				FTM_UINT32		i;
+				FTM_UINT32		ulPortCount;
+				FTM_UINT16_PTR	pPortList = NULL;
+
+				xRet = FTM_CATCHB_getCCTV(pCatchB, pArgv[1], &pCCTV);	
+				if (xRet != FTM_RET_OK)
+				{
+					printf("Invalid switch ID[%s]", pArgv[1]);	
+					break;
+				}
+
+				xRet = FTM_ANALYZER_getPortCount(pCatchB->pAnalyzer, &ulPortCount);
+				if (ulPortCount != 0)
+				{
+					pPortList = (FTM_UINT16_PTR)FTM_MEM_calloc(sizeof(FTM_UINT16), ulPortCount);	
+					if (pPortList == NULL)
+					{
+						xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+						ERROR(xRet, "Failed to create port buffer!");
+						break;
+					}
+
+					xRet = FTM_ANALYZER_getPortList(pCatchB->pAnalyzer, pPortList, ulPortCount, &ulPortCount);
+					if (xRet != FTM_RET_OK)
+					{
+						ERROR(xRet, "Failed to get port list!");
+						FTM_MEM_free(pPortList);
+						break;
+					}
+				}
+
+				printf("%16s : %s\n", "ID", 	pCCTV->xConfig.pID);
+				printf("%16s : %s\n", "IP", 	pCCTV->xConfig.pIP);
+				printf("%16s : %s\n", "Stat", 	FTM_CCTV_STAT_print(pCCTV->xConfig.xStat));
+				printf("%16s : %s\n", "Switch ID", pCCTV->xConfig.pSwitchID);
+				printf("%16s : %s\n", "Time",   FTM_TIME_printf2(pCCTV->xConfig.ulTime, NULL));
+				printf("%16s : %s\n", "Hash",   pCCTV->xConfig.pHash);
+				for(i = 0 ; i <ulPortCount ; i++)
+				{
+					printf("%16d : %s\n", pPortList[i], pCCTV->pPortStat[i]?"open":"closed");
+				}
+
+				if (pPortList != NULL)
+				{
+					FTM_MEM_free(pPortList);
+				}
+			}
 		}
 		break;
 
@@ -42,17 +96,6 @@ FTM_RET	FTM_SHELL_CMD_cctv
 				if (xRet != FTM_RET_OK)
 				{
 					printf("Failed to destroy switch[%s]!", pArgv[2]);	
-				}
-			}
-			else
-			{
-				FTM_CCTV_PTR	pCCTV;
-				
-				xRet = FTM_CATCHB_getCCTV(pCatchB, pArgv[1], &pCCTV);	
-				if (xRet != FTM_RET_OK)
-				{
-					printf("Invalid switch ID[%s]", pArgv[1]);	
-					break;
 				}
 			}
 		}
@@ -69,6 +112,29 @@ FTM_RET	FTM_SHELL_CMD_cctv
 				strncpy(xConfig.pID, pArgv[2], sizeof(xConfig.pID) - 1);
 				strncpy(xConfig.pIP, pArgv[3], sizeof(xConfig.pIP) - 1);
 				strncpy(xConfig.pSwitchID, pArgv[4], sizeof(xConfig.pSwitchID) - 1);
+		
+				xRet = FTM_CATCHB_createCCTV(pCatchB, &xConfig);
+				if (xRet != FTM_RET_OK)
+				{
+					printf("CCTV create failed !");	
+				}
+			}
+		
+		}
+		break;
+
+	case	6:
+		{
+			if (strcasecmp(pArgv[1], "add") == 0)
+			{
+				FTM_CCTV_CONFIG	xConfig;
+
+				memset(&xConfig, 0, sizeof(xConfig));
+
+				strncpy(xConfig.pID, pArgv[2], sizeof(xConfig.pID) - 1);
+				strncpy(xConfig.pIP, pArgv[3], sizeof(xConfig.pIP) - 1);
+				strncpy(xConfig.pSwitchID, pArgv[4], sizeof(xConfig.pSwitchID) - 1);
+				strncpy(xConfig.pComment, pArgv[5], sizeof(xConfig.pComment) - 1);
 		
 				xRet = FTM_CATCHB_createCCTV(pCatchB, &xConfig);
 				if (xRet != FTM_RET_OK)

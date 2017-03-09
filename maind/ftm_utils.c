@@ -36,6 +36,19 @@ FTM_RET	FTM_getLocalIP
 		xRet = FTM_RET_NET_INTERFACE_ERROR;	
 	}
 
+	if (xRet == FTM_RET_OK)
+	{
+		FTM_INT32	i;
+
+		for(i = 0 ; i < strlen(pBuff) ; i++)
+		{
+			if (!isprint(pBuff[i]))
+			{
+				pBuff[i] = '\0';	
+			}
+		}
+	}
+
 	return	xRet;
 }
 

@@ -42,8 +42,12 @@ FTM_SHELL_CMD	pCatchBShellCmdList[] =
 		.pHelp		= "<cmd>\n"
 					  "  CCTV(IP Camera) management.\n"
 					  "COMMANDS:\n"
+					  "  list\n"
+					  "    - Show CCTV list.\n"
 					  "  add <ID> <IP>\n"
+					  "    - Add new CCTV.\n"
 					  "  del <ID>\n"
+					  "    - Delete CCTV.\n"
 					  "PARAMETERS:\n"
 					  "  ID     CCTV Identifier\n"
 					  "  IP     CCTV IP Address\n",
@@ -67,8 +71,18 @@ FTM_SHELL_CMD	pCatchBShellCmdList[] =
 		.pHelp		= "<cmd>\n"
 					  "  Logger settings.\n"
 					  "COMMANDS:\n"
-					  "  list <COUNT>\n"
-					  "    - Show logs.\n",
+					  "  show\n"
+					  "    - Show the last 100 logs.\n"
+					  "  show <COUNT>\n"
+					  "    - Show the last <COUNT> logs.\n"
+					  "  show <INDEX> <COUNT>\n"
+					  "    - Show logs from <INDEX>.\n"
+					  "  del id <ID> [<COUNT>]\n"
+					  "    - Delete CCTV log for the ID.\n"
+					  "  del ip <IP> [<COUNT>]\n"
+					  "    - Delete CCTV log for the IP.\n",
+					  "  del range <Start Time> <End Time>\n"
+					  "    - Delete CCTV log for the time period.\n",
 		.pData		= NULL
 	},
 	{

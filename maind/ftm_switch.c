@@ -4,6 +4,26 @@
 #include "ftm_mem.h"
 #include "ftm_switch.h"
 
+FTM_SWITCH_INFO	pSwitchInfos[] = 
+{
+	{
+		.xModel	= FTM_SWITCH_MODEL_NST,
+		.pName  = "nst",
+		.fSetAC	= FTM_SWITCH_NST_setAC
+	},
+	{
+		.xModel	= FTM_SWITCH_MODEL_DASAN,
+		.pName  = "dasan",
+	},
+	{
+		.xModel	= FTM_SWITCH_MODEL_JUNIPER,
+		.pName  = "juniper",
+	},
+	{
+		.xModel	= FTM_SWITCH_MODEL_UNKNOWN
+	}
+};
+
 FTM_BOOL	FTM_SWITCH_AC_seeker
 (
 	const FTM_VOID_PTR pElement, 
@@ -309,33 +329,21 @@ FTM_RET	FTM_SWITCH_addAC
 	ASSERT(ppAC != NULL);
 	
 	FTM_RET				xRet = FTM_RET_OK;
-	FTM_BOOL			pIndexTable[48];
-	FTM_INT32			nIndex = -1;
-	FTM_INT				i;
 	FTM_SWITCH_AC_PTR	pAC;
+	FTM_SWITCH_INFO_PTR	pInfo;
 
-	memset(pIndexTable, 0, sizeof(pIndexTable));
-
-	FTM_LIST_iteratorStart(pSwitch->pACList);
-	while(FTM_LIST_iteratorNext(pSwitch->pACList, (FTM_VOID_PTR _PTR_)&pAC) == FTM_RET_OK)
+	xRet = FTM_SWITCH_getInfo(pSwitch, &pInfo);
+	if (xRet != FTM_RET_OK)
 	{
-		pIndexTable[pAC->nIndex] = FTM_TRUE;
+		ERROR(xRet, "Failed to get switch info!");
+		return	xRet;
 	}
 
-	for(i = 0 ; i < 48 ; i++)
+	if (pInfo->fSetAC == NULL)
 	{
-		if (pIndexTable[i] == FTM_FALSE)	
-		{
-			nIndex = i;
-			break;
-		}
-	}
-
-	if (nIndex < 0)
-	{
-		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
-		ERROR(xRet, "AC List is full!");
-		return	xRet;	
+		xRet = FTM_RET_NOT_SUPPORTED_FUNCTION;
+		ERROR(xRet, "Failed to add AC!");
+		return	xRet;
 	}
 
 	pAC = (FTM_SWITCH_AC_PTR)FTM_MEM_malloc(sizeof(FTM_SWITCH_AC));
@@ -347,7 +355,6 @@ FTM_RET	FTM_SWITCH_addAC
 	}
 
 	strncpy(pAC->pIP, pIP, sizeof(pAC->pIP)- 1);
-	pAC->nIndex = nIndex;
 	pAC->xPolicy = xPolicy;
 
 	xRet = FTM_LIST_append(pSwitch->pACList, pAC);
@@ -358,7 +365,7 @@ FTM_RET	FTM_SWITCH_addAC
 		return	xRet;
 	}
 
-	xRet = FTM_SWITCH_NST_process(pSwitch, pIP, nIndex, xPolicy);
+	xRet = pInfo->fSetAC(pSwitch, pIP, xPolicy);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR("Failed to deny IP[%s] from switch[%s].", pIP, pSwitch->xConfig.pID);
@@ -380,6 +387,21 @@ FTM_RET	FTM_SWITCH_deleteAC
 	
 	FTM_RET				xRet = FTM_RET_OK;
 	FTM_SWITCH_AC_PTR	pAC;
+	FTM_SWITCH_INFO_PTR	pInfo;
+
+	xRet = FTM_SWITCH_getInfo(pSwitch, &pInfo);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get switch info!");
+		return	xRet;
+	}
+
+	if (pInfo->fSetAC == NULL)
+	{
+		xRet = FTM_RET_NOT_SUPPORTED_FUNCTION;
+		ERROR(xRet, "Failed to add AC!");
+		return	xRet;
+	}
 
 	xRet = FTM_LIST_get(pSwitch->pACList, pIP, (FTM_VOID_PTR _PTR_)&pAC);
 	if (xRet != FTM_RET_OK)
@@ -388,7 +410,7 @@ FTM_RET	FTM_SWITCH_deleteAC
 		return	xRet;
 	}
 
-	xRet = FTM_SWITCH_NST_process(pSwitch, pIP, pAC->nIndex, FTM_SWITCH_AC_POLICY_ALLOW);
+	xRet = pInfo->fSetAC(pSwitch, pIP, FTM_SWITCH_AC_POLICY_ALLOW);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR("Failed to allow IP[%s] from switch[%s].", pIP, pSwitch->xConfig.pID);	
@@ -422,6 +444,31 @@ FTM_RET	FTM_SWITCH_getAC
 	return	FTM_LIST_get(pSwitch->pACList, pIP, (FTM_VOID_PTR _PTR_)ppAC);
 }
 
+FTM_RET	FTM_SWITCH_getInfo
+(
+	FTM_SWITCH_PTR	pSwitch,
+	FTM_SWITCH_INFO_PTR _PTR_ ppInfo
+)
+{
+	ASSERT(pSwitch != NULL);
+	ASSERT(ppInfo != NULL);
+
+	FTM_SWITCH_INFO_PTR	pInfo = pSwitchInfos;
+
+	while(pInfo->xModel != FTM_SWITCH_MODEL_UNKNOWN)
+	{
+		if (pInfo->xModel == pSwitch->xConfig.xModel)
+		{
+			*ppInfo = pInfo;
+
+			return	FTM_RET_OK;
+		}
+	}
+
+	return	FTM_RET_OBJECT_NOT_FOUND;
+
+}
+
 FTM_SWITCH_MODEL	FTM_getSwitchModelID
 (	
 	FTM_CHAR_PTR	pModel
@@ -429,19 +476,16 @@ FTM_SWITCH_MODEL	FTM_getSwitchModelID
 {
 	ASSERT(pModel != NULL);
 
-	if (strcasecmp(pModel, "nst") == 0)
+	FTM_SWITCH_INFO_PTR	pInfo = pSwitchInfos;
+
+	while(pInfo->xModel != FTM_SWITCH_MODEL_UNKNOWN)
 	{
-		return	FTM_SWITCH_MODEL_NST;	
-	}
-	else if (strcasecmp(pModel, "dasan") == 0)
-	{
-		return	FTM_SWITCH_MODEL_DASAN;	
-	}
-	else if (strcasecmp(pModel, "juniper") == 0)
-	{
-		return	FTM_SWITCH_MODEL_JUNIPER;	
+		if (strcasecmp(pModel, pInfo->pName) == 0)
+		{
+			break;
+		}
 	}
 
-	return	FTM_SWITCH_MODEL_UNKNOWN;
+	return	pInfo->xModel;
 }
 
