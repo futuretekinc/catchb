@@ -13,13 +13,15 @@ CFLAGS:= -fPIC -c -g -Wall \
 				-I$(TOPDIR)/include\
 				-I$(TOPDIR)/lib\
 				-I$(TOPDIR)/libtelnet\
-				-I$(TOPDIR)/maind
+				-I$(TOPDIR)/maind\
+				-I/home/xtra/tmp/libssh/include
 
 LDFLAGS:= -Wl,--no-as-needed\
 				-L.\
 				-L$(TOPDIR)/lib\
-				-L$(TOPDIR)/libssh\
-				-L$(TOPDIR)/libtelnet
+				-L$(TOPDIR)/libtelnet\
+				-L/home/xtra/tmp/libssh/build/src
+
 
 CC=gcc
 #CC=armv5-linux-gcc

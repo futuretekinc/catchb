@@ -26,6 +26,7 @@
 #include "ftm_utils.h"
 #include "ftm_switch.h"
 #include "ftm_telnet.h"
+#include "ftm_ssh.h"
 
 #define	NST_MAX_COMD	32
 
@@ -48,13 +49,13 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 	FTM_UINT32	ulCommandLines = 0;
 	FTM_INT		hFile;
 	FTM_INT		i;
-	ssh_session	xSession;
+	FTM_SSH_PTR	pSSH;
 
 	FTM_getLocalIP(pLocalIP, sizeof(pLocalIP));
 	ulIndex = ntohl(inet_addr(pTargetIP)) & 0xFFFFFF;
-
-
-	xSession = connect_ssh(pSwitch->xConfig.pIP, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd, 0);
+	
+	xRet = FTM_SSH_create(&pSSH);
+	xRet = FTM_SSH_connect(pSSH, pSwitch->xConfig.pIP, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd);
 
 	switch(xPolicy)
 	{
