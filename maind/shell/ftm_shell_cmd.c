@@ -20,8 +20,19 @@ FTM_SHELL_CMD	pCatchBShellCmdList[] =
 	{
 		.pString	= "alarm",
 		.function	= FTM_SHELL_CMD_alarm,
-		.pShortHelp	= "Alarm",
-		.pHelp		= "Alarm",
+		.pShortHelp	= "alarm settings.",
+		.pHelp		= "<cmd>\n"
+					  "  Alarm settings.\n"
+					  "COMMANDs:\n"
+					  "  list\n"
+					  "    - Show notificatoin email list.\n"    
+					  "  add <NAME> <EMAIL> <MESSAGE>\n"
+					  "    - Add new notification email.\n"
+					  "  del <NAME>\n"
+					  "    _ Delete notification email.\n"
+					  "PARAMETERS:\n"
+					  "  NAME   User name\n"
+					  "  EMAIL	Destination email address.\n",
 		.pData		= NULL
 	},
 	{

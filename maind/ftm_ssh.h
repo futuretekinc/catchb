@@ -4,7 +4,16 @@
 #include "ftm_types.h"
 #include <libssh/libssh.h>
 
-typedef	ssh_session	FTM_SSH_PTR;
+typedef	struct	FTM_SSH_STRUCT
+{
+	ssh_session		pSession;
+}	FTM_SSH, _PTR_	FTM_SSH_PTR;
+
+typedef	struct	FTM_SSH_CHANNEL_STRUCT
+{
+	FTM_SSH_PTR	pSSH;
+	ssh_channel	pChannel;
+}	FTM_SSH_CHANNEL, _PTR_ FTM_SSH_CHANNEL_PTR;
 
 FTM_RET	FTM_SSH_create
 (
@@ -38,6 +47,53 @@ FTM_RET	FTM_SSH_authenticateConsole
 FTM_RET	FTM_SSH_verifyKnownhost
 (
 	FTM_SSH_PTR pSSH
+);
+
+FTM_RET	FTM_SSH_CHANNEL_create
+(
+	FTM_SSH_PTR	pSSH,
+	FTM_SSH_CHANNEL_PTR _PTR_ ppChannel
+);
+
+
+FTM_RET	FTM_SSH_CHANNEL_destroy
+(
+	FTM_SSH_CHANNEL_PTR _PTR_ ppChannel
+);
+
+FTM_RET	FTM_SSH_CHANNEL_open
+(	
+	FTM_SSH_CHANNEL_PTR	pChannel
+);
+
+FTM_RET	FTM_SSH_CHANNEL_close
+(	
+	FTM_SSH_CHANNEL_PTR	pChannel
+);
+
+FTM_BOOL	FTM_SSH_CHANNEL_isOpen
+(
+	FTM_SSH_CHANNEL_PTR	pChannel
+);
+
+FTM_BOOL	FTM_SSH_CHANNEL_isEOF
+(
+	FTM_SSH_CHANNEL_PTR	pChannel
+);
+
+FTM_RET	FTM_SSH_CHANNEL_read
+(
+	FTM_SSH_CHANNEL_PTR	pChannel,
+	FTM_UINT8_PTR		pBuffer,
+	FTM_UINT32			ulBufferLen,
+	FTM_UINT32_PTR		pReadLen
+);
+
+FTM_RET	FTM_SSH_CHANNEL_write
+(
+	FTM_SSH_CHANNEL_PTR	pChannel,
+	FTM_UINT8_PTR		pBuffer,
+	FTM_UINT32			ulBufferLen
 );
 
 #endif

@@ -21,6 +21,7 @@ clients must be made or how a client should react.
 #include <string.h>
 #include <errno.h>
 #include "ftm_ssh.h"
+#include "ftm_mem.h"
 #include "ftm_trace.h"
 
 FTM_RET	FTM_SSH_create
@@ -33,16 +34,33 @@ FTM_RET	FTM_SSH_create
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_SSH_PTR	pSSH;
 
-	pSSH = ssh_new();
+	pSSH = (FTM_SSH_PTR)FTM_MEM_malloc(sizeof(FTM_SSH));
 	if (pSSH == NULL)
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
 		ERROR(xRet, "Failed to create ssh!");
-		return	xRet;
+		goto finished;
+	}
+
+	pSSH->pSession = ssh_new();
+	if (pSSH->pSession == NULL)
+	{
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+		ERROR(xRet, "Failed to create ssh!");
+		goto finished;
 	}
 
 	*ppSSH = pSSH;
 
+finished:
+	
+	if (xRet != FTM_RET_OK)
+	{
+		if (pSSH != NULL)
+		{
+			FTM_MEM_free(pSSH);	
+		}
+	}
 	return	xRet;
 }
 
@@ -53,7 +71,10 @@ FTM_RET	FTM_SSH_destroy
 {
 	ASSERT(ppSSH != NULL);
 
-	ssh_free(*ppSSH);
+	ssh_free((*ppSSH)->pSession);
+
+	FTM_MEM_free(*ppSSH);
+
 	*ppSSH = NULL;
 
 	return	FTM_RET_OK;
@@ -67,12 +88,14 @@ FTM_RET	FTM_SSH_connect
 	const FTM_CHAR_PTR	pPasswd
 )
 {
+	ASSERT(pSSH != NULL);
+
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_INT	nRet;
 
 	if(pUser != NULL)
 	{
-		nRet = ssh_options_set(pSSH, SSH_OPTIONS_USER, pUser);
+		nRet = ssh_options_set(pSSH->pSession, SSH_OPTIONS_USER, pUser);
 		if (nRet < 0)
 		{
 			xRet = FTM_RET_SSH_FAILED_TO_SET_OPTION;
@@ -81,7 +104,7 @@ FTM_RET	FTM_SSH_connect
 		}
 	}
 
-	nRet = ssh_options_set(pSSH, SSH_OPTIONS_HOST, pHost);
+	nRet = ssh_options_set(pSSH->pSession, SSH_OPTIONS_HOST, pHost);
 	if (nRet < 0)
 	{
 		xRet = FTM_RET_SSH_FAILED_TO_SET_OPTION;
@@ -89,11 +112,11 @@ FTM_RET	FTM_SSH_connect
 		return xRet;
 	}
 
-	nRet = ssh_connect(pSSH);
+	nRet = ssh_connect(pSSH->pSession);
 	if (nRet < 0)
 	{
 		xRet = FTM_RET_SSH_CONNECTION_FAILED;
-		ERROR(xRet, "Failed to connect[%s]",ssh_get_error(pSSH));
+		ERROR(xRet, "Failed to connect[%s]",ssh_get_error(pSSH->pSession));
 		return xRet;
 	}
 
@@ -123,7 +146,7 @@ FTM_RET	FTM_SSH_disconnect
 {
 	ASSERT(pSSH != NULL);
 
-	ssh_disconnect(pSSH);
+	ssh_disconnect(pSSH->pSession);
 
 	return	FTM_RET_OK;
 }
@@ -245,24 +268,24 @@ FTM_RET	FTM_SSH_authenticateConsole
 	FTM_INT	nMethod;
 
 	// Try to authenticate
-	nRet = ssh_userauth_none(pSSH, NULL);
+	nRet = ssh_userauth_none(pSSH->pSession, NULL);
 	if (nRet == SSH_AUTH_ERROR) 
 	{
 		xRet = FTM_RET_SSH_AUTH_ERROR;
-		ERROR(xRet, "Failed to authentication[%s]", ssh_get_error(pSSH));
+		ERROR(xRet, "Failed to authentication[%s]", ssh_get_error(pSSH->pSession));
 		return xRet;
 	}
 
-	nMethod = ssh_userauth_list(pSSH, NULL);
+	nMethod = ssh_userauth_list(pSSH->pSession, NULL);
 	while (nRet != SSH_AUTH_SUCCESS) 
 	{
 		if (nMethod & SSH_AUTH_METHOD_GSSAPI_MIC)
 		{
-			nRet = ssh_userauth_gssapi(pSSH);
+			nRet = ssh_userauth_gssapi(pSSH->pSession);
 			if(nRet == SSH_AUTH_ERROR) 
 			{
 				xRet = FTM_RET_SSH_AUTH_ERROR;
-				ERROR(xRet, "Failed to authentication[%s]", ssh_get_error(pSSH));
+				ERROR(xRet, "Failed to authentication[%s]", ssh_get_error(pSSH->pSession));
 				return xRet;
 			} 
 			else if (nRet == SSH_AUTH_SUCCESS) 
@@ -274,11 +297,11 @@ FTM_RET	FTM_SSH_authenticateConsole
 		// Try to authenticate with public key first
 		if (nMethod & SSH_AUTH_METHOD_PUBLICKEY) 
 		{
-			nRet = ssh_userauth_publickey_auto(pSSH, NULL, NULL);
+			nRet = ssh_userauth_publickey_auto(pSSH->pSession, NULL, NULL);
 			if (nRet == SSH_AUTH_ERROR) 
 			{
 				xRet = FTM_RET_SSH_AUTH_ERROR;
-				ERROR(xRet, "Failed to authentication[%s]", ssh_get_error(pSSH));
+				ERROR(xRet, "Failed to authentication[%s]", ssh_get_error(pSSH->pSession));
 				return xRet;
 			} 
 			else if (nRet == SSH_AUTH_SUCCESS) 
@@ -291,11 +314,11 @@ FTM_RET	FTM_SSH_authenticateConsole
 		// Try to authenticate with keyboard interactive";
 		if (nMethod & SSH_AUTH_METHOD_INTERACTIVE) 
 		{
-			nRet = FTM_SSH_authenticateKbdint(pSSH, NULL);
+			nRet = FTM_SSH_authenticateKbdint(pSSH->pSession, NULL);
 			if (nRet == SSH_AUTH_ERROR) 
 			{
 				xRet = FTM_RET_SSH_AUTH_ERROR;
-				ERROR(xRet, "Failed to authentication[%s]", ssh_get_error(pSSH));
+				ERROR(xRet, "Failed to authentication[%s]", ssh_get_error(pSSH->pSession));
 				return xRet;
 			} 
 			else if (nRet == SSH_AUTH_SUCCESS) 
@@ -307,11 +330,11 @@ FTM_RET	FTM_SSH_authenticateConsole
 		// Try to authenticate with password
 		if (nMethod & SSH_AUTH_METHOD_PASSWORD) 
 		{
-			nRet = ssh_userauth_password(pSSH, NULL, pPasswd);
+			nRet = ssh_userauth_password(pSSH->pSession, NULL, pPasswd);
 			if (nRet == SSH_AUTH_ERROR) 
 			{
 				xRet = FTM_RET_SSH_AUTH_ERROR;
-				ERROR(xRet, "Failed to authentication[%s]", ssh_get_error(pSSH));
+				ERROR(xRet, "Failed to authentication[%s]", ssh_get_error(pSSH->pSession));
 				return xRet;
 			} 
 			else if (nRet == SSH_AUTH_SUCCESS) 
@@ -343,7 +366,7 @@ FTM_RET	FTM_SSH_verifyKnownhost
 
 	memset(pBuff, 0x00, sizeof(pBuff));
 
-	nRet = ssh_get_publickey(pSSH, &pServerPublicKey);
+	nRet = ssh_get_publickey(pSSH->pSession, &pServerPublicKey);
 	if (nRet < 0) 
 	{
 		xRet = FTM_RET_SSH_FAILED_TO_GET_PUBLICKEY;
@@ -360,7 +383,7 @@ FTM_RET	FTM_SSH_verifyKnownhost
 		return xRet;
 	}
 
-	nState = ssh_is_server_known(pSSH);
+	nState = ssh_is_server_known(pSSH->pSession);
 	if (nState == SSH_SERVER_KNOWN_CHANGED)
 	{
 		nState = SSH_SERVER_NOT_KNOWN;
@@ -396,7 +419,7 @@ FTM_RET	FTM_SSH_verifyKnownhost
 		INFO("Public key hash: %s", pHexa);
 		ssh_string_free_char(pHexa);
 
-		nRet = ssh_write_knownhost(pSSH);
+		nRet = ssh_write_knownhost(pSSH->pSession);
 		if (nRet < 0) 
 		{
 			xRet = FTM_RET_SSH_FAILED_TO_SAVE_KEY;
@@ -406,7 +429,7 @@ FTM_RET	FTM_SSH_verifyKnownhost
 
 	case SSH_SERVER_ERROR:
 		{
-			ERROR(xRet, "Server error[%s]",ssh_get_error(pSSH));
+			ERROR(xRet, "Server error[%s]",ssh_get_error(pSSH->pSession));
 			xRet = FTM_RET_SSH_SERVER_ERROR;
 		}
 		break;
@@ -415,4 +438,174 @@ FTM_RET	FTM_SSH_verifyKnownhost
 	ssh_clean_pubkey_hash(&pHash);
 
 	return xRet;
+}
+
+FTM_RET	FTM_SSH_CHANNEL_create
+(
+	FTM_SSH_PTR	pSSH,
+	FTM_SSH_CHANNEL_PTR _PTR_ ppChannel
+)
+{
+	ASSERT(pSSH != NULL);
+	ASSERT(ppChannel != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_SSH_CHANNEL_PTR	pChannel;
+
+	pChannel = (FTM_SSH_CHANNEL_PTR)FTM_MEM_malloc(sizeof(FTM_SSH_CHANNEL));
+	if (pChannel == NULL)
+	{
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+		ERROR(xRet, "Failed to create ssh channel!");
+		goto finished;
+	}
+
+	pChannel->pChannel = ssh_channel_new(pSSH->pSession);
+	if (pChannel->pChannel == NULL)
+	{
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+		ERROR(xRet, "Failed to create ssh channel!");
+		goto finished;
+	}
+
+	pChannel->pSSH = pSSH;
+
+	*ppChannel = pChannel;
+	
+finished:
+	if (xRet != FTM_RET_OK)
+	{
+		if (pChannel != NULL)
+		{
+			FTM_MEM_free(pChannel);	
+		}
+	}
+
+	return	xRet;
+
+}
+
+
+FTM_RET	FTM_SSH_CHANNEL_destroy
+(
+	FTM_SSH_CHANNEL_PTR _PTR_ ppChannel
+)
+{
+	ASSERT(ppChannel != NULL);
+
+	ssh_channel_free((*ppChannel)->pChannel);
+
+	FTM_MEM_free(*ppChannel);
+	*ppChannel = NULL;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_SSH_CHANNEL_open
+(	
+	FTM_SSH_CHANNEL_PTR	pChannel
+)
+{
+	ASSERT(pChannel != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_INT	nRet;
+
+	nRet = ssh_channel_open_session(pChannel->pChannel);
+	if (nRet != SSH_OK)
+	{
+		xRet = FTM_RET_SSH_FAILED_TO_OPEN_CHANNEL;
+		ERROR(xRet, "Failed to open channel!");
+		return	xRet;
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_SSH_CHANNEL_close
+(	
+	FTM_SSH_CHANNEL_PTR	pChannel
+)
+{
+	ASSERT(pChannel != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+
+	if (ssh_channel_is_open(pChannel->pChannel))
+	{
+		ssh_channel_close(pChannel->pChannel);
+		ssh_channel_send_eof(pChannel->pChannel);
+	}
+
+	return	xRet;
+}
+
+FTM_BOOL	FTM_SSH_CHANNEL_isOpen
+(	
+	FTM_SSH_CHANNEL_PTR	pChannel
+)
+{
+	ASSERT(pChannel != NULL);
+
+	return	ssh_channel_is_open(pChannel->pChannel);
+}
+
+FTM_BOOL	FTM_SSH_CHANNEL_isEOF
+(
+	FTM_SSH_CHANNEL_PTR	pChannel
+)
+{
+ 	return	 ssh_channel_is_eof(pChannel->pChannel);
+}
+
+FTM_RET	FTM_SSH_CHANNEL_read
+(
+	FTM_SSH_CHANNEL_PTR	pChannel,
+	FTM_UINT8_PTR		pBuffer,
+	FTM_UINT32			ulBufferLen,
+	FTM_UINT32_PTR		pReadLen
+)
+{
+	ASSERT(pChannel != NULL);
+	ASSERT(pBuffer != NULL);
+	ASSERT(pReadLen != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_INT	nReadLen;
+
+	nReadLen = ssh_channel_read_nonblocking(pChannel->pChannel, pBuffer, ulBufferLen, 0);
+	if (nReadLen < 0)
+	{
+		xRet = FTM_RET_SSH_READ_FAILED;	
+		ERROR(xRet, "Failed to read data!");
+	}
+	else
+	{
+		*pReadLen = nReadLen;	
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_SSH_CHANNEL_write
+(
+	FTM_SSH_CHANNEL_PTR	pChannel,
+	FTM_UINT8_PTR		pBuffer,
+	FTM_UINT32			ulBufferLen
+)
+{
+	ASSERT(pChannel != NULL);
+	ASSERT(pBuffer != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_INT32	nWrittenLen;
+
+	nWrittenLen = ssh_channel_write(pChannel->pChannel, pBuffer, ulBufferLen);
+	if (nWrittenLen != ulBufferLen)
+	{
+		xRet = FTM_RET_SSH_WRITE_FAILED;	
+		ERROR(xRet, "Failed to write data!");
+	}
+
+	return	xRet;
 }

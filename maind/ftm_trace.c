@@ -16,9 +16,15 @@
 #include <common.h>
 #include "ftm_trace.h"
 #include "ftm_time.h"
+#include "ftm_lock.h"
 
 extern	
 FTM_CHAR_PTR	program_invocation_short_name;
+
+static
+FTM_BOOL	bInit = FTM_FALSE;
+static
+FTM_LOCK	xLock;
 
 static
 FTM_RET	FTM_TRACE_getFileSize
@@ -621,6 +627,13 @@ FTM_VOID	FTM_TRACE_Out
 	FTM_UINT32	ulLen = 0;
 	FTM_TRACE_TYPE_CONFIG_PTR	pConfig;
 
+	if (!bInit)
+	{
+		FTM_LOCK_init(&xLock);
+
+		bInit = FTM_TRUE;
+	}
+
 	if (!bEnable)
 	{
 		return;
@@ -635,6 +648,8 @@ FTM_VOID	FTM_TRACE_Out
 	case	FTM_TRACE_LEVEL_ERROR:	pConfig = &xTraceConfig.xError; 	break;
 	default:	return;
 	}
+
+	FTM_LOCK_set(&xLock);
 
 	memset(pOutputFormat, 0, sizeof(pOutputFormat));
 	memset(pBuffer, 0, sizeof(pBuffer));
@@ -828,6 +843,8 @@ FTM_VOID	FTM_TRACE_Out
 			FTM_TRACE_writeToFile(pFileName, &pBuffer[ulOffset], ulBufferLen);
 		}
 	}
+
+	FTM_LOCK_reset(&xLock);
 }
 
 FTM_RET	FTM_TRACE_writeToFile
@@ -843,17 +860,32 @@ FTM_RET	FTM_TRACE_writeToFile
 	FILE _PTR_	pFile;
 	FTM_RET		xRet = FTM_RET_OK;	
 
+#if 1
 	pFile = fopen(pFileName, "a");
 	if(pFile == NULL)
 	{
 		xRet = FTM_RET_ERROR;
-		fprintf(stderr, "Failed to open file[%s]", pFileName);
+		fprintf(stderr, "Failed to open file[%s:%s]\n", pFileName,strerror(errno));
 		return	xRet;
 	}
 
 	fwrite(pBuffer, 1, ulBufferLen, pFile);
 	fclose(pFile);
+#else
+	FTM_CHAR	pCommandLine[2048];
 
+	sprintf(pCommandLine, "echo \"%s\" >> %s", pBuffer, pFileName);
+	pFile = popen(pCommandLine, "a");
+	if (pFile == NULL)
+	{
+		xRet = FTM_RET_ERROR;
+		fprintf(stderr, "Failed to open file[%s:%s]\n", pFileName,strerror(errno));
+		return	xRet;
+	}
+
+	pclose(pFile);
+
+#endif
 	return	xRet;
 }
 

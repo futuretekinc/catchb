@@ -135,4 +135,6 @@ FTM_RET	FTM_SWITCH_getInfo
 );
 
 #include "ftm_switch_nst.h"
+#include "ftm_switch_dasan.h"
+#include "ftm_switch_juniper.h"
 #endif

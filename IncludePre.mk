@@ -12,20 +12,24 @@ CFLAGS:= -fPIC -c -g -Wall \
 				-I.\
 				-I$(TOPDIR)/include\
 				-I$(TOPDIR)/lib\
-				-I$(TOPDIR)/libtelnet\
+				-I$(TOPDIR)/libssh\
 				-I$(TOPDIR)/maind\
-				-I/home/xtra/tmp/libssh/include
+				-I/home/xtra/ftm/build/ftm-50s/_root/usr/include\
+				-I/home/xtra/ftm/build/ftm-50s/_root/usr/local/include
 
 LDFLAGS:= -Wl,--no-as-needed\
 				-L.\
 				-L$(TOPDIR)/lib\
-				-L$(TOPDIR)/libtelnet\
-				-L/home/xtra/tmp/libssh/build/src
+				-L$(TOPDIR)/libssh\
+				-L/home/xtra/ftm/build/ftm-50s/_root/usr/lib\
+				-L/home/xtra/ftm/build/ftm-50s/_root/usr/local/lib\
+				-L/home/xtra/tmp/libssh/build-armv5/src
 
 
-CC=gcc
-#CC=armv5-linux-gcc
+#CC=gcc
+CC=armv5-linux-gcc
 #CC=arm-openwrt-linux-uclibcgnueabi-gcc
+AR=armv5-linux-ar
 
 CFLAGS:= -fPIC \
 	$(CFLAGS) \

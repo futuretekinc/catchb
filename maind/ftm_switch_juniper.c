@@ -31,7 +31,7 @@
 
 #define	NST_MAX_COMD	32
 
-FTM_RET	FTM_SWITCH_DASAN_setAC
+FTM_RET	FTM_SWITCH_JUNIPER_setAC
 (
 	FTM_SWITCH_PTR	pSwitch,
 	FTM_CHAR_PTR	pTargetIP,
@@ -45,47 +45,38 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 	FTM_INT		i;
 	FTM_CHAR	pLocalIP[FTM_IP_LEN+1];
     FTM_CHAR	pCommandBuffers[NST_MAX_COMD][FTM_COMMAND_LEN];
-	FTM_UINT32	ulIndex;
+	//FTM_UINT32	ulIndex;
 	FTM_UINT32	ulCommandLines = 0;
 	FTM_SSH_PTR	pSSH = NULL;
 	FTM_SSH_CHANNEL_PTR	pChannel = NULL;
 	FTM_TIMER	xTimer;
 
 	FTM_getLocalIP(pLocalIP, sizeof(pLocalIP));
-	ulIndex = ntohl(inet_addr(pTargetIP)) & 0xFFFFFF;
+	//ulIndex = ntohl(inet_addr(pTargetIP)) & 0xFFFFFF;
 	
 	switch(xPolicy)
 	{
 	case	FTM_SWITCH_AC_POLICY_DENY:
 		{
-			sprintf(pCommandBuffers[ulCommandLines++],"enable\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"configure terminal\n");
+			sprintf(pCommandBuffers[ulCommandLines++],"configure\n");
 
-			sprintf(pCommandBuffers[ulCommandLines++],"flow catchb_main_%d create\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"ip %s/32 %s/32\n", pTargetIP, pLocalIP);
-			sprintf(pCommandBuffers[ulCommandLines++],"apply\n");
+			sprintf(pCommandBuffers[ulCommandLines++],"set firewall family ethernet-switching filter catchb_filter term 10 from source-address %s\n", pLocalIP);
+			sprintf(pCommandBuffers[ulCommandLines++],"set firewall family ethernet-switching filter catchb_filter term 10 from destination-address %s\n", pTargetIP);
+			sprintf(pCommandBuffers[ulCommandLines++],"set firewall family ethernet-switching filter catchb_filter term 10 then accept\n");
+
+			sprintf(pCommandBuffers[ulCommandLines++],"set firewall family ethernet-switching filter catchb_filter term 20 from source-address %s\n", pTargetIP);
+			sprintf(pCommandBuffers[ulCommandLines++],"set firewall family ethernet-switching filter catchb_filter term 20 from destination-address %s\n", pLocalIP);
+			sprintf(pCommandBuffers[ulCommandLines++],"set firewall family ethernet-switching filter catchb_filter term 20 then accept\n");
+
+			sprintf(pCommandBuffers[ulCommandLines++],"set firewall family ethernet-switching filter catchb_filter term 30 from source-address %s\n", pTargetIP);
+			sprintf(pCommandBuffers[ulCommandLines++],"set firewall family ethernet-switching filter catchb_filter term 30 then discard\n");
+
+			sprintf(pCommandBuffers[ulCommandLines++],"set firewall family ethernet-switching filter catchb_filter term 40 then accept\n");
+
+			sprintf(pCommandBuffers[ulCommandLines++],"set vlans default filter input catchb_filter\n");
+			sprintf(pCommandBuffers[ulCommandLines++],"commit\n");
 			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
-
-			sprintf(pCommandBuffers[ulCommandLines++],"flow catchb_%d create\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"ip %s/32 any\n", pTargetIP);
-			sprintf(pCommandBuffers[ulCommandLines++],"apply\n");
 			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
-
-			sprintf(pCommandBuffers[ulCommandLines++],"policy catchb_main_%d create\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"include-flow catchb_main_%d\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"priority highest\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"interface-binding vlan any\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"action match permit\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"apply\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
-
-			sprintf(pCommandBuffers[ulCommandLines++],"policy catchb_%d create\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"include-flow catchb_%d\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"priority medium\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"interface-binding vlan any\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"action match deny\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"apply\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"end\n");
 			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
 
 		}
@@ -93,17 +84,23 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 
 	case	FTM_SWITCH_AC_POLICY_ALLOW:	
 		{
-			sprintf(pCommandBuffers[ulCommandLines++],"enable\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"configure terminal\n");
+			sprintf(pCommandBuffers[ulCommandLines++],"configure\n");
+			sprintf(pCommandBuffers[ulCommandLines++],"show firewall family ethernet-switching filter catchb_filter\n");
 
-			sprintf(pCommandBuffers[ulCommandLines++],"no policy catchb_%d\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"no flow catchb_%d\n", ulIndex);
+			sprintf(pCommandBuffers[ulCommandLines++],"\n");
+			sprintf(pCommandBuffers[ulCommandLines++],"\n");
 
-			sprintf(pCommandBuffers[ulCommandLines++],"no policy catchb_main_%d\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"no flow catchb_main_%d\n", ulIndex);
+			sprintf(pCommandBuffers[ulCommandLines++],"delete firewall family ethernet-switching filter catchb_filter term 10 from destination-address %s\n", pTargetIP);
 
-			sprintf(pCommandBuffers[ulCommandLines++],"end\n");
+			sprintf(pCommandBuffers[ulCommandLines++],"delete firewall family ethernet-switching filter catchb_filter term 20 from source-address %s\n",pTargetIP);
+
+			sprintf(pCommandBuffers[ulCommandLines++],"delete firewall family ethernet-switching filter catchb_filter term 30 from source-address %s\n",pTargetIP);
+
+			sprintf(pCommandBuffers[ulCommandLines++],"commit\n");
 			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
+			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
+			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
+
 		}
 		break;
 	}

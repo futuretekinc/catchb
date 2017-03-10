@@ -45,31 +45,19 @@ FTM_RET	FTM_SHELL_CMD_alarm
 	ASSERT(pShell != NULL);
 	ASSERT(pArgv != NULL);
 	ASSERT(pData != NULL);
-	FTM_RET	xRet = FTM_RET_OK;
+
+	FTM_RET	xRet = FTM_RET_INVALID_ARGUMENTS;
 
 	FTM_CATCHB_PTR	pCatchB = (FTM_CATCHB_PTR)pData;
 
 	switch(nArgc)
 	{
-	case	1:
-		{
-			xRet = FTM_SHELL_CMD_showAlarmList(pCatchB);
-		}
-		break;
-
 	case	2:
 		{
-			FTM_CHAR_PTR	pHost = "smtp.cafe24.com";
-			FTM_UINT16		usPort = 587;
-			//FTM_CHAR_PTR	pUserId = "inhyun.cho@futuretek.co.kr";
-			//FTM_CHAR_PTR	pPasswd = "seaandriver0118";
-			FTM_CHAR_PTR	pUserId = "devweb@futuretek.co.kr";
-			FTM_CHAR_PTR	pPasswd = "futuretek1204";
-			FTM_CHAR_PTR	pTo = "xtra72@gmail.com";
-			FTM_CHAR_PTR	pFrom="inhyun.cho@futuretek.co.kr";
-			FTM_CHAR_PTR	pSubject="Send-Mail-Test";
-			FTM_CHAR_PTR	pMessage="Hello";
-			xRet = FTM_SHELL_CMD_testSendMail(pHost, usPort, pUserId, pPasswd, pTo, pFrom, pSubject, pMessage);
+			if (strcasecmp(pArgv[1], "list") == 0)
+			{
+				xRet = FTM_SHELL_CMD_showAlarmList(pCatchB);
+			}
 		}
 		break;
 
@@ -83,10 +71,22 @@ FTM_RET	FTM_SHELL_CMD_alarm
 					printf("Failed to destroy switch[%s]!", pArgv[2]);	
 				}
 			}
-			else
+		}
+		break;
+
+	case	4:
+		{
+			if (strcasecmp(pArgv[1], "add") == 0)
 			{
-				xRet = FTM_RET_INVALID_ARGUMENTS;
+				FTM_ALARM_PTR	pAlarm;
+
+				xRet = FTM_CATCHB_createAlarm(pCatchB, pArgv[2], pArgv[3], NULL, &pAlarm);
+				if (xRet != FTM_RET_OK)
+				{
+					printf("Error : Failed to create alarm!");	
+				}
 			}
+	
 		}
 		break;
 
@@ -99,12 +99,8 @@ FTM_RET	FTM_SHELL_CMD_alarm
 				xRet = FTM_CATCHB_createAlarm(pCatchB, pArgv[2], pArgv[3], pArgv[4], &pAlarm);
 				if (xRet != FTM_RET_OK)
 				{
-					printf("Alarm create failed !");	
+					printf("Error : Failed to create alarm!");	
 				}
-			}
-			else
-			{
-				xRet = FTM_RET_INVALID_ARGUMENTS;
 			}
 	
 		}
@@ -129,16 +125,6 @@ FTM_RET	FTM_SHELL_CMD_alarm
 					printf("Send mail test failed!\n");	
 				}
 			}
-			else
-			{
-				xRet = FTM_RET_INVALID_ARGUMENTS;
-			}
-		}
-		break;
-
-	default:
-		{
-			xRet = FTM_RET_INVALID_ARGUMENTS;
 		}
 		break;
 	}

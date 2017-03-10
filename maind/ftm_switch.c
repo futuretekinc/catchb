@@ -14,10 +14,12 @@ FTM_SWITCH_INFO	pSwitchInfos[] =
 	{
 		.xModel	= FTM_SWITCH_MODEL_DASAN,
 		.pName  = "dasan",
+		.fSetAC	= FTM_SWITCH_DASAN_setAC
 	},
 	{
 		.xModel	= FTM_SWITCH_MODEL_JUNIPER,
 		.pName  = "juniper",
+		.fSetAC	= FTM_SWITCH_JUNIPER_setAC
 	},
 	{
 		.xModel	= FTM_SWITCH_MODEL_UNKNOWN
