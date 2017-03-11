@@ -142,6 +142,8 @@ FTM_RET	FTM_LOGGER_destroy
 
 	if ((*ppLogger) != NULL)
 	{
+		FTM_LOGGER_stop((*ppLogger));
+
 		if ((*ppLogger)->pMsgQ != NULL)
 		{
 			FTM_MSGQ_destroy(&(*ppLogger)->pMsgQ);
@@ -216,6 +218,8 @@ FTM_RET	FTM_LOGGER_stop
 
 	if (!pLogger->bStop)
 	{
+		FTM_MSGQ_pushQuit(pLogger->pMsgQ);
+
 		pLogger->bStop = FTM_TRUE;
 		pthread_join(pLogger->xThread, NULL);
 		pLogger->xThread = 0;
@@ -261,16 +265,24 @@ FTM_VOID_PTR	FTM_LOGGER_threadMain
 	{
 		FTM_MSG_PTR	pRcvdMsg;
 
-		xRet = FTM_MSGQ_timedPop(pLogger->pMsgQ, 1000, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
+		xRet = FTM_MSGQ_timedPop(pLogger->pMsgQ, 10, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
 		if (xRet == FTM_RET_OK)
 		{
 			switch(pRcvdMsg->xType)
 			{
+			case	FTM_MSG_TYPE_QUIT:
+				{
+					pLogger->bStop = FTM_TRUE;
+				}
+				break;
+
 			default:
 				{
 					INFO("Unknown message[%s]", FTM_MESSAGE_getString(pRcvdMsg->xType));	
 				}
 			}
+
+			FTM_MEM_free(pRcvdMsg);
 		}
 
 		if (FTM_TIMER_isExpired(&xLogExpireTimer) == FTM_TRUE)

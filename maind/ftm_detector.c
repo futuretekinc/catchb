@@ -128,15 +128,10 @@ FTM_RET	FTM_DETECTOR_destroy
 
 	FTM_RET	xRet = FTM_RET_OK;
 
+	FTM_DETECTOR_stop((*ppDetector));
+
 	if ((*ppDetector)->pMsgQ != NULL)
 	{
-		FTM_MSG_PTR	pMsg;
-
-		while(FTM_MSGQ_pop((*ppDetector)->pMsgQ, (FTM_VOID_PTR _PTR_)&pMsg) == FTM_RET_OK)
-		{
-			FTM_MEM_free(pMsg);
-		}
-
 		xRet = FTM_MSGQ_destroy(&(*ppDetector)->pMsgQ);
 		if (xRet != FTM_RET_OK)
 		{
@@ -202,6 +197,8 @@ FTM_RET	FTM_DETECTOR_stop
 
 	if (pDetector->xThread != 0)
 	{
+		FTM_MSGQ_pushQuit(pDetector->pMsgQ);
+
 		pDetector->bStop = FTM_TRUE;	
 		pthread_join(pDetector->xThread, NULL);
 
@@ -227,11 +224,17 @@ FTM_VOID_PTR	FTM_DETECTOR_process
 	{
 		FTM_MSG_PTR	pRcvdMsg;
 
-		xRet = 	FTM_MSGQ_timedPop(pDetector->pMsgQ, 1000, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
+		xRet = 	FTM_MSGQ_timedPop(pDetector->pMsgQ, 10, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
 		if(xRet == FTM_RET_OK)
 		{
 			switch(pRcvdMsg->xType)
 			{
+			case	FTM_MSG_TYPE_QUIT:
+				{
+					pDetector->bStop = FTM_TRUE;
+				}
+				break;
+
 			case	FTM_MSG_TYPE_SWITCH_CONTROL:
 				{
 					FTM_DETECTOR_onSetControl(pDetector, (FTM_MSG_SWITCH_CONTROL_PTR)pRcvdMsg);

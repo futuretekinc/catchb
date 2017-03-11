@@ -21,7 +21,6 @@
 #include "ftm_trace.h"
 #include "ftm_utils.h"
 #include "ftm_switch.h"
-#include "ftm_telnet.h"
 
 typedef	enum	
 {
@@ -175,7 +174,7 @@ error:
 	return	xRet;
 }
 
-
+#if 0
 FTM_RET	FTM_SWITCH_NST_accessControl2
 (
 	FTM_SWITCH_PTR	pSwitch,
@@ -318,3 +317,6 @@ finished:
 
 	return	xRet;
 }
+
+#endif
+

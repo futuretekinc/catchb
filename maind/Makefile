@@ -9,6 +9,10 @@ include $(TOPDIR)/IncludePre.mk
 		-D__need_malloc_and_calloc=1
 
 BIN_TARGET=catchb
-BIN_OBJS=$(patsubst %.c,%.o,$(wildcard *.c) $(wildcard shell/*.c))
-BIN_LDFLAGS=$(LDFLAGS) -L$(TOPDIR)/lib -lssh -lcrypto -lcatchb -lcurl -lsqlite3 -lcjson -pthread -lm -ldl
+BIN_SRC=$(shell find . -name "*.c")
+#BIN_OBJS=$(patsubst %.c,%.o,$(wildcard *.c) $(wildcard shell/*.c))
+BIN_OBJS = $(BIN_SRC:%.c=%.o)
+
+BIN_LDFLAGS=$(LDFLAGS) -L$(TOPDIR)/lib -lz -lcatchb -lssh -lcurl -lssl -lcrypto -lsqlite3 -lcjson -pthread -lrt -lm -ldl
+
 include $(TOPDIR)/IncludePost.mk

@@ -461,7 +461,11 @@ FTM_VOID_PTR	FTM_EVENT_TIMER_MANAGER_threadMain
 		FTM_LOCK_reset(&pETM->xLock);
 
 		FTM_TIMER_remainMS(&xLoopTimer, &ulRemainTime);
-		usleep(ulRemainTime * 1000);
+		while((!pETM->bStop) && (FTM_TIMER_isExpired(&xLoopTimer) != FTM_TRUE))
+		{
+			usleep(1000);
+		}
+
 		FTM_TIMER_addMS(&xLoopTimer, pETM->ulLoopInterval);
 	}
 

@@ -1,5 +1,6 @@
 #include <string.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <time.h>
@@ -9,6 +10,7 @@
 #include "ftm_queue.h"
 #include "ftm_mem.h"
 #include "ftm_msgq.h"
+#include "ftm_message.h"
 
 FTM_RET	FTM_MSGQ_create(FTM_MSGQ_PTR _PTR_ ppMsgQ)
 {
@@ -98,7 +100,7 @@ FTM_RET FTM_MSGQ_pop(FTM_MSGQ_PTR pMsgQ, FTM_VOID_PTR _PTR_ ppMsg)
 	{
 		sem_post(&pMsgQ->xLock);
 	}
-	else	
+	else
 	{
 		*ppMsg = pMsg;
 	}
@@ -133,7 +135,7 @@ FTM_RET FTM_MSGQ_timedPop(FTM_MSGQ_PTR pMsgQ, FTM_UINT32 ulTimeout, FTM_VOID_PTR
 	{
 		sem_post(&pMsgQ->xLock);
 	}
-	else	
+	else
 	{
 		*ppMsg = pMsg;
 	}
@@ -149,3 +151,30 @@ FTM_RET FTM_MSGQ_count(FTM_MSGQ_PTR pMsgQ, FTM_UINT32_PTR pulCount)
 	return	FTM_QUEUE_count(&pMsgQ->xQueue, pulCount);
 }
 
+FTM_RET	FTM_MSGQ_pushQuit(FTM_MSGQ_PTR pMsgQ)
+{
+	ASSERT(pMsgQ != NULL);
+
+	FTM_RET	xRet;
+	FTM_MSG_PTR	pMsg;
+
+	pMsg = (FTM_MSG_PTR)FTM_MEM_malloc(sizeof(FTM_MSG));
+	if (pMsg == NULL)
+	{
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;	
+		ERROR(xRet, "Failed to create quit message!");
+		return	xRet;	
+	}
+
+	pMsg->xType = FTM_MSG_TYPE_QUIT;
+	pMsg->ulLen = sizeof(FTM_MSG);
+
+	xRet = FTM_MSGQ_push(pMsgQ, pMsg);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to push message!");
+		FTM_MEM_free(pMsg);	
+	}
+
+	return	xRet;
+}

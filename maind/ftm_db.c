@@ -100,7 +100,7 @@ FTM_RET	FTM_DB_create
 	FTM_RET		xRet=FTM_RET_OK;
 	FTM_DB_PTR	pDB;
 
-	pDB = (FTM_DB_PTR)FTM_MEM_malloc(sizeof(FTM_DB));
+	pDB = (FTM_DB_PTR)FTM_MEM_calloc(sizeof(FTM_DB),1);
 
 	if (pDB == NULL)
 	{

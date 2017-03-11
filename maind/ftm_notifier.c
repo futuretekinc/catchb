@@ -207,6 +207,8 @@ FTM_RET	FTM_NOTIFIER_destroy
 
 	FTM_RET	xRet = FTM_RET_OK;
 
+	FTM_NOTIFIER_stop((*ppNotifier));
+
 	if ((*ppNotifier)->pMsgQ != NULL)
 	{
 		xRet = FTM_MSGQ_destroy(&(*ppNotifier)->pMsgQ);
@@ -281,6 +283,8 @@ FTM_RET	FTM_NOTIFIER_stop
 
 	if (pNotifier->xThread != 0)
 	{
+		FTM_MSGQ_pushQuit(pNotifier->pMsgQ);
+
 		pNotifier->bStop = FTM_TRUE;	
 		pthread_join(pNotifier->xThread, NULL);
 
@@ -309,11 +313,17 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
     {
 		FTM_MSG_PTR	pRcvdMsg;
 
-		xRet= FTM_MSGQ_timedPop(pNotifier->pMsgQ, 1000, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
+		xRet= FTM_MSGQ_timedPop(pNotifier->pMsgQ, 10, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
 		if (xRet == FTM_RET_OK)
 		{
 			switch(pRcvdMsg->xType)
 			{
+			case	FTM_MSG_TYPE_QUIT:
+				{
+					pNotifier->bStop = FTM_TRUE;
+				}
+				break;
+
 			case	FTM_MSG_TYPE_SEND_ALARM:
 				{
 					FTM_MSG_SEND_ALARM_PTR	pMsg = (FTM_MSG_SEND_ALARM_PTR)pRcvdMsg;

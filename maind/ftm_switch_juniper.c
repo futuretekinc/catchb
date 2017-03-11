@@ -25,7 +25,6 @@
 #include "ftm_trace.h"
 #include "ftm_utils.h"
 #include "ftm_switch.h"
-#include "ftm_telnet.h"
 #include "ftm_timer.h"
 #include "ftm_ssh.h"
 

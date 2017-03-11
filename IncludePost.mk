@@ -45,7 +45,7 @@ endif
 
 
 clean:
-	@rm -f *.so *.a $(BIN_OBJS) *.d
+	@rm -f *.so *.a $(BIN_OBJS) $(LIB_OBJS) *.d
 	@for dir in $(SUBDIR); do\
 		make -C $$dir clean;\
 	done

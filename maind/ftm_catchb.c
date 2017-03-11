@@ -326,6 +326,8 @@ FTM_RET	FTM_CATCHB_destroy
 
 	FTM_RET	xRet = FTM_RET_OK;
 
+	FTM_CATCHB_stop((*ppCatchB));
+
 	if ((*ppCatchB)->pAlarmList != NULL)
 	{
 		FTM_ALARM_PTR	pAlarm = NULL;
@@ -827,8 +829,8 @@ FTM_VOID_PTR	FTM_CATCHB_process
 	{
 		FTM_MSG_PTR	pRcvdMsg;
 
-		
-		xRet = 	FTM_MSGQ_timedPop(pCatchB->pMsgQ, 1000, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
+	
+		xRet = 	FTM_MSGQ_timedPop(pCatchB->pMsgQ, 10, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
 		if(xRet == FTM_RET_OK)
 		{
 			//INFO("Message : %s", FTM_MESSAGE_getString(pRcvdMsg->xType));

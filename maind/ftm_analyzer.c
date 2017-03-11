@@ -243,14 +243,10 @@ FTM_RET	FTM_ANALYZER_destroy
 	ASSERT(ppAnalyzer != NULL);
 	ASSERT(*ppAnalyzer != NULL);
 
+	FTM_ANALYZER_stop((*ppAnalyzer));
+
 	if ((*ppAnalyzer)->pMsgQ != NULL)
 	{
-		FTM_MSG_PTR	pMsg;
-
-		while(FTM_MSGQ_pop((*ppAnalyzer)->pMsgQ, (FTM_VOID_PTR _PTR_)&pMsg) == FTM_RET_OK)
-		{
-			FTM_MEM_free(pMsg);
-		}
 		FTM_MSGQ_destroy(&(*ppAnalyzer)->pMsgQ);	
 	}
 
@@ -335,6 +331,8 @@ FTM_RET	FTM_ANALYZER_stop
 
 	if (pAnalyzer->xThread != 0)
 	{
+		FTM_MSGQ_pushQuit(pAnalyzer->pMsgQ);
+
 		pAnalyzer->bStop = FTM_TRUE;
 
 		pthread_join(pAnalyzer->xThread, NULL);
@@ -361,11 +359,17 @@ FTM_VOID_PTR FTM_ANALYZER_threadMain
 	{
 		FTM_MSG_PTR	pRcvdMsg;
 
-		xRet = FTM_MSGQ_timedPop(pAnalyzer->pMsgQ, 1000, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
+		xRet = FTM_MSGQ_timedPop(pAnalyzer->pMsgQ, 10, (FTM_VOID_PTR _PTR_)&pRcvdMsg);
 		if (xRet == FTM_RET_OK)
 		{
 			switch(pRcvdMsg->xType)
 			{
+			case	FTM_MSG_TYPE_QUIT:
+				{
+					pAnalyzer->bStop = FTM_TRUE;
+				}
+				break;
+
 			default:
 				INFO("Unknown message[%s]", FTM_MESSAGE_getString(pRcvdMsg->xType));
 				break;

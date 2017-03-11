@@ -7,7 +7,6 @@
 #include "ftm_shell.h"
 #include "ftm_db.h"
 #include "ftm_mem.h"
-#include "ftm_telnet.h"
 
 FTM_RET	FTM_SHELL_CMD_showSwitchList
 (

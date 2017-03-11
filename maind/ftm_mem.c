@@ -12,7 +12,7 @@ typedef struct
 {
 	FTM_CHAR_PTR	pFile;
 	FTM_UINT32		ulLine;
-	size_t			xSize;
+	FTM_UINT32		xSize;
 	FTM_UINT8		pMem[];
 }	FTM_MEM_BLOCK, _PTR_ FTM_MEM_BLOCK_PTR;
 
@@ -82,7 +82,18 @@ FTM_VOID_PTR	FTM_MEM_TRACE_malloc(size_t xSize, const char *pFile, unsigned long
 	}
 	memset(pMB, 0,sizeof(FTM_MEM_BLOCK) + xSize);
 
-	pMB->pFile = strdup(pFile);
+	if (pFile != NULL)
+	{
+		pMB->pFile = malloc(strlen(pFile)+1);
+		if (pMB->pFile == NULL)
+		{
+			free(pMB);
+			return	NULL;
+		}
+	
+		strcpy(pMB->pFile, pFile);
+	}
+
 	pMB->ulLine= ulLine;
 	pMB->xSize = xSize;
 	FTM_LIST_append(pMemList, pMB);
@@ -113,6 +124,11 @@ FTM_VOID_PTR	FTM_MEM_TRACE_calloc(size_t xNumber, size_t xSize, const char *pFil
 	if (pFile != NULL)
 	{
 		pMB->pFile = malloc(strlen(pFile) + 1);
+		if (pMB->pFile == NULL)
+		{
+			free(pMB);
+			return	NULL;
+		}
 		strcpy(pMB->pFile, pFile); 
 	}
 	pMB->ulLine= ulLine;
