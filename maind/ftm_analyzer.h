@@ -9,6 +9,7 @@
 #include "ftm_lock.h"
 #include "cjson/cJSON.h"
 #include "ftm_trace.h"
+#include "ftm_pcap.h"
 
 typedef	struct	FTM_ANALYZER_CONFIG_STRUCT
 {
@@ -56,6 +57,10 @@ typedef	struct FTM_ANALYZER_STRUCT
 
 	pthread_t		xThread;
 	FTM_BOOL		bStop;
+
+	pthread_t		xPCAPThread;
+	FTM_LOCK_PTR	pPCAPLock;
+	FTM_PCAP_PTR	pPCAP;
 } FTM_ANALYZER, _PTR_ FTM_ANALYZER_PTR;
 
 FTM_RET	FTM_ANALYZER_create
@@ -124,4 +129,15 @@ FTM_RET	FTM_ANALYZER_CCTV_getList
 	FTM_UINT32			ulMaxCount,
 	FTM_UINT32_PTR		pCount
 );
+
+FTM_RET	FTM_ANALYZER_PCAP_start
+(
+	FTM_ANALYZER_PTR	pAnalyzer
+);
+
+FTM_RET	FTM_ANALYZER_PCAP_stop
+(
+	FTM_ANALYZER_PTR	pAnalyzer
+);
+
 #endif

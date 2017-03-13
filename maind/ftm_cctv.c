@@ -12,6 +12,7 @@ FTM_RET	FTM_CCTV_create
 {
 	ASSERT(ppCCTV != NULL);
 
+	FTM_RET			xRet = FTM_RET_OK;
 	FTM_CCTV_PTR	pCCTV;
 
 	pCCTV = (FTM_CCTV_PTR)FTM_MEM_malloc(sizeof(FTM_CCTV));
@@ -29,12 +30,32 @@ FTM_RET	FTM_CCTV_create
 		pCCTV->xConfig.xStat = FTM_CCTV_STAT_UNREGISTERED;
 	}
 
-	FTM_LOCK_init(&pCCTV->xLock);
-	FTM_TIMER_initS(&pCCTV->xExpiredTimer, 0);
+	xRet = FTM_LOCK_init(&pCCTV->xLock);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to init lock!");
+		goto finished;
+	}
+
+	xRet = FTM_TIMER_initS(&pCCTV->xExpiredTimer, 0);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to init timer!");
+		goto finished;
+	}
 
 	*ppCCTV = pCCTV;
 
-	return	FTM_RET_OK;
+finished:
+	if (xRet != FTM_RET_OK)
+	{
+		if (pCCTV != NULL)
+		{
+			FTM_MEM_free(pCCTV);	
+		}
+	}
+
+	return	xRet;
 }
 
 FTM_RET	FTM_CCTV_destroy
@@ -45,11 +66,15 @@ FTM_RET	FTM_CCTV_destroy
 	ASSERT(ppCCTV != NULL);
 	ASSERT(*ppCCTV != NULL);
 
-	FTM_LOCK_final(&(*ppCCTV)->xLock);
+	if (*ppCCTV != NULL)
+	{
+		FTM_LOCK_final(&(*ppCCTV)->xLock);
 
-	FTM_MEM_free(*ppCCTV);
+		FTM_MEM_free(*ppCCTV);
 
-	*ppCCTV = NULL;
+		*ppCCTV = NULL;
+	}
+
 
 	return	FTM_RET_OK;
 }

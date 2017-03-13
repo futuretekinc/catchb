@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "ftm_catchb.h"
 #include "ftm_analyzer.h"
 #include "ftm_trace.h"
@@ -7,6 +8,8 @@
 #include "ftm_utils.h"
 #include "ftm_mem.h"
 #include "ftm_ping.h"
+#include "ftm_catchb.h"
+#include "ftm_score.h"
 
 #undef	__MODULE__
 #define	__MODULE__	"analyzer"
@@ -26,6 +29,17 @@ FTM_RET	FTM_ANALYZER_process
 FTM_VOID_PTR	FTM_ANALYZER_threadMain
 (
 	FTM_VOID_PTR	pParam
+);
+
+FTM_VOID_PTR FTM_ANALYZER_threadPCAP
+(
+	FTM_VOID_PTR pData
+);
+
+FTM_RET	FTM_ANALIZER_PCAP_calcScore
+(
+	FTM_ANALYZER_PTR	pAnalyzer,
+	FTM_SCORE_PTR		pScore
 );
 
 /*****************************************************************
@@ -177,25 +191,32 @@ FTM_RET	FTM_ANALYZER_create
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
 		ERROR(xRet, "Failed to create scheduler!\n");
-		goto error;
+		goto finished;
 	}
 
 	strcpy(pAnalyzer->pName, __MODULE__);
 
 	FTM_ANALYZER_CONFIG_setDefault(&pAnalyzer->xConfig);
 
+	xRet = FTM_LOCK_create(&pAnalyzer->pPCAPLock);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create pcap lock!");
+		goto finished;
+	}
+
 	xRet = FTM_LOCK_create(&pAnalyzer->pLock);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to create lock!");
-		goto error;
+		goto finished;
 	}
 
 	xRet = FTM_LIST_create(&pAnalyzer->pList);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to create CCTV list!");
-		goto error;
+		goto finished;
 	}
 	FTM_LIST_setSeeker(pAnalyzer->pList, FTM_ANALYZER_seeker);
 
@@ -203,7 +224,14 @@ FTM_RET	FTM_ANALYZER_create
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to create message queue!\n");
-		goto error;
+		goto finished;
+	}
+
+	xRet = FTM_PCAP_create(&pAnalyzer->pPCAP);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create pcap!");
+		goto finished;	
 	}
 
 	pAnalyzer->bStop = FTM_TRUE;
@@ -211,24 +239,35 @@ FTM_RET	FTM_ANALYZER_create
 
 	*ppAnalyzer = pAnalyzer;	
 
-	return	xRet;
-
-error:
-	if (pAnalyzer != NULL)
+finished:
+	if (xRet != FTM_RET_OK)
 	{
-		if (pAnalyzer->pMsgQ != NULL)
+		if (pAnalyzer != NULL)
 		{
-			FTM_MSGQ_destroy(&pAnalyzer->pMsgQ);	
-		}
+			if (pAnalyzer->pPCAP != NULL)
+			{
+				FTM_PCAP_destroy(&pAnalyzer->pPCAP);	
+			}
 
-		if (pAnalyzer->pList != NULL)
-		{
-			FTM_LIST_destroy(&pAnalyzer->pList);	
-		}
+			if (pAnalyzer->pMsgQ != NULL)
+			{
+				FTM_MSGQ_destroy(&pAnalyzer->pMsgQ);	
+			}
 
-		if (pAnalyzer->pLock != NULL)
-		{
-			FTM_LOCK_destroy(&pAnalyzer->pLock);	
+			if (pAnalyzer->pList != NULL)
+			{
+				FTM_LIST_destroy(&pAnalyzer->pList);	
+			}
+
+			if (pAnalyzer->pLock != NULL)
+			{
+				FTM_LOCK_destroy(&pAnalyzer->pLock);	
+			}
+
+			if (pAnalyzer->pPCAPLock != NULL)
+			{
+				FTM_LOCK_destroy(&pAnalyzer->pPCAPLock);	
+			}
 		}
 	}
 
@@ -244,6 +283,11 @@ FTM_RET	FTM_ANALYZER_destroy
 	ASSERT(*ppAnalyzer != NULL);
 
 	FTM_ANALYZER_stop((*ppAnalyzer));
+
+	if ((*ppAnalyzer)->pPCAP != NULL)
+	{
+		FTM_PCAP_destroy(&(*ppAnalyzer)->pPCAP);	
+	}
 
 	if ((*ppAnalyzer)->pMsgQ != NULL)
 	{
@@ -265,6 +309,12 @@ FTM_RET	FTM_ANALYZER_destroy
 	if ((*ppAnalyzer)->pLock != NULL)
 	{
 		FTM_LOCK_destroy(&(*ppAnalyzer)->pLock);
+	}
+
+
+	if ((*ppAnalyzer)->pPCAPLock != NULL)
+	{
+		FTM_LOCK_destroy(&(*ppAnalyzer)->pPCAPLock);	
 	}
 
 	FTM_MEM_free(*ppAnalyzer);
@@ -319,6 +369,12 @@ FTM_RET	FTM_ANALYZER_start
 		ERROR(xRet, "Failed to start %s!", pAnalyzer->pName);
 	}
 
+	if (pthread_create(&pAnalyzer->xPCAPThread, NULL, FTM_ANALYZER_threadPCAP, (FTM_VOID_PTR)pAnalyzer) < 0)
+	{
+		xRet = FTM_RET_THREAD_CREATION_FAILED;
+		ERROR(xRet, "Failed to start %s!", pAnalyzer->pName);
+	}
+
     return xRet;
 }
 
@@ -353,6 +409,13 @@ FTM_VOID_PTR FTM_ANALYZER_threadMain
 
 	INFO("%s started.", pAnalyzer->pName);
 
+	xRet = FTM_PCAP_open(pAnalyzer->pPCAP);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to open pcap!");
+		goto finished;
+	}
+
 	pAnalyzer->bStop = FTM_FALSE;
 
 	while(!pAnalyzer->bStop)
@@ -386,10 +449,59 @@ FTM_VOID_PTR FTM_ANALYZER_threadMain
 		}
 	}
 
+	FTM_PCAP_close(pAnalyzer->pPCAP);
+
 	INFO("%s stopped.", pAnalyzer->pName);
+
+finished:
 
 	return	0;
 }
+
+FTM_VOID_PTR FTM_ANALYZER_threadPCAP
+(
+	FTM_VOID_PTR pData
+)
+{
+	FTM_RET				xRet;
+	FTM_ANALYZER_PTR	pAnalyzer = (FTM_ANALYZER_PTR)pData;
+
+	INFO("%s started.", pAnalyzer->pName);
+
+	xRet = FTM_PCAP_open(pAnalyzer->pPCAP);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to open pcap!");
+		goto finished;
+	}
+
+	pAnalyzer->bStop = FTM_FALSE;
+
+	FTM_LOCK_set(pAnalyzer->pPCAPLock);
+
+	while(!pAnalyzer->bStop)
+	{
+
+		FTM_LOCK_set(pAnalyzer->pPCAPLock);
+		if (pAnalyzer->bStop)
+		{
+			break;
+		}
+
+		FTM_PCAP_start(pAnalyzer->pPCAP, 1000);
+	}
+
+	FTM_LOCK_reset(pAnalyzer->pPCAPLock);
+
+	FTM_PCAP_close(pAnalyzer->pPCAP);
+
+	INFO("%s stopped.", pAnalyzer->pName);
+
+finished:
+
+	return	0;
+}
+
 
 
 FTM_RET	FTM_ANALYZER_process
@@ -404,6 +516,7 @@ FTM_RET	FTM_ANALYZER_process
 	FTM_CHAR_PTR	pID;
 
 	FTM_LOCK_set(pAnalyzer->pLock);
+
 
 	xRet = FTM_LIST_count(pAnalyzer->pList, &ulCount);
 	if (xRet != FTM_RET_OK)
@@ -442,7 +555,6 @@ FTM_RET	FTM_ANALYZER_process
 		FTM_UINT32		ulReplyCount = 0;
 		FTM_UINT32		ulTime;
 
-
 		memset(pHashData, 0, sizeof(pHashData));
 		memset(pHashValue, 0, sizeof(pHashValue));
 
@@ -464,12 +576,26 @@ FTM_RET	FTM_ANALYZER_process
 		else
 		{
 			FTM_UINT32	j;
-			FTM_CHAR	pMAC[24]; 
+			FTM_CHAR	pMAC[64]; 
+			FTM_CHAR	pOptions[128];
+			FTM_CHAR	pLocalIP[32];
+			FTM_SCORE	xScore;
+
+			memset(&xScore, 0, sizeof(xScore));
+
+			FTM_getLocalIP(pLocalIP,sizeof(pLocalIP));
 
 			FTM_ARP_parsing(pCCTV->xConfig.pIP, pMAC); 
-
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen , "[ip : %s, mac : %s]", pCCTV->xConfig.pIP, pMAC);
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, " [port :");
+
+			//sprintf(pOptions, "src %s and dst %s and tcp", pCCTV->xConfig.pIP, pLocalIP);
+			sprintf(pOptions, "src %s and dst %s and tcp", pLocalIP, pCCTV->xConfig.pIP);
+			FTM_PCAP_setFilter(pAnalyzer->pPCAP, pOptions);
+			FTM_PCAP_setFilter2(pAnalyzer->pPCAP, inet_addr(pLocalIP), inet_addr(pCCTV->xConfig.pIP));
+
+			INFO("PCAP start!");
+			FTM_ANALYZER_PCAP_start(pAnalyzer);
 
 			pCCTV->ulPortCount = 0;
 			for(j =0 ;j < FTM_CATCHB_ANALYZER_MAX_PORT_COUNT ; j++)
@@ -487,8 +613,17 @@ FTM_RET	FTM_ANALYZER_process
 				pCCTV->ulPortCount++;
 
 				ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, "%d - %s", pAnalyzer->xConfig.pPortList[j], (bOpened)?"open":"close"); 
+			usleep(100000);	
 			}
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, "]");
+
+			usleep(1000000);	
+
+			FTM_ANALYZER_PCAP_stop(pAnalyzer);
+			INFO("PCAP finished !");
+
+			FTM_ANALIZER_PCAP_calcScore(pAnalyzer, &xScore);
+			INFO("xScore.fValue = %f", xScore.fValue);
 
 			FTM_HASH_SHA1((FTM_UINT8_PTR)pHashData, ulHashDataLen, pHashValue, sizeof(pHashValue));
 
@@ -718,7 +853,6 @@ FTM_RET	FTM_ANALYZER_CCTV_getList
 	return	FTM_RET_OK;
 }
 
-
 FTM_BOOL	FTM_ANALYZER_seeker
 (
 	const FTM_VOID_PTR pElement, 
@@ -730,3 +864,47 @@ FTM_BOOL	FTM_ANALYZER_seeker
 
 	return	(strcasecmp((FTM_CHAR_PTR)pElement, (FTM_CHAR_PTR)pIndicator) == 0);
 }
+
+FTM_RET	FTM_ANALYZER_PCAP_start
+(
+	FTM_ANALYZER_PTR	pAnalyzer
+)
+{
+	ASSERT(pAnalyzer != NULL);
+
+	return	FTM_LOCK_reset(pAnalyzer->pPCAPLock);
+}
+
+FTM_RET	FTM_ANALYZER_PCAP_stop
+(
+	FTM_ANALYZER_PTR	pAnalyzer
+)
+{
+	ASSERT(pAnalyzer != NULL);
+
+	return	FTM_PCAP_stop(pAnalyzer->pPCAP);
+}
+
+FTM_RET	FTM_ANALIZER_PCAP_calcScore
+(
+	FTM_ANALYZER_PTR	pAnalyzer,
+	FTM_SCORE_PTR		pScore
+)
+{
+	ASSERT(pAnalyzer != NULL);
+
+	
+	FTM_UINT32	i;
+
+	for(i = 0 ; i < pAnalyzer->pPCAP->ulCaptureCount ; i++)
+	{
+		FTM_SCORE_processIP(pScore, pAnalyzer->pPCAP->ppCapturePackets[i], 64);
+		FTM_SCORE_processTCP(pScore, pAnalyzer->pPCAP->ppCapturePackets[i], 64);
+	}
+
+	INFO("PCAP Caputred packet count : %d\n", pAnalyzer->pPCAP->ulCaptureCount);
+
+	return	FTM_RET_OK;
+
+}
+

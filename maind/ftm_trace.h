@@ -82,6 +82,8 @@ FTM_VOID	FTM_TRACE_Out
 	...
 );
 
+FTM_VOID	FTM_TRACE_asserted(FTM_VOID);
+
 #define	__MODULE__				NULL
 
 #define	OUTPUT(level, format, ...)	FTM_TRACE_Out(level, 				FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
@@ -93,5 +95,5 @@ FTM_VOID	FTM_TRACE_Out
 #define	WARN(errno, format, ...)	FTM_TRACE_Out(FTM_TRACE_LEVEL_WARN,	FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
 #define	ERROR(errno, format, ...)	FTM_TRACE_Out(FTM_TRACE_LEVEL_ERROR,FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
 
-#define	ASSERT(x)					{ if (!(x)) { printf("ASSERTED[%s:%d] - %s\n", __func__, __LINE__, #x);}; }
+#define	ASSERT(x)					{ if (!(x)) { printf("ASSERTED[%s:%d] - %s\n", __func__, __LINE__, #x); FTM_TRACE_asserted();}; }
 #endif

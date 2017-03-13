@@ -14,7 +14,7 @@ CFLAGS:= -fPIC -c -g -Wall \
 				-I$(TOPDIR)/lib\
 				-I$(TOPDIR)/maind
 
-LDFLAGS:= -Wl,--no-as-needed\
+LDFLAGS:= -Wl,--no-as-needed -rdynamic\
 				-L.\
 				-L$(TOPDIR)\
 				-L$(TOPDIR)/lib\

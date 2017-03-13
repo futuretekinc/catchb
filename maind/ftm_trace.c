@@ -1,3 +1,4 @@
+#include <execinfo.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
@@ -922,3 +923,26 @@ FTM_CHAR_PTR	FTM_TRACE_LEVEL_string
 
 	return	"UNKNOWN";
 }
+
+FTM_VOID	FTM_TRACE_asserted
+(
+)
+{
+	FTM_VOID_PTR	pArray[10];
+ 	FTM_UINT32		ulSize;
+ 	FTM_CHAR_PTR _PTR_ ppStrings;
+ 	size_t i;
+
+ 	ulSize = backtrace (pArray, 10);
+ 	ppStrings = backtrace_symbols (pArray, ulSize );
+
+ 	INFO("Obtained %zd stack frames.\n", ulSize);
+
+ 	for (i = 0; i < ulSize; i++)
+	{
+ 		INFO("%s\n", ppStrings[i]);
+	}
+
+ 	free (ppStrings);
+}
+

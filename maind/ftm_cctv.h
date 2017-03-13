@@ -3,6 +3,7 @@
 #include "ftm_types.h"
 #include "ftm_timer.h"
 #include "ftm_lock.h"
+
 typedef	enum	FTM_CCTV_STAT_ENUM
 {
 	FTM_CCTV_STAT_UNREGISTERED=0,
