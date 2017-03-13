@@ -1,13 +1,7 @@
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
-#include <common.h>
-#include <liblogs.h>
-#include <libsignal.h>
-#include <libsocket.h>
-#include <libutil.h>
-#include <syslog.h>
 #include "ftm_trace.h"
 #include "ftm_catchb.h"
 #include "ftm_mem.h"

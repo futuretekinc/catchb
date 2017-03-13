@@ -1,19 +1,10 @@
 #include <stdio.h>
 #include <stdarg.h>
-#include <liblogs.h>
-#include <time.h>
-#include <sys/time.h>
-
-//test
-#include <sys/un.h>
-#include <sys/socket.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <liblogs.h>
 #include <string.h>
 
-#include <common.h>
 #include "ftm_trace.h"
 #include "ftm_time.h"
 #include "ftm_lock.h"

@@ -1,8 +1,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <common_libssh.h>
-#include "libutil.h"
-#include "liblogs.h"
 #include "ftm_trace.h"
 #include "ftm_config.h"
 #include "ftm_utils.h"

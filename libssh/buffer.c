@@ -752,7 +752,6 @@ int ssh_buffer_pack_va(struct ssh_buffer_struct *buffer,
             len = strlen(cstring);
             rc = buffer_add_u32(buffer, htonl(len));
             if (rc == SSH_OK){
-                printf("[%S][%d]\n",__func__,__LINE__);
                 rc = ssh_buffer_add_data(buffer, cstring, len);
             }
             cstring = NULL;
