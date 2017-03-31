@@ -1,0 +1,294 @@
+#ifndef	__FTM_SERVER_H__
+#define	__FTM_SERVER_H__
+
+#include <sys/socket.h> 
+#include <arpa/inet.h>
+#include "ftm_types.h"
+#include "ftm_params.h"
+#include "ftm_list.h"
+#include "ftm_time.h"
+
+struct	FTM_CATCHB_STRUCT;
+
+#define	FTM_SERVER_DEFAULT_PORT			8800
+#define	FTM_SERVER_DEFAULT_MAX_SESSION	10
+#define	FTM_SERVER_DEFAULT_BUFFER_LEN	2048
+#define	FTM_PACKET_LEN					2048
+
+typedef	struct
+{
+	FTM_UINT16			usPort;
+	FTM_UINT32			ulMaxSession;
+	FTM_UINT32			ulBufferLen;
+}	FTM_SERVER_CONFIG, _PTR_ FTM_SERVER_CONFIG_PTR;
+
+typedef	struct
+{
+	FTM_SERVER_CONFIG	xConfig;
+
+	FTM_CHAR		pName[FTM_NAME_LEN+1];
+
+	struct FTM_CATCHB_STRUCT _PTR_		pCatchB;
+
+	pthread_t 			*pThread ;
+	FTM_BOOL			bStop;
+	sem_t				xSemaphore;
+	pthread_t			xThread;
+	FTM_INT				hSocket;
+	FTM_LIST			xSessionList;
+}	FTM_SERVER, _PTR_ FTM_SERVER_PTR;
+
+typedef	struct
+{
+	FTM_SERVER_PTR		pServer;
+	pthread_t 			xThread;	
+	FTM_INT				hSocket;
+	FTM_BOOL			bStop;
+	sem_t				xSemaphore;
+	struct sockaddr_in	xPeer;
+	FTM_UINT8_PTR		pReqBuff;
+	FTM_UINT32			ulReqBufferLen;
+	FTM_UINT8_PTR		pRespBuff;
+	FTM_UINT32			ulRespBufferLen;
+	FTM_TIME			xStartTime;
+	FTM_TIME			xLastTime;
+}	FTM_SESSION, _PTR_ FTM_SESSION_PTR;
+
+typedef	FTM_RET	(*FTM_SERVICE_CALLBACK)(FTM_SERVER_PTR pServer, FTM_REQ_PARAMS_PTR, FTM_RESP_PARAMS_PTR);
+
+FTM_RET	FTM_SERVER_create
+(
+	struct FTM_CATCHB_STRUCT _PTR_			pCatchB,
+	FTM_SERVER_PTR _PTR_	ppServer
+);
+
+FTM_RET	FTM_SERVER_destroy
+(
+	FTM_SERVER_PTR	_PTR_	ppServer
+);
+
+FTM_RET	FTM_SERVER_loadConfig
+(
+	FTM_SERVER_PTR			pServer,
+	FTM_SERVER_CONFIG_PTR	pConfig
+);
+
+FTM_RET	FTM_SERVER_start
+(
+	FTM_SERVER_PTR			pServer
+);
+
+FTM_RET	FTM_SERVER_stop
+(
+	FTM_SERVER_PTR			pServer
+);
+
+FTM_RET	FTM_SERVER_waitingForFinished
+(
+	FTM_SERVER_PTR			pServer
+);
+
+FTM_RET	FTM_SERVER_serviceCall
+(
+	FTM_SERVER_PTR			pServer,
+	FTM_REQ_PARAMS_PTR		pReq,
+	FTM_RESP_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_createSession
+(
+	FTM_SERVER_PTR pServer,
+	FTM_INT			hClient,
+	struct sockaddr *pSockAddr,
+	FTM_SESSION_PTR _PTR_ ppSession
+);
+
+FTM_RET	FTM_SERVER_destroySession
+(
+	FTM_SERVER_PTR pServer,
+	FTM_SESSION_PTR _PTR_ ppSession
+);
+
+FTM_RET	FTM_SERVER_getSessionCount
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_UINT32_PTR 	pulCount
+);
+
+FTM_RET	FTM_SERVER_getSessionInfo
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_UINT32 			ulIndex, 
+	FTM_SESSION_PTR 	pSession
+);
+
+FTM_RET	FTM_SERVER_addCCTV
+(
+	FTM_SERVER_PTR					pServer,
+	FTM_REQ_ADD_CCTV_PARAMS_PTR		pReq,
+	FTM_RESP_ADD_CCTV_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_delCCTV
+(
+	FTM_SERVER_PTR					pServer,
+	FTM_REQ_DEL_CCTV_PARAMS_PTR		pReq,
+	FTM_RESP_DEL_CCTV_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getCCTVCount
+(
+	FTM_SERVER_PTR					pServer,
+	FTM_REQ_GET_CCTV_COUNT_PARAMS_PTR		pReq,
+	FTM_RESP_GET_CCTV_COUNT_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getCCTVProperties
+(
+	FTM_SERVER_PTR					pServer,
+	FTM_REQ_GET_CCTV_PROPERTIES_PARAMS_PTR	pReq,
+	FTM_RESP_GET_CCTV_PROPERTIES_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_setCCTVProperties
+(
+	FTM_SERVER_PTR					pServer,
+	FTM_REQ_SET_CCTV_PROPERTIES_PARAMS_PTR	pReq,
+	FTM_RESP_SET_CCTV_PROPERTIES_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getCCTVIDList
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_GET_CCTV_ID_LIST_PARAMS_PTR		pReq,
+	FTM_RESP_GET_CCTV_ID_LIST_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getCCTVList
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_GET_CCTV_LIST_PARAMS_PTR		pReq,
+	FTM_RESP_GET_CCTV_LIST_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_addSwitch
+(
+	FTM_SERVER_PTR					pServer,
+	FTM_REQ_ADD_SWITCH_PARAMS_PTR		pReq,
+	FTM_RESP_ADD_SWITCH_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_delSwitch
+(
+	FTM_SERVER_PTR					pServer,
+	FTM_REQ_DEL_SWITCH_PARAMS_PTR	pReq,
+	FTM_RESP_DEL_SWITCH_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getSwitchCount
+(
+	FTM_SERVER_PTR					pServer,
+	FTM_REQ_GET_SWITCH_COUNT_PARAMS_PTR	pReq,
+	FTM_RESP_GET_SWITCH_COUNT_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getSwitchProperties
+(
+	FTM_SERVER_PTR					pServer,
+	FTM_REQ_GET_SWITCH_PROPERTIES_PARAMS_PTR	pReq,
+	FTM_RESP_GET_SWITCH_PROPERTIES_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_setSwitchProperties
+(
+	FTM_SERVER_PTR					pServer,
+	FTM_REQ_SET_SWITCH_PROPERTIES_PARAMS_PTR	pReq,
+	FTM_RESP_SET_SWITCH_PROPERTIES_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getSwitchIDList
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_GET_SWITCH_ID_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_GET_SWITCH_ID_LIST_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getSwitchList
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_GET_SWITCH_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_GET_SWITCH_LIST_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getLogInfo
+(
+	FTM_SERVER_PTR	pServer,
+	FTM_REQ_GET_LOG_INFO_PARAMS_PTR		pReq,
+	FTM_RESP_GET_LOG_INFO_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getLogCount
+(
+	FTM_SERVER_PTR	pServer,
+	FTM_REQ_GET_LOG_COUNT_PARAMS_PTR	pReq,
+	FTM_RESP_GET_LOG_COUNT_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getLogList
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_GET_LOG_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_GET_LOG_LIST_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_delLog
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_DEL_LOG_PARAMS_PTR	pReq,
+	FTM_RESP_DEL_LOG_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_addAlarm
+(
+	FTM_SERVER_PTR	pServer,
+	FTM_REQ_ADD_ALARM_PARAMS_PTR	pReq,
+	FTM_RESP_ADD_ALARM_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_delAlarm
+(
+	FTM_SERVER_PTR	pServer,
+	FTM_REQ_DEL_ALARM_PARAMS_PTR	pReq,
+	FTM_RESP_DEL_ALARM_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getAlarmCount
+(
+	FTM_SERVER_PTR	pServer,
+	FTM_REQ_GET_ALARM_COUNT_PARAMS_PTR	pReq,
+	FTM_RESP_GET_ALARM_COUNT_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_setAlarm
+(
+	FTM_SERVER_PTR	pServer,
+	FTM_REQ_SET_ALARM_PARAMS_PTR	pReq,
+	FTM_RESP_SET_ALARM_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getAlarm
+(
+	FTM_SERVER_PTR	pServer,
+	FTM_REQ_GET_ALARM_PARAMS_PTR	pReq,
+	FTM_RESP_GET_ALARM_PARAMS_PTR	pResp
+);
+
+FTM_RET	FTM_SERVER_getAlarmNameList
+(
+	FTM_SERVER_PTR	pServer,
+	FTM_REQ_GET_ALARM_NAME_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_GET_ALARM_NAME_LIST_PARAMS_PTR	pResp
+);
+
+
+#endif

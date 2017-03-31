@@ -1,7 +1,7 @@
 MODEL=i686
 
 TOPDIR=$(shell pwd)
-SUBDIR=libssh lib maind
+SUBDIR=libssh lib catchb
 
 export TOPDIR
 
