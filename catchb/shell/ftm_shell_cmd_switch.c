@@ -200,6 +200,29 @@ FTM_RET	FTM_SHELL_CMD_switch
 		}
 		
 	}
+	else if (strcasecmp(pArgv[1], "deny") == 0)
+	{
+		FTM_SWITCH_PTR	pSwitch;
+		FTM_SWITCH_AC_PTR pAC;
+
+		if (nArgc < 4)
+		{
+			xRet = FTM_RET_INVALID_ARGUMENTS;
+			goto finished;	
+		}
+
+		xRet = FTM_CATCHB_getSwitch(pCatchB, pArgv[2], &pSwitch);
+		if (xRet != FTM_RET_OK)
+		{
+			printf("Error : The switch[%s] not found!\n", pArgv[2]);	
+		}
+
+		xRet = FTM_SWITCH_addAC(pSwitch, pArgv[3], FTM_SWITCH_AC_POLICY_DENY, &pAC);
+		if (xRet != FTM_RET_OK)
+		{
+			printf("Error : Failed to set access control!\n");	
+		}
+	}
 	else
 	{
 		xRet = FTM_RET_INVALID_ARGUMENTS;

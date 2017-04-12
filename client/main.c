@@ -32,6 +32,7 @@ FTM_RET	FTM_setOptions
 
 static	FTM_CHAR			pConfigFileName[FTM_PATH_LEN + FTM_FILE_NAME_LEN] = "";
 static 	FTM_TRACE_CONFIG	xTraceConfig;
+static 	FTM_CLIENT_CONFIG	xClientConfig;
 
 FTM_INT	main
 (
@@ -46,6 +47,8 @@ FTM_INT	main
 	sprintf(pConfigFileName, "%s.conf", program_invocation_short_name);
 
 	FTM_MEM_init();
+
+	FTM_CLIENT_CONFIG_setDefault(&xClientConfig);
 
 	xRet = FTM_setOptions(nArgc, ppArgv);
 	if (xRet != FTM_RET_OK)
@@ -64,11 +67,16 @@ FTM_INT	main
 
 	FTM_TRACE_setConfig(&xTraceConfig);
 
-	xRet = FTM_CLIENT_create(&pClient);
+	xRet = FTM_CLIENT_create(&xClientConfig, &pClient);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to client!");
 		goto finished;
+	}
+
+	if (xClientConfig.bAutoConnect)
+	{
+		FTM_CLIENT_connect(pClient);
 	}
 
 	FTM_SHELL_run2("catchb", pCatchBShellCmdList, ulCatchBShellCmdCount, pClient);
@@ -185,6 +193,12 @@ FTM_RET	FTM_loadConfig
 		xRet = FTM_RET_INVALID_JSON_FORMAT;
 		ERROR(xRet, "Invalid json format!\n");
 		goto finished;
+	}
+
+	pSection = cJSON_GetObjectItem(pRoot, "client");
+	if (pSection != NULL)
+	{
+		FTM_CLIENT_CONFIG_load(&xClientConfig, pSection);
 	}
 
 	pSection = cJSON_GetObjectItem(pRoot, "trace");

@@ -34,7 +34,7 @@ FTM_RET	FTM_NOTIFIER_CONFIG_setDefault
 	FTM_NOTIFIER_CONFIG_PTR	pConfig
 )
 {
-	return	FTM_NOTIFIER_MAIL_CONFIG_setDefault(&pConfig->xMail);
+	return	FTM_NOTIFIER_SMTP_CONFIG_setDefault(&pConfig->xSMTP);
 }
 
 FTM_RET	FTM_NOTIFIER_CONFIG_load
@@ -49,10 +49,36 @@ FTM_RET	FTM_NOTIFIER_CONFIG_load
 	FTM_RET	xRet = FTM_RET_OK;
 	cJSON _PTR_	pSection;
 
-	pSection = cJSON_GetObjectItem(pRoot, "mail");
+	pSection = cJSON_GetObjectItem(pRoot, "smtp");
 	if (pSection != NULL)
 	{
-		xRet = FTM_NOTIFIER_MAIL_CONFIG_load(&pConfig->xMail, pSection);
+		xRet = FTM_NOTIFIER_SMTP_CONFIG_load(&pConfig->xSMTP, pSection);
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_NOTIFIER_CONFIG_save
+(
+	FTM_NOTIFIER_CONFIG_PTR	pConfig,
+	cJSON _PTR_		pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	cJSON _PTR_	pSection;
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		cJSON_AddStringToObject(pSection, "server", pConfig->xSMTP.pServer);
+		cJSON_AddNumberToObject(pSection, "port", pConfig->xSMTP.usPort);
+		cJSON_AddStringToObject(pSection, "userid", pConfig->xSMTP.pUserID);
+		cJSON_AddStringToObject(pSection, "passwd", pConfig->xSMTP.pPasswd);
+
+		cJSON_AddItemToObject(pRoot, "smtp", pSection);
 	}
 
 	return	xRet;
@@ -67,13 +93,13 @@ FTM_RET	FTM_NOTIFIER_CONFIG_show
 	ASSERT(pConfig != NULL);
 
 	OUTPUT(xLevel, "[ Notifier Configuration ]");
-	return	FTM_NOTIFIER_MAIL_CONFIG_show(&pConfig->xMail, xLevel);
+	return	FTM_NOTIFIER_SMTP_CONFIG_show(&pConfig->xSMTP, xLevel);
 
 }
 
-FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_setDefault
+FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_setDefault
 (
-	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig
+	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig
 )
 {
 	ASSERT(pConfig != NULL);
@@ -87,9 +113,9 @@ FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_setDefault
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_load
+FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_load
 (
-	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig,
+	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig,
 	cJSON _PTR_		pRoot
 )
 {
@@ -126,9 +152,9 @@ FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_load
 
 }
 
-FTM_RET	FTM_NOTIFIER_MAIL_CONFIG_show
+FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_show
 (
-	FTM_NOTIFIER_MAIL_CONFIG_PTR	pConfig,
+	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig,
 	FTM_TRACE_LEVEL					xLevel
 )
 {
@@ -341,7 +367,7 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 							break;
 						}
 					
-						xRet = FTM_CATCHB_getAlarmList(pNotifier->pCatchB, ulAlarmCount, pAlarms, &ulAlarmCount);
+						xRet = FTM_CATCHB_getAlarmList(pNotifier->pCatchB, 0, ulAlarmCount, pAlarms, &ulAlarmCount);
 						if (xRet == FTM_RET_OK)
 						{
 							FTM_UINT32	i;
@@ -440,17 +466,18 @@ FTM_RET	FTM_NOTIFIER_onSendAlarm
 	FTM_CHAR		pBody[2048];
 	FTM_UINT32		ulBodyLen = 0;
 
+	return	FTM_RET_OK;
 
 	INFO("##################################################");
 	INFO("Send mail to %s", pAlarm->pEmail);
 	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "Date:%s\r\n", FTM_TIME_printfCurrent(NULL));
-	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "From:<%s>\r\n", pNotifier->xConfig.xMail.pSender);
+	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "From:<%s>\r\n", pNotifier->xConfig.xSMTP.pSender);
 	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "To:<%s>\r\n", pAlarm->pEmail);
 	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "Subject:%s\r\n\r\n", "ALARM!");
 	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "%s\r\n\r\n", pAlarm->pMessage);
 
 
-	xRet = FTM_SMTPC_create(pNotifier->xConfig.xMail.pServer, pNotifier->xConfig.xMail.usPort, &pSMTPC);
+	xRet = FTM_SMTPC_create(pNotifier->xConfig.xSMTP.pServer, pNotifier->xConfig.xSMTP.usPort, &pSMTPC);
 	if (xRet != FTM_RET_OK)
 	{
 		return	xRet;	
@@ -468,14 +495,14 @@ FTM_RET	FTM_NOTIFIER_onSendAlarm
 		goto finished;
 	}
 
-	INFO("AUTH %s %s", pNotifier->xConfig.xMail.pUserID, pNotifier->xConfig.xMail.pPasswd);
-	xRet = FTM_SMTPC_sendAuth(pSMTPC, pNotifier->xConfig.xMail.pUserID, pNotifier->xConfig.xMail.pPasswd);
+	INFO("AUTH %s %s", pNotifier->xConfig.xSMTP.pUserID, pNotifier->xConfig.xSMTP.pPasswd);
+	xRet = FTM_SMTPC_sendAuth(pSMTPC, pNotifier->xConfig.xSMTP.pUserID, pNotifier->xConfig.xSMTP.pPasswd);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;
 	}
 
-	xRet = FTM_SMTPC_sendFrom(pSMTPC, pNotifier->xConfig.xMail.pSender);
+	xRet = FTM_SMTPC_sendFrom(pSMTPC, pNotifier->xConfig.xSMTP.pSender);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;

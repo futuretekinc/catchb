@@ -1210,6 +1210,7 @@ static int channel_write_common(ssh_channel channel,
   size_t maxpacketlen;
   int rc;
 
+
   if(channel == NULL) {
       return -1;
   }
@@ -1282,7 +1283,8 @@ static int channel_write_common(ssh_channel channel,
           continue;
       }
       effectivelen = MIN(len, channel->remote_window);
-    } else {
+    } else
+	{
       effectivelen = len;
     }
 
@@ -2691,25 +2693,19 @@ int ssh_channel_read_timeout(ssh_channel channel,
       timeout = SSH_TIMEOUT_DEFAULT;
   }
 
-        printf("[%s][%d]\n",__func__,__LINE__);
   rc = ssh_handle_packets_termination(session,
                                       timeout,
                                       ssh_channel_read_termination,
                                       &ctx);
-        printf("[%s][%d]\n",__func__,__LINE__);
   if (rc == SSH_ERROR){
-        printf("[%s][%d]\n",__func__,__LINE__);
     return rc;
   }
   if (channel->session->session_state == SSH_SESSION_STATE_ERROR){
-        printf("[%s][%d]\n",__func__,__LINE__);
       return SSH_ERROR;
   }
   if (channel->remote_eof && buffer_get_rest_len(stdbuf) == 0) {
-        printf("[%s][%d]\n",__func__,__LINE__);
     return 0;
   }
-        printf("[%s][%d]\n",__func__,__LINE__);
   len = buffer_get_rest_len(stdbuf);
   /* Read count bytes if len is greater, everything otherwise */
   len = (len > count ? count : len);
@@ -2725,7 +2721,6 @@ int ssh_channel_read_timeout(ssh_channel channel,
     }
   }
 
-        printf("[%s][%d] %d\n",__func__,__LINE__,len);
   return len;
 }
 

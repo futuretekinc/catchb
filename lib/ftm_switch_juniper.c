@@ -48,7 +48,6 @@ FTM_RET	FTM_SWITCH_JUNIPER_setAC
 	FTM_UINT32	ulCommandLines = 0;
 	FTM_SSH_PTR	pSSH = NULL;
 	FTM_SSH_CHANNEL_PTR	pChannel = NULL;
-	FTM_TIMER	xTimer;
 
 	FTM_getLocalIP(pLocalIP, sizeof(pLocalIP));
 	//ulIndex = ntohl(inet_addr(pTargetIP)) & 0xFFFFFF;
@@ -133,36 +132,23 @@ FTM_RET	FTM_SWITCH_JUNIPER_setAC
 		goto finished;
 	}
 
-	FTM_TIMER_initS(&xTimer, 1);
 	for(i = 0 ; i < ulCommandLines ; i++)
 	{
   		if (FTM_SSH_CHANNEL_isOpen(pChannel) && !FTM_SSH_CHANNEL_isEOF(pChannel))
 		{
 			FTM_CHAR	pBuffer[1024];
 			FTM_UINT32	ulReadLen;
+			FTM_CHAR	pErrorBuffer[1024];
+			FTM_UINT32	ulErrorReadLen;
+
+			xRet = FTM_SSH_CHANNEL_read(pChannel, 1000, (FTM_UINT8_PTR)pBuffer, sizeof(pBuffer), &ulReadLen, (FTM_UINT8_PTR)pErrorBuffer, sizeof(pErrorBuffer), &ulErrorReadLen);
+			if (xRet != FTM_RET_OK)
+			{
+				ERROR(xRet, "Failed to read channel!");
+				goto finished;
+			}
 
 			FTM_SSH_CHANNEL_write(pChannel, (FTM_UINT8_PTR)pCommandBuffers[i], strlen(pCommandBuffers[i]));
-
-			while(!FTM_TIMER_isExpired(&xTimer))
-			{
-				memset(pBuffer, 0, sizeof(pBuffer));
-				xRet = FTM_SSH_CHANNEL_read(pChannel, (FTM_UINT8_PTR)pBuffer, sizeof(pBuffer), &ulReadLen);
-				if (xRet != FTM_RET_OK)
-				{
-					ERROR(xRet, "Failed to read channel!");
-					goto finished;
-				}
-
-				if (ulReadLen == 0)
-				{
-					usleep(10 * 1000);
-				}
-				else
-				{
-					INFO("SSH : %s", pBuffer);	
-				}
-			}
-			FTM_TIMER_initS(&xTimer, 1);
 		}
 	}
 

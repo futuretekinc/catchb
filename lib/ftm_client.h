@@ -6,11 +6,35 @@
 #include "ftm_cctv.h"
 #include "ftm_switch.h"
 
+#define	FTM_CLIENT_FIELD_IP		(1 << 0)
+#define	FTM_CLIENT_FIELD_PORT	(1 << 1)
+#define	FTM_CLIENT_FIELD_ALL	(0xFF)
+
+typedef	struct	FTM_CLIENT_CONFIG_STRUCT
+{
+	FTM_CHAR		pIP[16];
+	FTM_UINT16 		usPort;
+	FTM_BOOL		bAutoConnect;
+}	FTM_CLIENT_CONFIG, _PTR_ FTM_CLIENT_CONFIG_PTR;
+
+
+FTM_RET	FTM_CLIENT_CONFIG_setDefault
+(
+	FTM_CLIENT_CONFIG_PTR	pConfig
+);
+
+FTM_RET	FTM_CLIENT_CONFIG_load
+(
+	FTM_CLIENT_CONFIG_PTR	pConfig,
+	cJSON _PTR_ pRoot
+);
+
 typedef struct FTM_CLIENT_STRUCT _PTR_ FTM_CLIENT_PTR;
 
 
 FTM_RET	FTM_CLIENT_create
 (
+	FTM_CLIENT_CONFIG_PTR	pConfig,
 	FTM_CLIENT_PTR _PTR_ ppClient
 );
 
@@ -19,11 +43,22 @@ FTM_RET	FTM_CLIENT_destroy
 	FTM_CLIENT_PTR _PTR_ ppClient
 );
 
+FTM_RET	FTM_CLIENT_setConfig
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_CLIENT_CONFIG_PTR	pConfig,
+	FTM_UINT32		ulFieldFlags
+);
+
+FTM_RET	FTM_CLIENT_getConfig
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_CLIENT_CONFIG_PTR	pConfig
+);
+
 FTM_RET FTM_CLIENT_connect
 (
-	FTM_CLIENT_PTR 	pClient,
-	FTM_CHAR_PTR	pIP,
-	FTM_UINT16 		usPort 
+	FTM_CLIENT_PTR 	pClient
 );
 
 FTM_RET FTM_CLIENT_disconnect
@@ -210,6 +245,7 @@ FTM_RET	FTM_CLIENT_setAlarm
 FTM_RET	FTM_CLIENT_getAlarmNameList
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulMaxCount,
 	FTM_NAME_PTR	pNameList,
 	FTM_UINT32_PTR	pCount

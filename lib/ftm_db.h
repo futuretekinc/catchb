@@ -28,6 +28,12 @@ FTM_RET	FTM_DB_CONFIG_load
 	cJSON _PTR_ 		pRoot
 );
 
+FTM_RET	FTM_DB_CONFIG_save
+(
+	FTM_DB_CONFIG_PTR	pConfig,
+	cJSON _PTR_ 		pRoot
+);
+
 FTM_RET	FTM_DB_CONFIG_show
 (
 	FTM_DB_CONFIG_PTR	pConfig,

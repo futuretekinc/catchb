@@ -83,6 +83,20 @@ FTM_RET	FTM_DB_CONFIG_load
 	return	FTM_RET_OK;
 }
 
+FTM_RET	FTM_DB_CONFIG_save
+(
+	FTM_DB_CONFIG_PTR	pConfig,
+	cJSON _PTR_ 		pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	cJSON_AddStringToObject(pRoot, "file", pConfig->pFileName);
+
+	return	FTM_RET_OK;
+}
+
 FTM_RET	FTM_DB_CONFIG_show
 (
 	FTM_DB_CONFIG_PTR	pConfig,

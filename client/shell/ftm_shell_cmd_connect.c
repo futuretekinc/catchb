@@ -22,11 +22,34 @@ FTM_RET	FTM_SHELL_CMD_connect
 	FTM_CLIENT_PTR	pClient = (FTM_CLIENT_PTR)pData;
 	switch(nArgc)
 	{
+	case	1:
+		{
+			xRet = FTM_CLIENT_connect(pClient);
+			if (xRet != FTM_RET_OK)
+			{
+				printf("Failed to connect to %s\n", pArgv[1]);	
+			}
+			else
+			{
+				printf("connected to %s\n", pArgv[1]);	
+			}
+		}
+		break;
+
 	case	3:
 		{
-			FTM_UINT16	usPort = strtoul(pArgv[2], 0, 10);
-	
-			xRet = FTM_CLIENT_connect(pClient, pArgv[1], usPort);
+			FTM_CLIENT_CONFIG	xConfig;
+
+			strncpy(xConfig.pIP, pArgv[1], sizeof(xConfig.pIP));
+			xConfig.usPort = strtoul(pArgv[2], 0, 10);
+
+			xRet = FTM_CLIENT_setConfig(pClient, &xConfig, FTM_CLIENT_FIELD_IP | FTM_CLIENT_FIELD_PORT);
+			if (xRet != FTM_RET_OK)
+			{
+				printf("Failed to set server information.\n");	
+			}
+
+			xRet = FTM_CLIENT_connect(pClient);
 			if (xRet != FTM_RET_OK)
 			{
 				printf("Failed to connect to %s\n", pArgv[1]);	

@@ -285,7 +285,7 @@ FTM_RET	FTM_getProcessCount
 	FILE*		pFP;
 
 	memset(pCmd, 0, sizeof(pCmd));
-	snprintf(pCmd, sizeof(pCmd) - 1, "ps -ax | egrep %s | awk '{ if ($5 != \"egrep\") print $5}' | wc | awk '{ print $2 }'", pProcessName);
+	snprintf(pCmd, sizeof(pCmd) - 1, "ps -a | egrep %s | awk '{ if ($5 ~ \"%s\") print $5}' | wc | awk '{ print $1 }'", pProcessName, pProcessName);
 
 	pFP = popen(pCmd, "r");
 	if (pFP == NULL)
@@ -295,11 +295,7 @@ FTM_RET	FTM_getProcessCount
 	}
 	else
 	{
-		char	pBuff[1024];
-
-		//fscanf(pFP, "%d", &nCount);	
-		fgets(pBuff, sizeof(pBuff), pFP);
-		printf("%s", pBuff);
+		fscanf(pFP, "%d", &nCount);	
 		pclose(pFP);
 
 		*pCount = nCount;

@@ -2540,7 +2540,7 @@ FTM_RET	FTM_CATCHB_getAlarm
 	FTM_ALARM_PTR	pTempAlarm;
 
 	FTM_LIST_iteratorStart(pCatchB->pAlarmList);
-	while(FTM_LIST_iteratorNext(pCatchB->pAlarmList, (FTM_VOID_PTR _PTR_)&pTempAlarm) != FTM_RET_OK)
+	while(FTM_LIST_iteratorNext(pCatchB->pAlarmList, (FTM_VOID_PTR _PTR_)&pTempAlarm) == FTM_RET_OK)
 	{
 		if (strcmp(pName, pTempAlarm->pName) == 0)
 		{
@@ -2589,6 +2589,7 @@ FTM_RET	FTM_CATCHB_setAlarm
 FTM_RET	FTM_CATCHB_getAlarmList
 (
 	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulMaxCount,
 	FTM_ALARM_PTR	pAlarmList,
 	FTM_UINT32_PTR	pCount
@@ -2597,28 +2598,35 @@ FTM_RET	FTM_CATCHB_getAlarmList
 	ASSERT(pCatchB != NULL);
 	ASSERT(pAlarmList != NULL);
 	ASSERT(pCount != NULL);
-	FTM_RET	xRet;
 	FTM_UINT32	i;
+	FTM_UINT32	ulCount = 0;
+	FTM_ALARM_PTR	pAlarm;
 
+	i = 0;
 	FTM_LIST_iteratorStart(pCatchB->pAlarmList);
-	for(i = 0 ; i < ulMaxCount ; i++)
+	while(FTM_LIST_iteratorNext(pCatchB->pAlarmList, (FTM_VOID_PTR _PTR_)&pAlarm) == FTM_RET_OK)
 	{
-		FTM_ALARM_PTR	pAlarm;
-		xRet = FTM_LIST_iteratorNext(pCatchB->pAlarmList, (FTM_VOID_PTR _PTR_)&pAlarm);
-		if (xRet != FTM_RET_OK)
+		if (i >= ulIndex)
+		{
+			memcpy(&pAlarmList[ulCount++], pAlarm, sizeof(FTM_ALARM));
+		}
+
+		if (ulCount >= ulMaxCount)
 		{
 			break;	
 		}
 
-		memcpy(&pAlarmList[i], pAlarm, sizeof(FTM_ALARM));
+		i++;
 	}
 
-	*pCount = i;
+	*pCount = ulCount;
+
 	return	FTM_RET_OK;
 }
 FTM_RET	FTM_CATCHB_getAlarmNameList
 (
 	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulMaxCount,
 	FTM_NAME_PTR	pNameList,
 	FTM_UINT32_PTR	pCount
@@ -2627,23 +2635,31 @@ FTM_RET	FTM_CATCHB_getAlarmNameList
 	ASSERT(pCatchB != NULL);
 	ASSERT(pNameList != NULL);
 	ASSERT(pCount != NULL);
-	FTM_RET	xRet;
 	FTM_UINT32	i;
+	FTM_UINT32	ulCount = 0;
+	FTM_ALARM_PTR	pAlarm;
 
 	FTM_LIST_iteratorStart(pCatchB->pAlarmList);
-	for(i = 0 ; i < ulMaxCount ; i++)
+	while(FTM_LIST_iteratorNext(pCatchB->pAlarmList, (FTM_VOID_PTR _PTR_)&pAlarm) == FTM_RET_OK)
 	{
-		FTM_ALARM_PTR	pAlarm;
-		xRet = FTM_LIST_iteratorNext(pCatchB->pAlarmList, (FTM_VOID_PTR _PTR_)&pAlarm);
-		if (xRet != FTM_RET_OK)
+		if (i >= ulIndex)
+		{
+			memcpy(&pNameList[ulCount++], pAlarm->pName, sizeof(FTM_NAME));
+		}
+
+		if (ulCount >= ulMaxCount)
 		{
 			break;	
 		}
 
-		memcpy(&pNameList[i], pAlarm->pName, sizeof(FTM_NAME));
+		i++;
 	}
 
-	*pCount = i;
+	*pCount = ulCount;
+
+	INFO("Alarm Name Max Count : %d", ulMaxCount);
+	INFO("Alarm Name Count : %d", ulCount);
+
 	return	FTM_RET_OK;
 }
 

@@ -50,6 +50,7 @@ FTM_RET	FTM_SHELL_CMD_alarm
 
 	FTM_CATCHB_PTR	pCatchB = (FTM_CATCHB_PTR)pData;
 
+	INFO("Call Alarm!");
 	if ((nArgc == 1) || (strcasecmp(pArgv[1], "list") == 0))
 	{
 		xRet = FTM_SHELL_CMD_showAlarmList(pCatchB);
@@ -197,7 +198,7 @@ FTM_RET	FTM_SHELL_CMD_showAlarmList
 	FTM_RET	xRet = FTM_RET_OK;
 
 	FTM_UINT32	i, ulCount = 0;
-	FTM_ALARM_PTR	pAlarmes = NULL;
+	FTM_ALARM_PTR	pAlarmList = NULL;
 
 	xRet = FTM_CATCHB_getAlarmCount(pCatchB, &ulCount);
 	if (xRet != FTM_RET_OK)
@@ -212,15 +213,15 @@ FTM_RET	FTM_SHELL_CMD_showAlarmList
 		goto finished;
 	}
 
-	pAlarmes = (FTM_ALARM_PTR)FTM_MEM_calloc(sizeof(FTM_ALARM), ulCount);
-	if (pAlarmes == NULL)
+	pAlarmList = (FTM_ALARM_PTR)FTM_MEM_calloc(sizeof(FTM_ALARM), ulCount);
+	if (pAlarmList == NULL)
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
 		ERROR(xRet, "Failed to create switch buffer!");
 		goto finished;
 	}
 
-	xRet = FTM_CATCHB_getAlarmList(pCatchB, pAlarmes, ulCount, &ulCount);
+	xRet = FTM_CATCHB_getAlarmList(pCatchB, 0, ulCount, pAlarmList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get switches!");
@@ -230,11 +231,11 @@ FTM_RET	FTM_SHELL_CMD_showAlarmList
 		printf("%4s   %16s %24s %s\n", "", "Name", "e-mail", "Message");
 		for(i = 0; i < ulCount ; i++)
 		{
-			printf("%4d : %16s %24s %s\n", i+1, pAlarmes[i].pName, pAlarmes[i].pEmail, pAlarmes[i].pMessage);
+			printf("%4d : %16s %24s %s\n", i+1, pAlarmList[i].pName, pAlarmList[i].pEmail, pAlarmList[i].pMessage);
 		}
 	}
 
-	FTM_MEM_free(pAlarmes);
+	FTM_MEM_free(pAlarmList);
 
 finished:
 	return	xRet;

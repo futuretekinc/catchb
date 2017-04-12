@@ -349,6 +349,7 @@ typedef	struct
 typedef	struct
 {
 	FTM_REQ_PARAMS	xCommon;
+	FTM_UINT32		ulIndex;
 	FTM_UINT32		ulCount;
 }	FTM_REQ_GET_ALARM_NAME_LIST_PARAMS, _PTR_ FTM_REQ_GET_ALARM_NAME_LIST_PARAMS_PTR;
 

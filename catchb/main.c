@@ -33,7 +33,7 @@ FTM_INT	main
 )
 {
 	FTM_RET			xRet;
-	//FTM_BOOL		bDuplicated = FTM_FALSE;
+	FTM_BOOL		bDuplicated = FTM_FALSE;
 	FTM_CONFIG_PTR	pConfig = NULL;
 	FTM_CATCHB_PTR	pCatchB = NULL;
 
@@ -50,7 +50,7 @@ FTM_INT	main
 		goto finished;
 	}
 
-#if 0
+#if 1
 	FTM_areDuplicatesRunning(program_invocation_short_name,  getpid(), &bDuplicated);
 	if (bDuplicated)
 	{
@@ -143,9 +143,10 @@ FTM_RET	FTM_setOptions
 	FTM_CHAR_PTR	ppArgv[]
 )
 {
+	FTM_RET		xRet = FTM_RET_OK;
 	FTM_CHAR	xOption;
 
-    while ((xOption = getopt(nArgc, ppArgv, "c:d")) != -1)
+    while ((xOption = getopt(nArgc, ppArgv, "c:d")) != (FTM_CHAR)(-1))
     {
         switch (xOption)
         {
@@ -158,7 +159,9 @@ FTM_RET	FTM_setOptions
 			break;
 
 		default:
-			return	FTM_RET_INVALID_ARGUMENTS;
+			xRet = FTM_RET_INVALID_ARGUMENTS;
+			ERROR(xRet, "Failed to get option[%d]!", xOption);
+			return	xRet;
         }
     }
 

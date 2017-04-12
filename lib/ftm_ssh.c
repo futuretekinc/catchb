@@ -22,7 +22,24 @@ clients must be made or how a client should react.
 #include <errno.h>
 #include "ftm_ssh.h"
 #include "ftm_mem.h"
+#include "ftm_timer.h"
 #include "ftm_trace.h"
+#include <libssh/callbacks.h>
+
+#undef	__MODULE__
+#define	__MODULE__	"ssh"
+
+
+void FTM_SSH_LOG_callback
+(
+	int 	priority, 
+	const char *function, 
+	const char *buffer, 
+	void *userdata
+)
+{
+	INFO("%s - %s", function, buffer);
+}
 
 FTM_RET	FTM_SSH_create
 (
@@ -33,6 +50,10 @@ FTM_RET	FTM_SSH_create
 
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_SSH_PTR	pSSH;
+
+
+//	ssh_set_log_level(100);
+//	ssh_set_log_callback(FTM_SSH_LOG_callback);
 
 	pSSH = (FTM_SSH_PTR)FTM_MEM_malloc(sizeof(FTM_SSH));
 	if (pSSH == NULL)
@@ -151,7 +172,7 @@ FTM_RET	FTM_SSH_disconnect
 	return	FTM_RET_OK;
 }
 
-#if 0
+#if 1
 FTM_RET	FTM_SSH_authenticateKbdint
 (
 	FTM_SSH_PTR	pSSH, 
@@ -161,7 +182,7 @@ FTM_RET	FTM_SSH_authenticateKbdint
 	FTM_RET	xRet;
 	FTM_INT	nRet;
 
-    nRet = ssh_userauth_kbdint(pSSH, NULL, NULL);
+    nRet = ssh_userauth_kbdint(pSSH->pSession, NULL, NULL);
     while (nRet == SSH_AUTH_INFO) 
 	{
         const FTM_CHAR _PTR_	pInstruction;
@@ -169,19 +190,19 @@ FTM_RET	FTM_SSH_authenticateKbdint
         FTM_CHAR	pBuffer[128];
         FTM_INT		i, n;
 
-        pName = ssh_userauth_kbdint_getname(pSSH);
+        pName = ssh_userauth_kbdint_getname(pSSH->pSession);
         if (pName && strlen(pName) > 0) 
 		{
             INFO("SSH : Name - %s\n", pName);
         }
 
-        pInstruction = ssh_userauth_kbdint_getinstruction(pSSH);
+        pInstruction = ssh_userauth_kbdint_getinstruction(pSSH->pSession);
         if (pInstruction && strlen(pInstruction) > 0) 
 		{
             INFO("SSH : Instruction - %s\n", pInstruction);
         }
 
-        n = ssh_userauth_kbdint_getnprompts(pSSH);
+        n = ssh_userauth_kbdint_getnprompts(pSSH->pSession);
 
         for (i = 0; i < n; i++) 
 		{
@@ -189,7 +210,7 @@ FTM_RET	FTM_SSH_authenticateKbdint
             const FTM_CHAR _PTR_	pPrompt;
             char echo;
 
-            pPrompt = ssh_userauth_kbdint_getprompt(pSSH, i, &echo);
+            pPrompt = ssh_userauth_kbdint_getprompt(pSSH->pSession, i, &echo);
             if (pPrompt == NULL) 
 			{
                 break;
@@ -212,7 +233,7 @@ FTM_RET	FTM_SSH_authenticateKbdint
                     *p = '\0';
                 }
 
-                if (ssh_userauth_kbdint_setanswer(pSSH, i, pBuffer) < 0) {
+                if (ssh_userauth_kbdint_setanswer(pSSH->pSession, i, pBuffer) < 0) {
                     return SSH_AUTH_ERROR;
                 }
 
@@ -235,7 +256,7 @@ FTM_RET	FTM_SSH_authenticateKbdint
                     pAnswer = pBuffer;
                 }
 
-                nRet = ssh_userauth_kbdint_setanswer(pSSH, i, pAnswer);
+                nRet = ssh_userauth_kbdint_setanswer(pSSH->pSession, i, pAnswer);
                 memset(pBuffer, 0, sizeof(pBuffer));
                 if (nRet < 0) 
 				{
@@ -245,7 +266,7 @@ FTM_RET	FTM_SSH_authenticateKbdint
                 }
             }
         }
-        nRet = ssh_userauth_kbdint(pSSH,NULL,NULL);
+        nRet = ssh_userauth_kbdint(pSSH->pSession,NULL,NULL);
     }
 
 	if (nRet < 0)
@@ -314,7 +335,7 @@ FTM_RET	FTM_SSH_authenticateConsole
 		// Try to authenticate with keyboard interactive";
 		if (nMethod & SSH_AUTH_METHOD_INTERACTIVE) 
 		{
-			nRet = FTM_SSH_authenticateKbdint(pSSH->pSession, NULL);
+			nRet = FTM_SSH_authenticateKbdint(pSSH, NULL);
 			if (nRet == SSH_AUTH_ERROR) 
 			{
 				xRet = FTM_RET_SSH_AUTH_ERROR;
@@ -330,6 +351,7 @@ FTM_RET	FTM_SSH_authenticateConsole
 		// Try to authenticate with password
 		if (nMethod & SSH_AUTH_METHOD_PASSWORD) 
 		{
+			INFO("User Auth method passwd!");
 			nRet = ssh_userauth_password(pSSH->pSession, NULL, pPasswd);
 			if (nRet == SSH_AUTH_ERROR) 
 			{
@@ -519,6 +541,16 @@ FTM_RET	FTM_SSH_CHANNEL_open
 		return	xRet;
 	}
 
+	nRet = ssh_channel_request_exec(pChannel->pChannel, "vtysh");
+	if (nRet != SSH_OK)
+	{
+		ssh_channel_close(pChannel->pChannel);
+		pChannel->pChannel = 0;
+		xRet = FTM_RET_SSH_FAILED_TO_OPEN_CHANNEL;
+		ERROR(xRet, "Failed to open channel!");
+		return	xRet;
+	}
+
 	return	xRet;
 }
 
@@ -533,8 +565,8 @@ FTM_RET	FTM_SSH_CHANNEL_close
 
 	if (ssh_channel_is_open(pChannel->pChannel))
 	{
-		ssh_channel_close(pChannel->pChannel);
 		ssh_channel_send_eof(pChannel->pChannel);
+		ssh_channel_close(pChannel->pChannel);
 	}
 
 	return	xRet;
@@ -561,27 +593,65 @@ FTM_BOOL	FTM_SSH_CHANNEL_isEOF
 FTM_RET	FTM_SSH_CHANNEL_read
 (
 	FTM_SSH_CHANNEL_PTR	pChannel,
+	FTM_UINT32			ulTimeout,
 	FTM_UINT8_PTR		pBuffer,
 	FTM_UINT32			ulBufferLen,
-	FTM_UINT32_PTR		pReadLen
+	FTM_UINT32_PTR		pReadLen,
+	FTM_UINT8_PTR		pErrorBuffer,
+	FTM_UINT32			ulErrorBufferLen,
+	FTM_UINT32_PTR		pErrorReadLen
 )
 {
 	ASSERT(pChannel != NULL);
 	ASSERT(pBuffer != NULL);
 	ASSERT(pReadLen != NULL);
 
-	FTM_RET	xRet = FTM_RET_OK;
-	FTM_INT	nReadLen;
+	FTM_RET	xRet = FTM_RET_TIMEOUT;
+	FTM_INT	nReadLen =  0;
+	FTM_TIMER	xTimer;
 
-	nReadLen = ssh_channel_read_nonblocking(pChannel->pChannel, pBuffer, ulBufferLen, 0);
-	if (nReadLen < 0)
+	FTM_TIMER_initMS(&xTimer, ulTimeout);
+
+	*pReadLen = 0;
+	*pErrorReadLen = 0;
+
+	while(!FTM_TIMER_isExpired(&xTimer))
 	{
-		xRet = FTM_RET_SSH_READ_FAILED;	
-		ERROR(xRet, "Failed to read data!");
-	}
-	else
-	{
-		*pReadLen = nReadLen;	
+		if (pBuffer != NULL)
+		{
+			nReadLen = ssh_channel_read_nonblocking(pChannel->pChannel, pBuffer, ulBufferLen, 0);
+			if (nReadLen < 0)
+			{
+				xRet = FTM_RET_SSH_READ_FAILED;	
+				ERROR(xRet, "Failed to read data!");
+				break;
+			}
+			else if (nReadLen > 0)
+			{
+				*pReadLen = nReadLen;	
+				xRet = FTM_RET_OK;
+				break;
+			}
+		}
+
+		if (pErrorBuffer != NULL)
+		{
+			nReadLen = ssh_channel_read_nonblocking(pChannel->pChannel, pErrorBuffer, ulErrorBufferLen, 1);
+			if (nReadLen < 0)
+			{
+				xRet = FTM_RET_SSH_READ_FAILED;	
+				ERROR(xRet, "Failed to read data!");
+				break;
+			}
+			else if (nReadLen > 0)
+			{
+				*pErrorReadLen = nReadLen;	
+				xRet = FTM_RET_OK;
+				break;
+			}
+		}
+
+		usleep(1000);
 	}
 
 	return	xRet;
@@ -600,12 +670,14 @@ FTM_RET	FTM_SSH_CHANNEL_write
 	FTM_RET		xRet = FTM_RET_OK;
 	FTM_INT32	nWrittenLen;
 
+	INFO("ssh_channel_write(%x, %s, %d)", pChannel->pChannel, pBuffer, ulBufferLen);
 	nWrittenLen = ssh_channel_write(pChannel->pChannel, pBuffer, ulBufferLen);
 	if (nWrittenLen != ulBufferLen)
 	{
 		xRet = FTM_RET_SSH_WRITE_FAILED;	
 		ERROR(xRet, "Failed to write data!");
 	}
+	INFO("ssh_channel_write done.");
 
 	return	xRet;
 }

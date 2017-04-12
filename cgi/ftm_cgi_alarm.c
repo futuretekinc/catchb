@@ -131,6 +131,50 @@ finished:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
+FTM_RET	FTM_CGI_getAlarm
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReq != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_CHAR	pName[FTM_NAME_LEN+1];
+	FTM_ALARM	xAlarm;
+	cJSON _PTR_	pRoot;
+
+	pRoot = cJSON_CreateObject();
+
+	xRet = FTM_CGI_getSTRING(pReq, "name", pName, FTM_NAME_LEN, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_getAlarm(pClient, pName, &xAlarm);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get alarm");
+		goto finished;	
+	}
+
+	cJSON _PTR_ pAlarm = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(pAlarm, "name", xAlarm.pName);
+	cJSON_AddStringToObject(pAlarm, "email", xAlarm.pEmail);
+	cJSON_AddStringToObject(pAlarm, "message", xAlarm.pMessage);
+
+
+	cJSON_AddItemToObject(pRoot, "alarm", pAlarm);
+
+finished:
+
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}
+
+
 FTM_RET	FTM_CGI_getAlarmList
 (
 	FTM_CLIENT_PTR pClient, 
@@ -142,27 +186,49 @@ FTM_RET	FTM_CGI_getAlarmList
 
 	FTM_RET		xRet = FTM_RET_OK;
 	FTM_INT		i;
+	FTM_UINT32	ulIndex = 0;
 	FTM_UINT32	ulCount = 20;
 	FTM_NAME_PTR	pAlarmNameList = NULL;
 	FTM_ALARM_PTR	pAlarmList = NULL;
-
 	cJSON _PTR_	pRoot;
+
+	pRoot = cJSON_CreateObject();
+
+	xRet = FTM_CGI_getCount(pReq, &ulIndex, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "The index parameter is messing!");
+		goto finished;
+	}
+
+	xRet = FTM_CGI_getCount(pReq, &ulCount, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "The count parameter is messing!");
+		goto finished;
+	}
 
 	pAlarmNameList = (FTM_NAME_PTR)FTM_MEM_malloc(sizeof(FTM_NAME) * ulCount);
 	if (pAlarmNameList == NULL)
 	{
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+		ERROR(xRet, "Not enough memory[size = %d]!", sizeof(FTM_NAME) * ulCount);
 		goto finished;	
 	}
 	
-	xRet = FTM_CLIENT_getAlarmNameList(pClient, ulCount, pAlarmNameList, &ulCount);
+	xRet = FTM_CLIENT_getAlarmNameList(pClient, ulIndex, ulCount, pAlarmNameList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
+		ERROR(xRet, "Failed to get alarm name list!");
 		goto finished;	
 	}
 
-	pAlarmList = (FTM_ALARM_PTR)FTM_MEM_malloc(sizeof(FTM_ALARM)*ulCount);
+	INFO("Name list count : %d", ulCount);
+	pAlarmList = (FTM_ALARM_PTR)FTM_MEM_malloc(sizeof(FTM_ALARM) * ulCount);
 	if (pAlarmList == NULL)
 	{
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+		ERROR(xRet, "Not enough memory[size = %d]!", sizeof(FTM_ALARM) * ulCount);
 		goto finished;	
 	}
 	
@@ -171,6 +237,7 @@ FTM_RET	FTM_CGI_getAlarmList
 		xRet = FTM_CLIENT_getAlarm(pClient, pAlarmNameList[i], &pAlarmList[i]);
 		if (xRet != FTM_RET_OK)
 		{
+			ERROR(xRet, "Failed to get alarm[%s]!", pAlarmNameList[i]);
 			goto finished;	
 		}
 	}
@@ -187,8 +254,6 @@ FTM_RET	FTM_CGI_getAlarmList
 
 		cJSON_AddItemToArray(pAlarmArray, pAlarm);
 	}
-
-	pRoot = cJSON_CreateObject();
 
 	cJSON_AddNumberToObject(pRoot, "count", ulCount);
 	cJSON_AddItemToObject(pRoot, "alarm_list", pAlarmArray);
@@ -209,3 +274,119 @@ finished:
 }
 
 
+FTM_RET	FTM_CGI_setAlarm
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReq != NULL);
+
+	FTM_RET		xRet;
+	cJSON _PTR_	pRoot;
+	cJSON _PTR_ pReqRoot = NULL;
+	FTM_UINT32	ulFieldFlags = 0;
+	FTM_ALARM	xAlarm;
+	FTM_CHAR	pName[FTM_NAME_LEN+1];
+
+	pRoot = cJSON_CreateObject();
+
+	FTM_CHAR_PTR	pBody = qcgireq_getquery(Q_CGI_POST);
+
+	if (pBody == NULL)
+	{
+		xRet = FTM_RET_INVALID_ARGUMENTS;
+		ERROR(xRet, "Post body is empry!");
+		goto finished;
+	}
+
+	pReqRoot = cJSON_Parse(pBody);
+	if (pReqRoot == NULL)
+	{
+		xRet = FTM_RET_INVALID_JSON_FORMAT;
+		ERROR(xRet, "Invalid JSON format!");
+		goto finished;	
+	}
+
+	memset(pName, 0, sizeof(pName));
+	memset(&xAlarm, 0, sizeof(xAlarm));
+
+	cJSON _PTR_ pAlarmItem = cJSON_GetObjectItem(pReqRoot, "alarm");
+	if (pAlarmItem == NULL)
+	{
+		xRet = FTM_RET_OBJECT_NOT_FOUND;
+		ERROR(xRet, "Failed to get alarm element!");
+		goto finished;	
+	}
+	
+	cJSON _PTR_ pItem = cJSON_GetObjectItem(pAlarmItem, "name");
+	if ((pItem == NULL) || (pItem->type != cJSON_String) || (strlen(pItem->valuestring) > FTM_NAME_LEN))
+	{
+		xRet = FTM_RET_OBJECT_NOT_FOUND;
+		ERROR(xRet, "Failed to get alarm name!");
+		goto finished;	
+	}
+
+	strcpy(pName, pItem->valuestring);
+
+
+	xRet = FTM_CLIENT_getAlarm(pClient, pName, &xAlarm);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get alarm");
+		goto finished;	
+	}
+
+	pItem = cJSON_GetObjectItem(pAlarmItem, "email");
+	if (pItem != NULL)
+	{
+		if ((pItem->type != cJSON_String) || (strlen(pItem->valuestring) > FTM_EMAIL_LEN))
+		{
+			ERROR(xRet, "Invalid email!");
+			goto finished;	
+		}
+		strcpy(xAlarm.pEmail, pItem->valuestring);
+		ulFieldFlags |= FTM_ALARM_FIELD_EMAIL;
+	}
+
+	pItem = cJSON_GetObjectItem(pAlarmItem, "message");
+	if (pItem != NULL)
+	{
+		if ((pItem->type != cJSON_String) || (strlen(pItem->valuestring) > FTM_ALARM_MESSAGE_LEN))
+		{
+			ERROR(xRet, "Invalid message!");
+			goto finished;	
+		}
+		strcpy(xAlarm.pMessage, pItem->valuestring);
+		ulFieldFlags |= FTM_ALARM_FIELD_MESSAGE;
+	}
+
+	xRet = FTM_CLIENT_setAlarm(pClient, pName, &xAlarm, ulFieldFlags);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_getAlarm(pClient, pName, &xAlarm);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	cJSON _PTR_ pAlarm = cJSON_CreateObject();
+	cJSON_AddStringToObject(pAlarm, "name", xAlarm.pName);
+	cJSON_AddStringToObject(pAlarm, "email", xAlarm.pEmail);
+	cJSON_AddStringToObject(pAlarm, "message", xAlarm.pMessage);
+
+	cJSON_AddItemToObject(pRoot, "alarm", pAlarm);
+
+finished:
+
+	if (pReqRoot != NULL)
+	{
+		cJSON_Delete(pReqRoot);	
+	}
+
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}

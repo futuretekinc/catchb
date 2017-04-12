@@ -219,7 +219,7 @@ FTM_RET	FTM_SHELL_CMD_showAlarmList
 		goto finished;
 	}
 
-	xRet = FTM_CLIENT_getAlarmNameList(pClient, ulCount, pNameList, &ulCount);
+	xRet = FTM_CLIENT_getAlarmNameList(pClient, 0, ulCount, pNameList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get switches!");

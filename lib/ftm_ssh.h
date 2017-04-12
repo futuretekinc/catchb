@@ -84,9 +84,13 @@ FTM_BOOL	FTM_SSH_CHANNEL_isEOF
 FTM_RET	FTM_SSH_CHANNEL_read
 (
 	FTM_SSH_CHANNEL_PTR	pChannel,
+	FTM_UINT32			ulTimeout,
 	FTM_UINT8_PTR		pBuffer,
 	FTM_UINT32			ulBufferLen,
-	FTM_UINT32_PTR		pReadLen
+	FTM_UINT32_PTR		pReadLen,
+	FTM_UINT8_PTR		pErrorBuffer,
+	FTM_UINT32			ulErrorBufferLen,
+	FTM_UINT32_PTR		pErrorReadLen
 );
 
 FTM_RET	FTM_SSH_CHANNEL_write

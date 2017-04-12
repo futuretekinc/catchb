@@ -14,6 +14,8 @@
 
 typedef struct FTM_CLIENT_STRUCT
 {
+	FTM_CLIENT_CONFIG	xConfig;
+
 	FTM_INT		hSock;
 	FTM_INT		nTimeout;
 	FTM_LOCK	xLock;
@@ -24,15 +26,79 @@ static FTM_RET FTM_CLIENT_request
 	FTM_CLIENT_PTR			pClient, 
 	FTM_REQ_PARAMS_PTR		pReq,
 	FTM_INT					nReqLen,
-	FTM_RESP_PARAMS_PTR	pResp,
+	FTM_RESP_PARAMS_PTR		pResp,
 	FTM_INT					nRespLen
 );
+
+FTM_RET	FTM_CLIENT_CONFIG_setDefault
+(
+	FTM_CLIENT_CONFIG_PTR	pConfig
+)
+{
+	memset(pConfig, 0, sizeof(FTM_CLIENT_CONFIG));
+
+	strncpy(pConfig->pIP, "127.0.0.1", sizeof(pConfig->pIP));
+	pConfig->usPort = 8800;
+	pConfig->bAutoConnect = FTM_FALSE;
+
+	return	FTM_RET_OK;
+}
+
+
+FTM_RET	FTM_CLIENT_CONFIG_load
+(
+	FTM_CLIENT_CONFIG_PTR	pConfig,
+	cJSON _PTR_ pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+	
+	FTM_RET	xRet = FTM_RET_OK;
+	cJSON _PTR_ 	pItem;
+
+	pItem = cJSON_GetObjectItem(pRoot, "ip");
+	if (pItem != NULL)
+	{
+		strncpy(pConfig->pIP, pItem->valuestring, sizeof(pConfig->pIP));
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "port");
+	if (pItem != NULL)
+	{
+		pConfig->usPort = pItem->valueint;
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "auto");
+	if (pItem != NULL)
+	{
+		if (pItem->type == cJSON_String)
+		{
+			if ((strcasecmp(pItem->valuestring, "yes") == 0) ||(strcasecmp(pItem->valuestring, "on") == 0))
+			{
+				pConfig->bAutoConnect = FTM_TRUE;
+			}
+			else if ((strcasecmp(pItem->valuestring, "no") == 0) ||(strcasecmp(pItem->valuestring, "off") == 0))
+			{
+				pConfig->bAutoConnect = FTM_FALSE;
+			}
+		}
+		else if (pItem->type == cJSON_Number)
+		{
+			pConfig->bAutoConnect = (pItem->valueint != 0);
+		}
+	}
+
+	return	xRet;
+}
+
 
 /*****************************************************************
  *
  *****************************************************************/
 FTM_RET	FTM_CLIENT_create
 (
+	FTM_CLIENT_CONFIG_PTR	pConfig,
 	FTM_CLIENT_PTR _PTR_ ppClient
 )
 {
@@ -46,6 +112,15 @@ FTM_RET	FTM_CLIENT_create
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
 		ERROR(xRet, "Failed to create FTM client!\n");
 		return	xRet;
+	}
+
+	if(pConfig != NULL)
+	{
+		memcpy(&pClient->xConfig, pConfig, sizeof(FTM_CLIENT_CONFIG));		
+	}
+	else
+	{
+		FTM_CLIENT_CONFIG_setDefault(&pClient->xConfig);	
 	}
 
 	*ppClient = pClient;
@@ -73,11 +148,49 @@ FTM_RET	FTM_CLIENT_destroy
 /*****************************************************************
  *
  *****************************************************************/
+FTM_RET	FTM_CLIENT_setConfig
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_CLIENT_CONFIG_PTR	pConfig,
+	FTM_UINT32		ulFieldFlags
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pConfig != NULL);
+
+	if (ulFieldFlags & FTM_CLIENT_FIELD_IP)
+	{
+		strncpy(pClient->xConfig.pIP, pConfig->pIP, sizeof(pClient->xConfig.pIP));
+	}
+
+	if (ulFieldFlags & FTM_CLIENT_FIELD_PORT)
+	{
+		pClient->xConfig.usPort = pConfig->usPort;
+	}
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_CLIENT_getConfig
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_CLIENT_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pConfig != NULL);
+
+	memcpy(pConfig, &pClient->xConfig, sizeof(FTM_CLIENT_CONFIG));
+
+	return	FTM_RET_OK;
+}
+
+/*****************************************************************
+ *
+ *****************************************************************/
 FTM_RET FTM_CLIENT_connect
 (
-	FTM_CLIENT_PTR 	pClient,
-	FTM_CHAR_PTR	pIP,
-	FTM_UINT16 		usPort 
+	FTM_CLIENT_PTR 	pClient
 )
 {
 	int 	hSock;
@@ -96,9 +209,9 @@ FTM_RET FTM_CLIENT_connect
 		return	FTM_RET_ERROR;
 	}
 
-	inet_aton(pIP, &xServer.sin_addr);
+	inet_aton(pClient->xConfig.pIP, &xServer.sin_addr);
 	xServer.sin_family 		= AF_INET;
-	xServer.sin_port 		= htons(usPort);
+	xServer.sin_port 		= htons(pClient->xConfig.usPort);
 
 	if (connect(hSock, (struct sockaddr *)&xServer, sizeof(xServer)) < 0)
 	{
@@ -1191,6 +1304,7 @@ FTM_RET FTM_CLIENT_setAlarm
 FTM_RET FTM_CLIENT_getAlarmNameList
 (
  	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulMaxCount,
 	FTM_NAME_PTR	pNameList,
 	FTM_UINT32_PTR	pCount
@@ -1217,11 +1331,14 @@ FTM_RET FTM_CLIENT_getAlarmNameList
 
 	xReq.xCommon.xCmd	=	FTM_CMD_GET_ALARM_NAME_LIST;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	xReq.ulIndex		=   ulIndex;
+	xReq.ulCount		=   ulMaxCount;
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)pResp, ulRespLen);
 	if (xRet == FTM_RET_OK)
 	{
 		memcpy(pNameList, pResp->pNameList, sizeof(FTM_NAME)*(pResp->ulCount));
+		*pCount = pResp->ulCount;
 	}
 
 	FTM_MEM_free(pResp);

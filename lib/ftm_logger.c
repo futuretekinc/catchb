@@ -65,6 +65,8 @@ FTM_RET	FTM_LOGGER_CONFIG_save
 	ASSERT(pConfig != NULL);
 	ASSERT(pRoot != NULL);
 
+	cJSON_AddNumberToObject(pRoot, "retention", pConfig->ulRetentionPeriod);
+
 	return	FTM_RET_OK;
 }
 

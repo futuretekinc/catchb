@@ -257,6 +257,7 @@ FTM_RET	FTM_CATCHB_setAlarm
 FTM_RET	FTM_CATCHB_getAlarmList
 (
 	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulMaxCount,
 	FTM_ALARM_PTR	pAlarmList,
 	FTM_UINT32_PTR	pCount
@@ -265,6 +266,7 @@ FTM_RET	FTM_CATCHB_getAlarmList
 FTM_RET	FTM_CATCHB_getAlarmNameList
 (
 	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulMaxCount,
 	FTM_NAME_PTR  	pNameList,
 	FTM_UINT32_PTR	pCount

@@ -51,6 +51,8 @@ FTM_CGI_COMMAND	pAlarmCmds[] =
 {
 	{	"add",  FTM_CGI_addAlarm			},
 	{	"del",	FTM_CGI_delAlarm			},
+	{	"get",	FTM_CGI_getAlarm			},
+	{	"set",	FTM_CGI_setAlarm			},
 	{	"list",	FTM_CGI_getAlarmList		},
 	{	NULL,		NULL					}
 };
@@ -66,7 +68,7 @@ FTM_RET	FTM_CGI_finish
 
 	qcgires_setcontenttype(pReq, "text/xml");
 	printf("%s", cJSON_Print(pRoot));
-
+	INFO("%s",  cJSON_Print(pRoot));
 	if (pRoot != NULL)
 	{
 		cJSON_Delete(pRoot);

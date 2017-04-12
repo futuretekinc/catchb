@@ -102,6 +102,18 @@ FTM_RET	FTM_CGI_delAlarm
 	qentry_t _PTR_ pReq
 );
 
+FTM_RET	FTM_CGI_getAlarm
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_setAlarm
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
 FTM_RET	FTM_CGI_getAlarmList
 (
 	FTM_CLIENT_PTR pClient, 

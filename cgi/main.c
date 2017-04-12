@@ -13,8 +13,8 @@ FTM_CGI_COMMAND	pCmds[] =
 {
 	{	"cctv",		FTM_CGI_cctv	},
 	{	"switch",	FTM_CGI_switch	},
-	{	"log",		FTM_CGI_log	},
-	{	"alarm",		FTM_CGI_alarm},
+	{	"log",		FTM_CGI_log		},
+	{	"alarm",	FTM_CGI_alarm	},
 	{	NULL,		NULL			}
 };
 
@@ -25,8 +25,20 @@ FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 
 	FTM_RET			xRet;
 	FTM_CGI_COMMAND_PTR	pCmd = &pCmds[0];
+	FTM_CLIENT_CONFIG	xClientConfig;
+	FTM_TRACE_CONFIG	xTraceConfig;
 
 	FTM_MEM_init();	
+
+	FTM_CLIENT_CONFIG_setDefault(&xClientConfig);
+
+	FTM_TRACE_CONFIG_setDefault(&xTraceConfig);
+	strcpy(xTraceConfig.xLog.pFileName, "catchb_cgi.log");
+	strcpy(xTraceConfig.xInfo.pFileName, "catchb_cgi.log");
+	strcpy(xTraceConfig.xWarn.pFileName, "catchb_cgi.log");
+	strcpy(xTraceConfig.xError.pFileName, "catchb_cgi.log");
+
+	FTM_TRACE_setConfig(&xTraceConfig);
 
 	while(pCmd->pName != NULL)
 	{
@@ -46,13 +58,13 @@ FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 	{
 		FTM_CLIENT_PTR	pClient;
 		
-		xRet = FTM_CLIENT_create(&pClient);
+		xRet = FTM_CLIENT_create(&xClientConfig, &pClient);
 		if (xRet != FTM_RET_OK)
 		{
 			qcgires_error(pReq, "Internal Error!");
 		}
 
-		xRet = FTM_CLIENT_connect(pClient, "127.0.0.1", 8800);
+		xRet = FTM_CLIENT_connect(pClient);
 		if (xRet == FTM_RET_OK)
 		{
        		pCmd->fService(pClient, pReq);
@@ -64,10 +76,11 @@ FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 
 	}	
 
-	FTM_MEM_final();
-
     // De-allocate memories
     pReq->free(pReq);
+
+	FTM_MEM_final();
+
 
     return 0;
 }

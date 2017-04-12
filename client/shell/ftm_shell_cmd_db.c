@@ -20,8 +20,9 @@ FTM_RET	FTM_SHELL_CMD_db
 	ASSERT(pData != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 
-	FTM_CATCHB_PTR	pCatchB = (FTM_CATCHB_PTR)pData;
 
+#if 0
+	FTM_CATCHB_PTR	pCatchB = (FTM_CATCHB_PTR)pData;
 	if (nArgc < 2)
 	{
 		goto finished;
@@ -193,6 +194,7 @@ FTM_RET	FTM_SHELL_CMD_db
 	}
 
 finished:
+#endif
 
 	return	xRet;
 }

@@ -60,6 +60,12 @@ FTM_RET		FTM_TRACE_CONFIG_load
 	cJSON _PTR_				pRoot
 );
 
+FTM_RET		FTM_TRACE_CONFIG_save
+(
+	FTM_TRACE_CONFIG_PTR	pConfig,
+	cJSON _PTR_				pRoot
+);
+
 FTM_RET		FTM_TRACE_setConfig
 (
 	FTM_TRACE_CONFIG_PTR	pConfig

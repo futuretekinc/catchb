@@ -52,6 +52,18 @@ FTM_RET	FTM_ANALYZER_CONFIG_setDefault
 {
 	ASSERT(pConfig != NULL);
 
+	if ((pConfig->pPortList != NULL) && (pConfig->ulPortCount != 0))
+	{
+		FTM_MEM_free(pConfig->pPortList);
+		pConfig->pPortList = NULL;
+		pConfig->ulPortCount = 0;
+	}
+
+	pConfig->pPortList = FTM_MEM_malloc(sizeof(FTM_UINT16)*8);
+	if (pConfig->pPortList == NULL)
+	{
+		return	FTM_RET_NOT_ENOUGH_MEMORY;	
+	}
 
 	pConfig->ulPortCount = 0;
 	pConfig->pPortList[pConfig->ulPortCount++] = 80;
@@ -79,29 +91,60 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 {
 	ASSERT(pConfig != NULL);
 	ASSERT(pRoot != NULL);
-
-	cJSON _PTR_ pSection;
-	cJSON _PTR_ pItem;
+	
+	FTM_RET	xRet = FTM_RET_OK;
+	cJSON _PTR_ 	pSection;
+	cJSON _PTR_ 	pItem;
+	FTM_UINT16_PTR	pPortList = NULL;
+	FTM_UINT32		ulPortCount = 0;
 
 	pSection = cJSON_GetObjectItem(pRoot, "port");
 	if (pSection != NULL)
 	{
 		if(pSection->type == cJSON_Array)
 		{
-			FTM_INT32	ulCount, i;
-
-			pConfig->ulPortCount = 0;
-
-			ulCount = cJSON_GetArraySize(pSection);
-			for(i = 0 ; i < ulCount && i < sizeof(pConfig->pPortList) / sizeof(pConfig->pPortList[0]) ; i++)
+			ulPortCount = cJSON_GetArraySize(pSection);
+			if (ulPortCount > 0)
 			{
-				pItem = cJSON_GetArrayItem(pSection, i);
-				if (pItem != NULL)
+				FTM_INT32	i;
+
+				pPortList = FTM_MEM_malloc(sizeof(FTM_UINT16) * ulPortCount);
+				if (pPortList == NULL)
 				{
-					pConfig->pPortList[pConfig->ulPortCount++] = pItem->valueint;		
+					xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+					ERROR(xRet, "Failed to load configuration due to not enough memory!");
+					goto finished;
 				}
-			}	
+
+				for(i = 0 ; i < ulPortCount ; i++)
+				{
+					pItem = cJSON_GetArrayItem(pSection, i);
+					if (pItem == NULL)
+					{
+						xRet = FTM_RET_INVALID_JSON_FORMAT;
+						ERROR(xRet, "Failed to load configuration due to JSON format error!");
+						goto finished;
+					}
+					pPortList[i] = pItem->valueint;		
+				}	
+			}
 		}
+		else
+		{
+			xRet = FTM_RET_INVALID_JSON_FORMAT;
+			ERROR(xRet, "Failed to load configuration due to JSON format error!");
+			goto finished;
+		}
+
+		if (pConfig->pPortList != NULL)
+		{
+			FTM_MEM_free(pConfig->pPortList);
+		}
+
+		pConfig->pPortList = pPortList;
+		pConfig->ulPortCount = ulPortCount;
+
+		pPortList = NULL;
 	}
 
 	pItem = cJSON_GetObjectItem(pRoot, "interval");
@@ -110,6 +153,10 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 		if (FTM_CATCHB_ANALYZER_MINIMUM_IP_CHECK_INTERVAL <= pItem->valueint)
 		{
 			pConfig->ulIPCheckInterval = pItem->valueint;	
+		}
+		else
+		{
+			WARN(FTM_RET_INVALID_JSON_FORMAT, "Failed to load configuration due to invalid interval value[ < %d]!",FTM_CATCHB_ANALYZER_MINIMUM_IP_CHECK_INTERVAL);
 		}
 	}
 
@@ -129,7 +176,7 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 			}
 			else
 			{
-				return	FTM_RET_INVALID_ARGUMENTS;
+				WARN(FTM_RET_INVALID_JSON_FORMAT, "Failed to load configuration due to invalid enable value[yes or no]!");
 			}
 		}
 
@@ -140,7 +187,62 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 			{
 				pConfig->xTest.ulErrorRate = pItem->valueint;	
 			}
+			else
+			{
+				WARN(FTM_RET_INVALID_VALUE, "Failed to load configuration due to invalid error_rate value [0 ~ 100]!");
+			}
 		}
+	}
+
+finished:
+
+	if (pPortList != NULL)
+	{
+		FTM_MEM_free(pPortList);
+	}
+
+	return	xRet;
+}
+
+
+FTM_RET	FTM_ANALYZER_CONFIG_save
+(
+	FTM_ANALYZER_CONFIG_PTR	pConfig,
+	cJSON _PTR_ pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+	
+	cJSON _PTR_ 	pSection;
+	cJSON _PTR_ 	pItem;
+
+	pSection = cJSON_CreateArray();
+	if (pSection != NULL)
+	{
+		FTM_UINT32	i;
+
+		for(i = 0 ; i < pConfig->ulPortCount ; i++)
+		{
+			pItem = cJSON_CreateNumber(pConfig->pPortList[i]);
+			if (pItem != NULL)
+			{
+				cJSON_AddItemToArray(pSection, pItem);	
+			}
+		}
+
+		cJSON_AddItemToObject(pRoot, "port", pSection);
+	}
+
+	cJSON_AddNumberToObject(pRoot, "interval", pConfig->ulIPCheckInterval);
+	
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		cJSON_AddStringToObject(pSection, "enable", (pConfig->xTest.bEnable?"yes":"no"));
+		cJSON_AddNumberToObject(pSection, "error_rate", pConfig->xTest.ulErrorRate);
+
+		cJSON_AddItemToObject(pRoot, "test", pSection);
 	}
 
 	return	FTM_RET_OK;
@@ -592,13 +694,13 @@ FTM_RET	FTM_ANALYZER_process
 			sprintf(pOptions, "ip.src == %s && ip.dst == %s", pCCTV->xConfig.pIP, pLocalIP);
 			FTM_PCAP_setFilter(pAnalyzer->pPCAP, pOptions);
 			FTM_PCAP_setFilterIP(pAnalyzer->pPCAP, inet_addr(pCCTV->xConfig.pIP), inet_addr(pLocalIP));
-			FTM_PCAP_setFilterPorts(pAnalyzer->pPCAP, pAnalyzer->xConfig.pPortList, FTM_CATCHB_ANALYZER_MAX_PORT_COUNT);
+			FTM_PCAP_setFilterPorts(pAnalyzer->pPCAP, pAnalyzer->xConfig.pPortList, pAnalyzer->xConfig.ulPortCount);
 
 			INFO("PCAP start!");
 			FTM_ANALYZER_PCAP_start(pAnalyzer);
 
 			pCCTV->ulPortCount = 0;
-			for(j =0 ;j < FTM_CATCHB_ANALYZER_MAX_PORT_COUNT ; j++)
+			for(j =0 ;j < pAnalyzer->xConfig.ulPortCount ; j++)
 			{
 				FTM_BOOL	bOpened = FTM_FALSE;
 

@@ -120,11 +120,11 @@ FTM_RET	FTM_SHELL_CMD_cctv
 			xRet = FTM_CLIENT_delCCTV(pClient, pArgv[i]);	
 			if (xRet == FTM_RET_OK)
 			{
-				printf("CCTV[%s] deleted!", pArgv[i]);	
+				printf("CCTV[%s] deleted!\n", pArgv[i]);	
 			}
 			else
 			{
-				printf("Failed to delete CCTV[%s]!", pArgv[i]);	
+				printf("Failed to delete CCTV[%s]!\n", pArgv[i]);	
 			}
 		}
 	}
@@ -135,11 +135,11 @@ FTM_RET	FTM_SHELL_CMD_cctv
 		xRet = FTM_CLIENT_getCCTVCount(pClient, &ulCount);	
 		if (xRet == FTM_RET_OK)
 		{
-			printf("Number of CCTV : %d", ulCount);	
+			printf("Number of CCTV : %d\n", ulCount);	
 		}
 		else
 		{
-			printf("Failed to get CCTV count!");	
+			printf("Failed to get CCTV count!\n");	
 		}
 	}
 	else if(strcasecmp(pArgv[1], "get") == 0)
@@ -163,7 +163,7 @@ FTM_RET	FTM_SHELL_CMD_cctv
 		}
 		else
 		{
-			printf("Failed to get CCTV[%s] properties!", pArgv[2]);	
+			printf("Failed to get CCTV[%s] properties!\n", pArgv[2]);	
 		}
 	}
 	else if(strcasecmp(pArgv[1], "set") == 0)

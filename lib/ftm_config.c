@@ -197,16 +197,6 @@ FTM_RET	FTM_CONFIG_load
 		FTM_LOGGER_CONFIG_load(&pConfig->xLogger, pSection);
 	}
 
-	pSection = cJSON_GetObjectItem(pRoot, "switches");
-	if (pSection != NULL)
-	{
-		xRet = FTM_SWITCH_CONFIG_loadList(pConfig->pSwitchList, pSection);	
-		if (xRet != FTM_RET_OK)
-		{
-			goto finished;	
-		}
-	}
-
 	pSection = cJSON_GetObjectItem(pRoot, "trace");
 	if (pSection != NULL)
 	{
@@ -233,6 +223,117 @@ finished:
 	}
 
 	return	FTM_RET_OK;	
+}
+
+FTM_RET	FTM_CONFIG_save
+(
+	FTM_CONFIG_PTR 	pConfig, 
+	char* 			pFileName
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pFileName != NULL);
+
+	FILE *pFile; 
+	FTM_RET		xRet = FTM_RET_OK;
+	cJSON _PTR_		pRoot = NULL;
+	cJSON _PTR_		pSection;
+
+	pRoot = cJSON_CreateObject();
+	if (pRoot == NULL)
+	{    
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+		ERROR(xRet, "Failed to save configuration due to not allocated memory!\n");
+		goto finished;
+	}    
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		xRet = FTM_DB_CONFIG_save(&pConfig->xDB, pSection);
+		if (xRet == FTM_RET_OK)
+		{
+			cJSON_AddItemToObject(pRoot, "database", pSection);	
+		}
+		else
+		{
+			cJSON_Delete(pSection);
+		}
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		xRet = FTM_ANALYZER_CONFIG_save(&pConfig->xAnalyzer, pSection);
+		if (xRet == FTM_RET_OK)
+		{
+			cJSON_AddItemToObject(pRoot, "analyzer", pSection);	
+		}
+		else
+		{
+			cJSON_Delete(pSection);
+		}
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		xRet = FTM_NOTIFIER_CONFIG_save(&pConfig->xNotifier, pSection);
+		if (xRet == FTM_RET_OK)
+		{
+			cJSON_AddItemToObject(pRoot, "notifier", pSection);	
+		}
+		else
+		{
+			cJSON_Delete(pSection);
+		}
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		xRet = FTM_LOGGER_CONFIG_save(&pConfig->xLogger, pSection);
+		if (xRet == FTM_RET_OK)
+		{
+			cJSON_AddItemToObject(pRoot, "logger", pSection);	
+		}
+		else
+		{
+			cJSON_Delete(pSection);
+		}
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		xRet = FTM_TRACE_CONFIG_save(&pConfig->xTrace, pSection);
+		if (xRet == FTM_RET_OK)
+		{
+			cJSON_AddItemToObject(pRoot, "trace", pSection);	
+		}
+		else
+		{
+			cJSON_Delete(pSection);
+		}
+	}
+
+	
+	pFile = fopen(pFileName, "wt"); 
+	if (pFile != NULL)
+	{
+		fprintf(pFile, "%s", cJSON_Print(pRoot));
+
+		fclose(pFile);
+	}
+
+finished:
+	if (pRoot != NULL)
+	{
+		cJSON_Delete(pRoot);
+		pRoot = NULL;
+	}
+
+	return	xRet;	
 }
 
 

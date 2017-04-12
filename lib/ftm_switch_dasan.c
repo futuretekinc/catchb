@@ -2,6 +2,7 @@
 #include <common.h>
 #include <syslog.h>
 #include <signal.h>
+#include <errno.h>
 
 #include <sys/select.h>
 #include <sys/time.h>
@@ -30,6 +31,9 @@
 
 #define	NST_MAX_COMD	32
 
+#undef	__MODULE__
+#define	__MODULE__	"switch"
+
 FTM_RET	FTM_SWITCH_DASAN_setAC
 (
 	FTM_SWITCH_PTR	pSwitch,
@@ -48,6 +52,10 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 	FTM_UINT32	ulCommandLines = 0;
 	FTM_SSH_PTR	pSSH = NULL;
 	FTM_SSH_CHANNEL_PTR	pChannel = NULL;
+	FTM_UINT8	pBuffer[2048];
+	FTM_UINT8	pErrorBuffer[2048];
+	FTM_UINT32	nReadLen;
+	FTM_UINT32	nErrorReadLen;
 	FTM_TIMER	xTimer;
 
 	FTM_getLocalIP(pLocalIP, sizeof(pLocalIP));
@@ -58,6 +66,7 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 	case	FTM_SWITCH_AC_POLICY_DENY:
 		{
 			sprintf(pCommandBuffers[ulCommandLines++],"enable\n");
+			sprintf(pCommandBuffers[ulCommandLines++],"sh\n");
 			sprintf(pCommandBuffers[ulCommandLines++],"configure terminal\n");
 
 			sprintf(pCommandBuffers[ulCommandLines++],"flow catchb_main_%d create\n", ulIndex);
@@ -107,7 +116,7 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 		break;
 	}
 
-
+	INFO("FTM_SSH_create");
 	xRet = FTM_SSH_create(&pSSH);
 	if (xRet != FTM_RET_OK)
 	{
@@ -115,6 +124,7 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 		goto finished;
 	}
 
+	INFO("FTM_SSH_connect(%s, %s, %s)", pSwitch->xConfig.pIP, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd);
 	xRet = FTM_SSH_connect(pSSH, pSwitch->xConfig.pIP, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd);
 	if (xRet != FTM_RET_OK)
 	{
@@ -122,6 +132,7 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 		goto finished;
 	}
 
+	INFO("FTM_SSH_CHANNEL_create");
 	xRet = FTM_SSH_CHANNEL_create(pSSH, &pChannel);
 	if (xRet != FTM_RET_OK)
 	{
@@ -129,6 +140,7 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 		goto finished;
 	}
 
+	INFO("FTM_SSH_CHANNEL_open");
 	xRet = FTM_SSH_CHANNEL_open(pChannel);
 	if (xRet != FTM_RET_OK)
 	{
@@ -136,55 +148,82 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 		goto finished;
 	}
 
-	FTM_TIMER_initS(&xTimer, 1);
-	for(i = 0 ; i < ulCommandLines ; i++)
+	fd_set	fds;
+	FTM_INT	eof = 0;
+
+	for(i = 0; i < ulCommandLines ; i++)
 	{
+		
+		FTM_TIMER_initMS(&xTimer, 1000);
+		while(!FTM_TIMER_isExpired(&xTimer))
+		{
+			FTM_UINT32	ulRemainTime = 0;
+			FTM_TIMER_remainMS(&xTimer, &ulRemainTime);
+
+			xRet = FTM_SSH_CHANNEL_read(pChannel, ulRemainTime, pBuffer, sizeof(pBuffer), &nReadLen, pErrorBuffer, sizeof(pErrorBuffer), &nErrorReadLen);
+			if ((xRet != FTM_RET_TIMEOUT) && (xRet != FTM_RET_OK))
+			{
+				break;	
+			}
+			else if (nReadLen != 0)
+			{
+				INFO("STDOUT : %s", (FTM_CHAR_PTR)pBuffer);	
+			}
+			else if (nErrorReadLen != 0)
+			{
+				INFO("STDERR : %s", (FTM_CHAR_PTR)pErrorBuffer);	
+			}
+		}
+
   		if (FTM_SSH_CHANNEL_isOpen(pChannel) && !FTM_SSH_CHANNEL_isEOF(pChannel))
 		{
-			FTM_CHAR	pBuffer[1024];
-			FTM_UINT32	ulReadLen;
+			FTM_INT	nFD = 0; 
 
-			FTM_SSH_CHANNEL_write(pChannel, (FTM_UINT8_PTR)pCommandBuffers[i], strlen(pCommandBuffers[i]));
-
-			while(!FTM_TIMER_isExpired(&xTimer))
+			FD_ZERO(&fds);
+			if(!eof)
 			{
-				memset(pBuffer, 0, sizeof(pBuffer));
-				xRet = FTM_SSH_CHANNEL_read(pChannel, (FTM_UINT8_PTR)pBuffer, sizeof(pBuffer), &ulReadLen);
-				if (xRet != FTM_RET_OK)
-				{
-					ERROR(xRet, "Failed to read channel!");
-					goto finished;
-				}
-
-				if (ulReadLen == 0)
-				{
-					usleep(10 * 1000);
-				}
-				else
-				{
-					INFO("SSH : %s", pBuffer);	
-				}
+				FD_SET(0,&fds);
 			}
-			FTM_TIMER_initS(&xTimer, 1);
+
+			nFD = ssh_get_fd(pSSH->pSession);
+			if (nFD < 0) 
+			{ 
+				xRet = FTM_RET_ERROR;
+				ERROR(xRet, "Failed to get FD.");
+				break;
+			}    
+
+			FD_SET(nFD, &fds);
+
+			if(FD_ISSET(nFD,&fds))
+			{
+				INFO("FTM_SSH_CHANNEL_write(%s, %d)", (FTM_UINT8_PTR)pCommandBuffers[i], strlen(pCommandBuffers[i]));
+				FTM_SSH_CHANNEL_write(pChannel, (FTM_UINT8_PTR)pCommandBuffers[i], strlen(pCommandBuffers[i]));
+
+				sleep(1);
+			}    
 		}
 	}
 
+	INFO("FTM_SSH_CHANNEL_close");
 	FTM_SSH_CHANNEL_close(pChannel);
+	INFO("FTM_SSH_disconnect");
 	FTM_SSH_disconnect(pSSH);
 
 finished:
 	
 	if (pChannel != NULL)
 	{
+		INFO("FTM_SSH_CHANNEL_destroy");
 		FTM_SSH_CHANNEL_destroy(&pChannel);	
 	}
 
 	if (pSSH != NULL)
 	{
+		INFO("FTM_SSH_destroy");
 		FTM_SSH_destroy(&pSSH);	
 	}
 
 	return	xRet;
 }
-
 

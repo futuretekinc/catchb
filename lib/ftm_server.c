@@ -1192,6 +1192,7 @@ FTM_RET	FTM_SERVER_setAlarm
 
 	return	xRet;
 }
+
 FTM_RET	FTM_SERVER_getAlarmNameList
 (
 	FTM_SERVER_PTR pServer, 
@@ -1211,7 +1212,8 @@ FTM_RET	FTM_SERVER_getAlarmNameList
 		ulMaxCount = pReq->ulCount;	
 	}
 
-	xRet = FTM_CATCHB_getAlarmNameList(pCatchB, ulMaxCount, pResp->pNameList, &pResp->ulCount);
+	pResp->ulCount = 0;
+	xRet = FTM_CATCHB_getAlarmNameList(pCatchB, pReq->ulIndex, ulMaxCount, pResp->pNameList, &pResp->ulCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get alarm list!");
@@ -1219,7 +1221,7 @@ FTM_RET	FTM_SERVER_getAlarmNameList
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_GET_ALARM_NAME_LIST_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_GET_ALARM_NAME_LIST_PARAMS) + sizeof(FTM_NAME) * pResp->ulCount;;
 
 	return	xRet;
 }

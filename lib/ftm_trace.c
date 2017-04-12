@@ -528,6 +528,71 @@ FTM_RET		FTM_TRACE_TYPE_CONFIG_load
 	return	FTM_RET_OK;
 }
 
+FTM_RET		FTM_TRACE_TYPE_CONFIG_save
+(
+	FTM_TRACE_TYPE_CONFIG_PTR	pConfig,
+	cJSON _PTR_				pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	cJSON _PTR_ pSection;
+
+	cJSON_AddStringToObject(pRoot, "enable", ((pConfig->bEnable)?"yes":"no"));
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		cJSON_AddStringToObject(pSection, "enable", ((pConfig->xTime.bEnable)?"yes":"no"));
+		cJSON_AddStringToObject(pSection, "dynamic", ((pConfig->xTime.bDynamic)?"yes":"no"));
+		cJSON_AddNumberToObject(pSection, "size", pConfig->xTime.ulSize);
+	
+		cJSON_AddItemToObject(pRoot, "time", pSection);
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		cJSON_AddStringToObject(pSection, "enable", ((pConfig->xFunction.bEnable)?"yes":"no"));
+		cJSON_AddStringToObject(pSection, "dynamic", ((pConfig->xFunction.bDynamic)?"yes":"no"));
+		cJSON_AddNumberToObject(pSection, "size", pConfig->xFunction.ulSize);
+	
+		cJSON_AddItemToObject(pRoot, "function", pSection);
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		cJSON_AddStringToObject(pSection, "enable", ((pConfig->xLine.bEnable)?"yes":"no"));
+		cJSON_AddStringToObject(pSection, "dynamic", ((pConfig->xLine.bDynamic)?"yes":"no"));
+		cJSON_AddNumberToObject(pSection, "size", pConfig->xLine.ulSize);
+	
+		cJSON_AddItemToObject(pRoot, "line", pSection);
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		cJSON_AddStringToObject(pSection, "enable", ((pConfig->xModule.bEnable)?"yes":"no"));
+		cJSON_AddStringToObject(pSection, "dynamic", ((pConfig->xModule.bDynamic)?"yes":"no"));
+		cJSON_AddNumberToObject(pSection, "size", pConfig->xModule.ulSize);
+	
+		cJSON_AddItemToObject(pRoot, "module", pSection);
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		cJSON_AddStringToObject(pSection, "enable", ((pConfig->xLevel.bEnable)?"yes":"no"));
+		cJSON_AddStringToObject(pSection, "dynamic", ((pConfig->xLevel.bDynamic)?"yes":"no"));
+		cJSON_AddNumberToObject(pSection, "size", pConfig->xLevel.ulSize);
+	
+		cJSON_AddItemToObject(pRoot, "level", pSection);
+	}
+
+	return	FTM_RET_OK;
+}
+
 FTM_RET		FTM_TRACE_CONFIG_load
 (
 	FTM_TRACE_CONFIG_PTR	pConfig,
@@ -569,6 +634,52 @@ FTM_RET		FTM_TRACE_CONFIG_load
 	if (pSection != NULL)
 	{
 		FTM_TRACE_TYPE_CONFIG_load(&pConfig->xError, pSection);	
+	}
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET		FTM_TRACE_CONFIG_save
+(
+	FTM_TRACE_CONFIG_PTR	pConfig,
+	cJSON _PTR_				pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	cJSON _PTR_ pSection;
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		FTM_TRACE_TYPE_CONFIG_save(&pConfig->xLog, pSection);	
+
+		cJSON_AddItemToObject(pRoot, "log", pSection);
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		FTM_TRACE_TYPE_CONFIG_save(&pConfig->xInfo, pSection);	
+
+		cJSON_AddItemToObject(pRoot, "info", pSection);
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		FTM_TRACE_TYPE_CONFIG_save(&pConfig->xWarn, pSection);	
+
+		cJSON_AddItemToObject(pRoot, "warn", pSection);
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		FTM_TRACE_TYPE_CONFIG_save(&pConfig->xError, pSection);	
+
+		cJSON_AddItemToObject(pRoot, "error", pSection);
 	}
 
 	return	FTM_RET_OK;
