@@ -697,6 +697,18 @@ FTM_RET		FTM_TRACE_setConfig
 	return	FTM_RET_OK;
 }
 
+FTM_RET		FTM_TRACE_getConfig
+(
+	FTM_TRACE_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	memcpy(pConfig, &xTraceConfig, sizeof(FTM_TRACE_CONFIG));
+
+	return	FTM_RET_OK;
+}
+
 FTM_VOID	FTM_TRACE_SystemError
 (
 	const FTM_CHAR_PTR pFormat,
@@ -745,11 +757,16 @@ FTM_VOID	FTM_TRACE_Out
 	switch(xLevel)
 	{
 	case	FTM_TRACE_LEVEL_CONSOLE:pConfig = &xTraceConfig.xConsole; 	break;
-	case	FTM_TRACE_LEVEL_LOG:	pConfig = &xTraceConfig.xLog; 	break;
-	case	FTM_TRACE_LEVEL_INFO:	pConfig = &xTraceConfig.xInfo; 	break;
-	case	FTM_TRACE_LEVEL_WARN:	pConfig = &xTraceConfig.xWarn; 	break;
+	case	FTM_TRACE_LEVEL_LOG:	pConfig = &xTraceConfig.xLog; 		break;
+	case	FTM_TRACE_LEVEL_INFO:	pConfig = &xTraceConfig.xInfo; 		break;
+	case	FTM_TRACE_LEVEL_WARN:	pConfig = &xTraceConfig.xWarn; 		break;
 	case	FTM_TRACE_LEVEL_ERROR:	pConfig = &xTraceConfig.xError; 	break;
 	default:	return;
+	}
+
+	if (!pConfig->bEnable)
+	{
+		return;
 	}
 
 	FTM_LOCK_set(&xLock);

@@ -1,4 +1,4 @@
-MODEL=ftm-50
+MODEL=i686
 TARGET=$(TOPDIR)/target/$(MODEL)
 EXEC_PREFIX=$(TARGET)/usr/bin
 INC_PREFIX=$(TARGET)/usr/include
@@ -12,13 +12,15 @@ CFLAGS:= -fPIC -c -g -Wall \
 				-I$(TOPDIR)\
 				-I$(TOPDIR)/include\
 				-I$(TOPDIR)/lib\
-				-I$(TOPDIR)/maind
+				-I$(TOPDIR)/maind\
+				-I$(TOPDIR)/libtelnet
 
 LDFLAGS:= -Wl,--no-as-needed -rdynamic\
 				-L.\
 				-L$(TOPDIR)\
 				-L$(TOPDIR)/lib\
-				-L$(TOPDIR)/libssh
+				-L$(TOPDIR)/libssh\
+				-L$(TOPDIR)/libtelnet
 
 
 

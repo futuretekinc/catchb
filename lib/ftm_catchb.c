@@ -152,7 +152,6 @@ FTM_RET	FTM_CATCHB_CONFIG_setDefault
 {
 	ASSERT(pConfig != NULL);
 
-	sprintf(pConfig->xDB.pFileName, FTM_CATCHB_DB_DEFAULT_FILE_NAME);
 	pConfig->xCCTV.ulUpdateInterval = 10000;
 
 	return	FTM_RET_OK;
@@ -465,6 +464,16 @@ FTM_RET	FTM_CATCHB_setConfig
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_RET	xRet1;
 
+	if (pCatchB->pDB != NULL)
+	{
+		xRet1 = FTM_DB_setConfig(pCatchB->pDB, &pConfig->xDB);
+		if (xRet1 != FTM_RET_OK)
+		{
+			xRet = xRet1;
+			ERROR(xRet, "Failed to set DB configuration!");
+		}
+	}
+
 	if (pCatchB->pAnalyzer != NULL)
 	{
 		xRet1 = FTM_ANALYZER_setConfig(pCatchB->pAnalyzer, &pConfig->xAnalyzer);
@@ -494,6 +503,65 @@ FTM_RET	FTM_CATCHB_setConfig
 			ERROR(xRet, "Failed to set logger configuration!");
 		}
 	}
+
+	FTM_TRACE_setConfig(&pConfig->xTrace);
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CATCHB_getConfig
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pConfig != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_RET	xRet1;
+
+	if (pCatchB->pDB != NULL)
+	{
+		xRet1 = FTM_DB_getConfig(pCatchB->pDB, &pConfig->xDB);
+		if (xRet1 != FTM_RET_OK)
+		{
+			xRet = xRet1;
+			ERROR(xRet, "Failed to get DB configuration!");
+		}
+	}
+
+	if (pCatchB->pAnalyzer != NULL)
+	{
+		xRet1 = FTM_ANALYZER_getConfig(pCatchB->pAnalyzer, &pConfig->xAnalyzer);
+		if (xRet1 != FTM_RET_OK)
+		{
+			xRet = xRet1;
+			ERROR(xRet, "Failed to get analyzer configuration!");
+		}
+	}
+
+	if (pCatchB->pNotifier != NULL)
+	{
+		xRet1 = FTM_NOTIFIER_getConfig(pCatchB->pNotifier, &pConfig->xNotifier);
+		if (xRet != FTM_RET_OK)
+		{
+			xRet1 = xRet1;
+			ERROR(xRet, "Failed to get notifier configuration!");
+		}
+	}
+
+	if (pCatchB->pLogger != NULL)
+	{
+		xRet1 = FTM_LOGGER_getConfig(pCatchB->pLogger, &pConfig->xLogger);
+		if (xRet1 != FTM_RET_OK)
+		{
+			xRet = xRet1;
+			ERROR(xRet, "Failed to get logger configuration!");
+		}
+	}
+
+	FTM_TRACE_getConfig(&pConfig->xTrace);
 
 	return	xRet;
 }
@@ -563,7 +631,7 @@ FTM_RET	FTM_CATCHB_initProcess
 	FTM_RET	xRet;
 	FTM_BOOL	bExist;
 
-	xRet = FTM_DB_open(pCatchB->pDB, pCatchB->xConfig.xDB.pFileName);
+	xRet = FTM_DB_open(pCatchB->pDB);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to open DB!");	

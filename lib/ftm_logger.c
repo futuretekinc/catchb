@@ -184,6 +184,22 @@ FTM_RET	FTM_LOGGER_setConfig
 	return	xRet;
 }
 
+FTM_RET	FTM_LOGGER_getConfig
+(
+	FTM_LOGGER_PTR	pLogger,
+	FTM_LOGGER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pLogger != NULL);
+	ASSERT(pConfig != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+
+	memcpy(pConfig, &pLogger->xConfig, sizeof(FTM_LOGGER_CONFIG));
+
+	return	xRet;
+}
+
 FTM_RET	FTM_LOGGER_start
 (
 	FTM_LOGGER_PTR	pLogger

@@ -26,6 +26,7 @@ FTM_RET	FTM_CONFIG_destroy(FTM_CONFIG_PTR _PTR_ ppConfig);
 FTM_RET	FTM_CONFIG_setDefault(FTM_CONFIG_PTR pConfig);
 
 FTM_RET	FTM_CONFIG_load(FTM_CONFIG_PTR pConfig, char* pFileName);
+FTM_RET	FTM_CONFIG_save(FTM_CONFIG_PTR pConfig, char* pFileName);
 FTM_RET	FTM_CONFIG_show(FTM_CONFIG_PTR 	pConfig, FTM_TRACE_LEVEL xLevel);
 
 #endif

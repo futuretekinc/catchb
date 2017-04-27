@@ -36,6 +36,7 @@ FTM_INT	main
 	FTM_BOOL		bDuplicated = FTM_FALSE;
 	FTM_CONFIG_PTR	pConfig = NULL;
 	FTM_CATCHB_PTR	pCatchB = NULL;
+	FTM_UINT32		ulPID = 0;
 
 	LOG("");
 	LOG("########################################");
@@ -51,16 +52,25 @@ FTM_INT	main
 	}
 
 #if 1
-	FTM_areDuplicatesRunning(program_invocation_short_name,  getpid(), &bDuplicated);
-	if (bDuplicated)
+	xRet = FTM_ReadPID(program_invocation_short_name, &ulPID);
+	if (xRet == FTM_RET_OK)
 	{
-		xRet = FTM_RET_ALREADY_RUNNING;
-        ERROR(xRet ,"%s is already running!!\n", program_invocation_short_name);
-		goto finished;
-    }
-
-	FTM_createPIDFile(program_invocation_short_name, getpid());
+		FTM_areDuplicatesRunning(program_invocation_short_name,  ulPID, &bDuplicated);
+		if (bDuplicated)
+		{
+			xRet = FTM_RET_ALREADY_RUNNING;
+			ERROR(xRet ,"%s is already running!!\n", program_invocation_short_name);
+			goto finished;
+		}
+	}
 #endif
+
+	xRet = FTM_createPIDFile(program_invocation_short_name, getpid());
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create PID file!.");	
+	}
+
 	xRet = FTM_CONFIG_create(&pConfig);
 	if (xRet != FTM_RET_OK)
 	{
@@ -81,8 +91,6 @@ FTM_INT	main
 	{
         daemon(0, 0);
 	}
-
-	FTM_TRACE_setConfig(&pConfig->xTrace);
 
 	xRet = FTM_CATCHB_create(&pCatchB);
 	if(xRet != FTM_RET_OK)
@@ -132,6 +140,8 @@ finished:
 		FTM_CONFIG_destroy(&pConfig);
 	}
 	
+	FTM_destroyPIDFile(program_invocation_short_name);
+
 	FTM_MEM_final();
 
     return 0;

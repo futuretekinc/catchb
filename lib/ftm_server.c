@@ -180,10 +180,14 @@ FTM_RET	FTM_SERVER_stop
 {
 	ASSERT(pServer != NULL);
 
-	pServer->bStop = FTM_TRUE;
-	close(pServer->hSocket);
+	if (!pServer->bStop)
+	{
+		pServer->bStop = FTM_TRUE;
 
-	return	FTM_SERVER_waitingForFinished(pServer);
+		return	FTM_SERVER_waitingForFinished(pServer);
+	}
+
+	return	FTM_RET_OK;
 }
 
 FTM_RET	FTM_SERVER_waitingForFinished
@@ -194,6 +198,8 @@ FTM_RET	FTM_SERVER_waitingForFinished
 	ASSERT(pServer != NULL);
 
 	pthread_join(pServer->xThread, NULL);
+
+	pServer->xThread = 0;
 
 	return	FTM_RET_OK;
 }
@@ -290,6 +296,9 @@ FTM_VOID_PTR FTM_SERVER_process(FTM_VOID_PTR pData)
 		FTM_SERVER_destroySession(pServer, &pSession);
 	}
 
+	close(pServer->hSocket);
+
+	INFO("Server stopped.");
 error:
 
 	return	0;

@@ -70,6 +70,12 @@ FTM_RET	FTM_LOGGER_setConfig
 	FTM_LOGGER_CONFIG_PTR	pConfig
 );
 
+FTM_RET	FTM_LOGGER_getConfig
+(
+	FTM_LOGGER_PTR	pLogger,
+	FTM_LOGGER_CONFIG_PTR	pConfig
+);
+
 FTM_RET	FTM_LOGGER_start
 (
 	FTM_LOGGER_PTR	pLogger

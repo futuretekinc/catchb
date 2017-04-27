@@ -45,6 +45,12 @@ FTM_RET	FTM_CGI_alarm
 	qentry_t *pReq
 );
 
+FTM_RET	FTM_CGI_sys
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
 const 
 char *FTM_CGI_whitespaceCB
 (

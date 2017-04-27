@@ -14,6 +14,7 @@ FTM_RET	FTM_SHELL_CMD_logger(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR p
 FTM_RET	FTM_SHELL_CMD_notifier(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_switch(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_trace(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
+FTM_RET	FTM_SHELL_CMD_config(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 
 FTM_SHELL_CMD	pCatchBShellCmdList[] = 
 {
@@ -72,6 +73,17 @@ FTM_SHELL_CMD	pCatchBShellCmdList[] =
 					  "    The switch id to which the CCTV is connected.\n"
 					  "  --comment <COMMENT>\n"
 					  "    Comment.\n",
+		.pData		= NULL
+	},
+	{
+		.pString	= "config",
+		.function	= FTM_SHELL_CMD_config,
+		.pShortHelp	= "Configuration settings.",
+		.pHelp		= "<cmd>\n"
+					  "  Configuration settings.\n"
+					  "COMMANDs:\n"
+					  "  save [<file>]\n"
+					  "    - Save configuration to file.\n",
 		.pData		= NULL
 	},
 	{

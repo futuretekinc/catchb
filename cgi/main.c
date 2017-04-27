@@ -15,6 +15,7 @@ FTM_CGI_COMMAND	pCmds[] =
 	{	"switch",	FTM_CGI_switch	},
 	{	"log",		FTM_CGI_log		},
 	{	"alarm",	FTM_CGI_alarm	},
+	{	"sys",		FTM_CGI_sys		},
 	{	NULL,		NULL			}
 };
 

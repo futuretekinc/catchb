@@ -120,4 +120,10 @@ FTM_RET	FTM_CGI_getAlarmList
 	qentry_t _PTR_ pReq
 );
 
+FTM_RET	FTM_CGI_getSysInfo
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
 #endif

@@ -52,19 +52,7 @@ FTM_RET	FTM_ANALYZER_CONFIG_setDefault
 {
 	ASSERT(pConfig != NULL);
 
-	if ((pConfig->pPortList != NULL) && (pConfig->ulPortCount != 0))
-	{
-		FTM_MEM_free(pConfig->pPortList);
-		pConfig->pPortList = NULL;
-		pConfig->ulPortCount = 0;
-	}
-
-	pConfig->pPortList = FTM_MEM_malloc(sizeof(FTM_UINT16)*8);
-	if (pConfig->pPortList == NULL)
-	{
-		return	FTM_RET_NOT_ENOUGH_MEMORY;	
-	}
-
+	memset(pConfig->pPortList, 0, sizeof(pConfig->pPortList));
 	pConfig->ulPortCount = 0;
 	pConfig->pPortList[pConfig->ulPortCount++] = 80;
 	pConfig->pPortList[pConfig->ulPortCount++] = 135;
@@ -136,15 +124,12 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 			goto finished;
 		}
 
-		if (pConfig->pPortList != NULL)
+		if (ulPortCount > 32)
 		{
-			FTM_MEM_free(pConfig->pPortList);
+			ulPortCount = 32;
 		}
-
-		pConfig->pPortList = pPortList;
+		memcpy(pConfig->pPortList, pPortList, sizeof(FTM_UINT16)*ulPortCount);
 		pConfig->ulPortCount = ulPortCount;
-
-		pPortList = NULL;
 	}
 
 	pItem = cJSON_GetObjectItem(pRoot, "interval");
@@ -446,6 +431,22 @@ FTM_RET	FTM_ANALYZER_setConfig
 	{
 		memcpy(&pAnalyzer->xConfig, pConfig, sizeof(FTM_ANALYZER_CONFIG));
 	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_ANALYZER_getConfig
+(
+	FTM_ANALYZER_PTR	pAnalyzer,
+	FTM_ANALYZER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pAnalyzer != NULL);
+	ASSERT(pConfig != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+
+	memcpy(pConfig, &pAnalyzer->xConfig, sizeof(FTM_ANALYZER_CONFIG));
 
 	return	xRet;
 }

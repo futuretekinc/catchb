@@ -67,4 +67,20 @@ FTM_RET	FTM_destroyPIDFile
 	FTM_CHAR_PTR	pProcessName
 );
 
+FTM_RET	FTM_ReadPID
+(
+	FTM_CHAR_PTR	pProcessName,
+	FTM_UINT32_PTR	pulPID
+);
+
+FTM_RET	FTM_getCPUUtilization
+(
+	FTM_FLOAT_PTR	pUtilization
+) ;
+
+FTM_RET	FTM_getMemoryUtilization
+(
+	FTM_UINT32_PTR	pTotalMemory,
+	FTM_UINT32_PTR	pFreeMemory
+) ;
 #endif

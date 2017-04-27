@@ -57,6 +57,13 @@ FTM_CGI_COMMAND	pAlarmCmds[] =
 	{	NULL,		NULL					}
 };
 
+static 
+FTM_CGI_COMMAND	pSysCmds[] =
+{
+	{	"info", FTM_CGI_getSysInfo			},
+	{	NULL,		NULL					}
+};
+
 FTM_RET	FTM_CGI_finish
 (
 	qentry_t _PTR_ pReq,
@@ -111,6 +118,15 @@ FTM_RET	FTM_CGI_alarm
 )
 {
 	return	FTM_CGI_service(pClient, pReq, pAlarmCmds);
+}
+
+FTM_RET	FTM_CGI_sys
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+)
+{
+	return	FTM_CGI_service(pClient, pReq, pSysCmds);
 }
 
 FTM_RET	FTM_CGI_service

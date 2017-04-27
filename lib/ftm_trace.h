@@ -71,6 +71,11 @@ FTM_RET		FTM_TRACE_setConfig
 	FTM_TRACE_CONFIG_PTR	pConfig
 );
 
+FTM_RET		FTM_TRACE_getConfig
+(
+	FTM_TRACE_CONFIG_PTR	pConfig
+);
+
 FTM_VOID	FTM_TRACE_SystemError
 (
 	const FTM_CHAR_PTR pFormat,
@@ -95,7 +100,6 @@ FTM_VOID	FTM_TRACE_asserted(FTM_VOID);
 #define	OUTPUT(level, format, ...)	FTM_TRACE_Out(level, 				FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
 #define	LOG(format, ...)			FTM_TRACE_Out(FTM_TRACE_LEVEL_LOG, 	FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
 #define	INFO(format, ...)			FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
-#define	INFO2(enable, format, ...)	FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, enable,   __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)
 #define	INFO_ENTRY()				FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, FTM_TRUE, __func__, __LINE__, __MODULE__, "ENTRY")
 #define	INFO_EXIT()					FTM_TRACE_Out(FTM_TRACE_LEVEL_INFO, FTM_TRUE, __func__, __LINE__, __MODULE__, "EXIT")
 #define	WARN(errno, format, ...)	FTM_TRACE_Out(FTM_TRACE_LEVEL_WARN,	FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)

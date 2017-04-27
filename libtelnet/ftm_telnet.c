@@ -65,7 +65,6 @@ FTM_RET	FTM_TELNET_CLIENT_recv
 	FTM_UINT32				ulSize
 )
 {
-	INFO("TELNET : Rcvd[%d]", ulSize);
 	FTM_LOCK_set(pClient->pLock);
 
 	FTM_BUFFER_pushBack(pClient->pBuffer, (FTM_UINT8_PTR)pBuffer, ulSize);
@@ -418,7 +417,7 @@ FTM_RET	FTM_TELNET_CLIENT_write
 		goto finished;
 	}
 
-	for(i = 0 ; i < ulDataLen ; i++)
+	for(i = 0 ; (i < ulDataLen) && (i < sizeof(pBuffer) - 1) ; i++)
 	{
 		if ((pData[i] == '\n') || (pData[i] == '\r'))
 		{
@@ -432,6 +431,54 @@ FTM_RET	FTM_TELNET_CLIENT_write
 			//telnet_send(pClient->pHandler, &pData[i], 1);
 		}
 	}
+	pBuffer[ulBufferLen] = 0;
+
+	telnet_send(pClient->pHandler, pBuffer, ulBufferLen);
+
+finished:
+	return	xRet;
+}
+
+FTM_RET	FTM_TELNET_CLIENT_writel
+(
+	FTM_TELNET_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR			pData,
+	FTM_UINT32				ulDataLen
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pData != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_UINT32	i;
+	FTM_CHAR	pBuffer[512];
+	FTM_UINT32	ulBufferLen = 0;
+
+	//static FTM_CHAR	crlf[] = { '\r', '\n' };
+
+	if (pClient->pHandler == NULL)
+	{
+		xRet = FTM_RET_SOCKET_CLOSED;
+		goto finished;
+	}
+
+	for(i = 0 ; (i < ulDataLen) && (i < sizeof(pBuffer) - 3) ; i++)
+	{
+		if ((pData[i] == '\n') || (pData[i] == '\r'))
+		{
+			pBuffer[ulBufferLen++] = '\r';
+			pBuffer[ulBufferLen++] = '\n';
+			//telnet_send(pClient->pHandler, crlf, 2);
+		}
+		else
+		{
+			pBuffer[ulBufferLen++] = pData[i];
+			//telnet_send(pClient->pHandler, &pData[i], 1);
+		}
+	}
+	pBuffer[ulBufferLen++] = '\r';
+	pBuffer[ulBufferLen++] = '\n';
+	pBuffer[ulBufferLen] = 0;
 
 	telnet_send(pClient->pHandler, pBuffer, ulBufferLen);
 
@@ -502,7 +549,6 @@ FTM_RET	FTM_TELNET_CLIENT_readline
 	FTM_BUFFER_getSize(pClient->pBuffer, &ulRcvdLen);
 	if (ulRcvdLen == 0)
 	{
-		INFO("Buffer is empty!");
 		goto finished;
 	}
 

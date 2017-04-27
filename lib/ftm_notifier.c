@@ -269,6 +269,22 @@ FTM_RET	FTM_NOTIFIER_setConfig
 	return	xRet;
 }
 
+FTM_RET	FTM_NOTIFIER_getConfig
+(
+	FTM_NOTIFIER_PTR	pNotifier,
+	FTM_NOTIFIER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pNotifier != NULL);
+	ASSERT(pConfig != NULL);
+	
+	FTM_RET	xRet = FTM_RET_OK;
+
+	memcpy(pConfig, &pNotifier->xConfig, sizeof(FTM_NOTIFIER_CONFIG));
+
+	return	xRet;
+}
+
 FTM_RET	FTM_NOTIFIER_start
 (
 	FTM_NOTIFIER_PTR pNotifier

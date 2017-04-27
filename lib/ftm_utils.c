@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
@@ -315,6 +316,8 @@ FTM_RET	FTM_areDuplicatesRunning
 {
 	ASSERT(pProcessName != NULL);
 	ASSERT(pDuplicated != NULL);
+	FTM_CHAR	pCmd[128];
+#if 0
 	FTM_RET		xRet;
 	FTM_UINT32	ulProcessCount = 0;
 	
@@ -326,6 +329,11 @@ FTM_RET	FTM_areDuplicatesRunning
 	}
 
 	*pDuplicated = (ulProcessCount != 1);
+#endif
+	memset(pCmd, 0, sizeof(pCmd));
+	snprintf(pCmd, sizeof(pCmd) - 1, "ps -ax | egrep %d | awk '{if($1 ~ %d) print \"found\"}'", ulPID, ulPID);
+
+	*pDuplicated = (strcasecmp(pCmd, "found") == 0);
 	
 	return	FTM_RET_OK;
 }
@@ -420,4 +428,93 @@ FTM_RET	FTM_destroyPIDFile
 	return	xRet;
 }
 
+
+FTM_RET	FTM_ReadPID
+(
+	FTM_CHAR_PTR	pProcessName,
+	FTM_UINT32_PTR	pulPID
+)
+{
+	ASSERT(pProcessName != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_CHAR	pFileName[FTM_PATH_LEN + FTM_FILE_NAME_LEN];
+	FILE*		pFP;
+	FTM_UINT32	ulReadPID = 0;
+
+	sprintf(pFileName, "/var/run/%s.pid", pProcessName);
+
+	pFP = fopen(pFileName, "r");
+	if (pFP == NULL)
+	{
+		xRet = FTM_RET_FILE_OPEN_FAILED;
+	}
+	else
+	{
+    	fscanf(pFP, "%d", &ulReadPID);
+		fclose(pFP);
+
+		*pulPID = ulReadPID;
+		INFO("PID : %d", ulReadPID);
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_getCPUUtilization
+(
+	FTM_FLOAT_PTR	pUtilization
+) 
+{
+	FTM_CHAR	pBuffer[128];
+    FILE *pFP;
+
+	memset(pBuffer, 0, sizeof(pBuffer));
+	sprintf(pBuffer, "0");
+
+	pFP = popen("mpstat | tail -1 | awk '{print 100-$13}'", "r");
+    if(pFP != NULL) 
+	{
+        fgets(pBuffer, sizeof(pBuffer) - 1, pFP);
+    	pclose(pFP);
+    }
+
+	*pUtilization = strtod(pBuffer, NULL);
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_getMemoryUtilization
+(
+	FTM_UINT32_PTR	pTotalMemory,
+	FTM_UINT32_PTR	pFreeMemory
+) 
+{
+	FTM_CHAR	pBuffer[128];
+    FILE *pFP;
+	FTM_UINT32	ulTotal = 0;
+	FTM_UINT32	ulFree	= 0;
+
+	memset(pBuffer, 0, sizeof(pBuffer));
+	sprintf(pBuffer, "0");
+
+	pFP = popen("cat /proc/meminfo | grep Mem | awk '{print $2}'", "r");
+    if(pFP != NULL) 
+	{
+        if (fgets(pBuffer, sizeof(pBuffer) - 1, pFP) != NULL)
+		{
+			ulTotal = strtoul(pBuffer, 0, 10);
+        	if (fgets(pBuffer, sizeof(pBuffer) - 1, pFP) != NULL)
+			{
+				ulFree = strtoul(pBuffer, 0, 10);
+			}
+		}
+    	pclose(pFP);
+    }
+
+	*pTotalMemory = ulTotal;
+	*pFreeMemory = ulFree;
+
+	return	FTM_RET_OK;
+}
 

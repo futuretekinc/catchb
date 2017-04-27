@@ -45,6 +45,8 @@ FTM_RET	FTM_DB_CONFIG_show
 /////////////////////////////////////////////////////////////////
 typedef	struct	FTM_DB_STRUCT
 {
+	FTM_DB_CONFIG	xConfig;
+
 	FTM_CHAR	pCCTVTableName[FTM_NAME_LEN+1];
 	FTM_CHAR	pAlarmTableName[FTM_NAME_LEN+1];
 	FTM_CHAR	pLogTableName[FTM_NAME_LEN+1];
@@ -66,13 +68,24 @@ FTM_RET	FTM_DB_destroy
 
 FTM_RET	FTM_DB_open
 (
-	FTM_DB_PTR 		pDB, 
-	FTM_CHAR_PTR 	pFileName
+	FTM_DB_PTR 		pDB
 );
 
 FTM_RET	FTM_DB_close
 (
 	FTM_DB_PTR 		pDB
+);
+
+FTM_RET	FTM_DB_setConfig
+(
+	FTM_DB_PTR	pDB,
+	FTM_DB_CONFIG_PTR	pConfig
+);
+
+FTM_RET	FTM_DB_getConfig
+(
+	FTM_DB_PTR	pDB,
+	FTM_DB_CONFIG_PTR	pConfig
 );
 
 FTM_RET FTM_DB_isExistTable

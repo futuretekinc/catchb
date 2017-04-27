@@ -13,7 +13,7 @@
 
 typedef	struct	FTM_ANALYZER_CONFIG_STRUCT
 {
-	FTM_UINT16_PTR	pPortList;
+	FTM_UINT16		pPortList[32];
 	FTM_UINT32		ulPortCount;
 	FTM_UINT32		ulIPCheckInterval;
 	struct
@@ -81,6 +81,12 @@ FTM_RET	FTM_ANALYZER_destroy
 );
 
 FTM_RET	FTM_ANALYZER_setConfig
+(
+	FTM_ANALYZER_PTR	pAnalyzer,
+	FTM_ANALYZER_CONFIG_PTR	pConfig
+);
+
+FTM_RET	FTM_ANALYZER_getConfig
 (
 	FTM_ANALYZER_PTR	pAnalyzer,
 	FTM_ANALYZER_CONFIG_PTR	pConfig

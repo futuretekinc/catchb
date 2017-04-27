@@ -39,9 +39,16 @@ FTM_RET	FTM_SHELL_CMD_switch
 		xRet = FTM_CATCHB_getSwitchIDList(pCatchB, 10, pIDList, &ulCount);
 		if (xRet == FTM_RET_OK)
 		{
+			printf("%16s %16s %16s %16s %16s %s\n", "ID", "MODEL", "IP", "USER", "PASSWD", "COMMENT");
 			for(i = 0 ; i < ulCount ; i++)
 			{
-				printf("%4d : %s\n", i+1, pIDList[i]);
+				FTM_SWITCH_PTR	pSwitch;
+				xRet = FTM_CATCHB_getSwitch(pCatchB, pIDList[i], &pSwitch);
+				if (xRet == FTM_RET_OK)
+				{
+					printf("%16s %16s %16s %16s %16s %s\n", pSwitch->xConfig.pID, FTM_getSwitchModelName(pSwitch->xConfig.xModel), pSwitch->xConfig.pIP, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd, pSwitch->xConfig.pComment);
+				
+				}
 			}
 		}
 
@@ -100,7 +107,7 @@ FTM_RET	FTM_SHELL_CMD_switch
 		xRet = FTM_CATCHB_addSwitch(pCatchB, &xConfig, &pSwitch);
 		if (xRet != FTM_RET_OK)
 		{
-			printf("Error : Failed to creat switch!\n");	
+			printf("Error : Failed to create switch!\n");	
 		}
 
 	}
@@ -218,6 +225,29 @@ FTM_RET	FTM_SHELL_CMD_switch
 		}
 
 		xRet = FTM_SWITCH_addAC(pSwitch, pArgv[3], FTM_SWITCH_AC_POLICY_DENY, &pAC);
+		if (xRet != FTM_RET_OK)
+		{
+			printf("Error : Failed to set access control!\n");	
+		}
+	}
+	else if (strcasecmp(pArgv[1], "allow") == 0)
+	{
+		FTM_SWITCH_PTR	pSwitch;
+		FTM_SWITCH_AC_PTR pAC;
+
+		if (nArgc < 4)
+		{
+			xRet = FTM_RET_INVALID_ARGUMENTS;
+			goto finished;	
+		}
+
+		xRet = FTM_CATCHB_getSwitch(pCatchB, pArgv[2], &pSwitch);
+		if (xRet != FTM_RET_OK)
+		{
+			printf("Error : The switch[%s] not found!\n", pArgv[2]);	
+		}
+
+		xRet = FTM_SWITCH_addAC(pSwitch, pArgv[3], FTM_SWITCH_AC_POLICY_ALLOW, &pAC);
 		if (xRet != FTM_RET_OK)
 		{
 			printf("Error : Failed to set access control!\n");	

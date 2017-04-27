@@ -32,12 +32,12 @@ FTM_RET	FTM_SHELL_CMD_cctv
 		FTM_CCTV	pCCTVList[10];
 		FTM_UINT32	i, ulCount = 0;
 
-		printf("%16s %16s %16s %16s %16s %s\n", "ID", "IP", "STATE", "SWITCH ID", "Registered Time", "Hash");
+		printf("%16s %16s %16s %16s %24s %s\n", "ID", "IP", "STATE", "SWITCH ID", "Registered Time", "Hash");
 
 		xRet = FTM_CATCHB_getCCTVList(pCatchB, 10, pCCTVList, &ulCount);
 		for(i = 0 ; i < ulCount ; i++)
 		{
-			printf("%16s %16s %16s %16s %16s %s\n", pCCTVList[i].xConfig.pID, pCCTVList[i].xConfig.pIP, FTM_CCTV_STAT_print(pCCTVList[i].xConfig.xStat), pCCTVList[i].xConfig.pSwitchID, FTM_TIME_printf2(pCCTVList[i].xConfig.ulTime, NULL), pCCTVList[i].xConfig.pHash);
+			printf("%16s %16s %16s %16s %24s %s\n", pCCTVList[i].xConfig.pID, pCCTVList[i].xConfig.pIP, FTM_CCTV_STAT_print(pCCTVList[i].xConfig.xStat), pCCTVList[i].xConfig.pSwitchID, FTM_TIME_printf2(pCCTVList[i].xConfig.ulTime, NULL), pCCTVList[i].xConfig.pHash);
 		}
 	}
 	else if(strcasecmp(pArgv[1], "add") == 0)

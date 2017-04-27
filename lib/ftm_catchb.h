@@ -17,11 +17,6 @@ typedef	struct 	FTM_CATCHB_CONFIG_STRUCT
 {
 	struct
 	{
-		FTM_CHAR	pFileName[FTM_PATH_LEN+FTM_FILE_NAME_LEN+1];
-	}	xDB;
-
-	struct
-	{
 		FTM_UINT32	ulUpdateInterval;
 	}	xCCTV;
 
@@ -63,6 +58,12 @@ FTM_RET	FTM_CATCHB_destroy
 );
 
 FTM_RET	FTM_CATCHB_setConfig
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CONFIG_PTR	pConfig
+);
+
+FTM_RET	FTM_CATCHB_getConfig
 (
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_CONFIG_PTR	pConfig

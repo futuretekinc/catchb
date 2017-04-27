@@ -133,6 +133,7 @@ FTM_RET	FTM_DB_create
 	}
 	else
 	{
+		FTM_DB_CONFIG_setDefault(&pDB->xConfig);
 		strcpy(pDB->pCCTVTableName, "tb_cctv");
 		strcpy(pDB->pAlarmTableName, "tb_alarm");
 		strcpy(pDB->pLogTableName, "tb_log");
@@ -163,8 +164,7 @@ FTM_RET	FTM_DB_destroy
 
 FTM_RET	FTM_DB_open
 (
-	FTM_DB_PTR 	pDB, 
-	FTM_CHAR_PTR pFileName
+	FTM_DB_PTR 	pDB
 )
 {
 	ASSERT(pDB != NULL);
@@ -177,14 +177,14 @@ FTM_RET	FTM_DB_open
 	}
 	else
 	{
-		if (sqlite3_open(pFileName, &pDB->pSQLite3) != 0)
+		if (sqlite3_open(pDB->xConfig.pFileName, &pDB->pSQLite3) != 0)
 		{
 			xRet = FTM_RET_DB_OPEN_FAILED;	
 			ERROR(xRet, "DB open failed!");
 		}
 		else
 		{
-			INFO("The database[%s] opened successfully.", pFileName);
+			INFO("The database[%s] opened successfully.", pDB->xConfig.pFileName);
 		}
 	}
 
@@ -206,6 +206,34 @@ FTM_RET	FTM_DB_close
 	}
 
 	return	xRet;
+}
+
+FTM_RET	FTM_DB_setConfig
+(
+	FTM_DB_PTR	pDB,
+	FTM_DB_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pConfig != NULL);
+
+	memcpy(&pDB->xConfig, pConfig, sizeof(FTM_DB_CONFIG));
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_DB_getConfig
+(
+	FTM_DB_PTR	pDB,
+	FTM_DB_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pConfig != NULL);
+
+	memcpy(pConfig, &pDB->xConfig, sizeof(FTM_DB_CONFIG));
+
+	return	FTM_RET_OK;
 }
 
 FTM_RET	FTM_DB_createTable
