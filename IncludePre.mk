@@ -7,7 +7,7 @@ CONF_PREFIX=$(TARGET)/etc
 CGI_PREFIX=$(TARGET)/www/cgi-bin
 export MODEL TOPDIR
 
-CFLAGS:= -fPIC -c -g -Wall \
+CFLAGS:= -fPIC -std=gnu99 -c -g -Wall \
 				-I.\
 				-I$(TOPDIR)\
 				-I$(TOPDIR)/include\
@@ -43,6 +43,7 @@ AR=armv5-linux-ar
 
 CFLAGS:= $(CFLAGS) \
 		-I/home/xtra/ftm/build/ftm-50s/_root/usr/include\
+		-I/home/xtra/ftm/build/ftm-50s/_root/usr/include/cjson\
 		-I/home/xtra/ftm/build/ftm-50s/_root/usr/local/include
 		
 LDFLAGS:= $(LDFLAGS)\

@@ -5,6 +5,42 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "ftm_types.h"
+#include "ftm_time.h"
+
+typedef	struct
+{
+	FTM_UINT32	ulTotal;
+	FTM_UINT32	ulFree;
+	FTM_FLOAT	fMemory;
+}	FTM_MEMORY_STATISTICS, _PTR_ FTM_MEMORY_STATISTICS_PTR;
+
+typedef	struct
+{
+	FTM_UINT32	ulRxBytes;
+	FTM_UINT32	ulTxBytes;
+}	FTM_NET_STATISTICS, _PTR_ FTM_NET_STATISTICS_PTR;
+
+typedef	struct
+{
+	FTM_TIME	xTime;
+	FTM_FLOAT	fCPU;
+	FTM_MEMORY_STATISTICS	xMemory;
+	FTM_NET_STATISTICS		xNet;
+}	FTM_STATISTICS, _PTR_ FTM_STATISTICS_PTR;
+
+typedef	struct
+{
+	FTM_CHAR	pOS[256];
+	FTM_TIME	xUpTime;
+}	FTM_SYSTEM_INFO, _PTR_ FTM_SYSTEM_INFO_PTR;
+
+typedef	struct
+{
+	FTM_CHAR	pName[32];
+	FTM_CHAR	pIP[32];	
+	FTM_CHAR	pNetmask[32];	
+	FTM_CHAR	pGateway[32];	
+}	FTM_NETWORK_INTERFACE_INFO, _PTR_ FTM_NETWORK_INTERFACE_INFO_PTR;
 
 FTM_RET	FTM_getLocalIP
 (
@@ -83,4 +119,20 @@ FTM_RET	FTM_getMemoryUtilization
 	FTM_UINT32_PTR	pTotalMemory,
 	FTM_UINT32_PTR	pFreeMemory
 ) ;
+
+FTM_RET	FTM_getNetStatistics
+(
+	FTM_NET_STATISTICS_PTR	pStatistics
+);
+
+FTM_RET	FTM_getStatistics
+(
+	FTM_STATISTICS_PTR	pStatistics
+);
+
+FTM_RET	FTM_getBootTime
+(
+	FTM_TIME_PTR	pTime
+);
+
 #endif

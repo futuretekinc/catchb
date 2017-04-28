@@ -139,6 +139,7 @@ FTM_RET	FTM_DB_create
 		strcpy(pDB->pLogTableName, "tb_log");
 		strcpy(pDB->pDenyTableName, "tb_deny");
 		strcpy(pDB->pSwitchTableName, "tb_switch");
+		strcpy(pDB->pStatisticsTableName, "tb_statistics");
 
 		*ppDB = pDB;	
 	}
@@ -2198,3 +2199,499 @@ FTM_RET	FTM_DB_getACList
 	return	xRet;
 }
 
+////////////////////////////////////////////////////////////////////////////////////
+//
+/////////////////////////////////////////////////////////////////////////////////////
+FTM_RET	FTM_DB_createStatisticsTable
+(
+	FTM_DB_PTR	pDB
+)
+{
+	return FTM_DB_createTable(pDB, pDB->pStatisticsTableName, "_TIME INT, _CPU INT, _TOTAL_MEM INT, _FREE_MEM INT, _NET_RX INT, _NET_TX INT");
+}
+
+FTM_RET	FTM_DB_isStatisticsTableExist
+(
+	FTM_DB_PTR		pDB,
+	FTM_BOOL_PTR	pExist
+)
+{
+	return	FTM_DB_isExistTable(pDB, pDB->pStatisticsTableName, pExist);
+}
+
+FTM_RET	FTM_DB_getStatisticsCount
+(
+	FTM_DB_PTR 	pDB, 
+	FTM_UINT32_PTR pCount
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pCount != NULL);
+	FTM_RET	xRet = FTM_RET_OK;
+	
+	xRet =FTM_DB_getElementCount(pDB, pDB->pStatisticsTableName, pCount);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get element count of table tv_log_info!");
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_DB_addStatistics
+(
+	FTM_DB_PTR		pDB,
+	FTM_STATISTICS_PTR	pStatistics
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pStatistics != NULL);
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
+	FTM_CHAR_PTR	pErrorMsg;
+
+	memset(pQuery, 0, sizeof(pQuery));
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_TIME, _CPU, _TOTAL_MEM, _FREE_MEM, _NET_RX, _NET_TX) VALUES(%d, %d, %d, %d , %d, %d);", 
+		pDB->pStatisticsTableName, 
+		(FTM_UINT32)pStatistics->xTime.xTimeval.tv_sec, 
+		(FTM_UINT32)(pStatistics->fCPU * 100), 
+		pStatistics->xMemory.ulTotal, 
+		pStatistics->xMemory.ulFree,
+		pStatistics->xNet.ulRxBytes,
+		pStatistics->xNet.ulTxBytes);
+	
+	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	{
+		xRet = FTM_RET_ERROR;
+		sqlite3_free(pErrorMsg);
+	}
+
+	return	xRet;
+}
+
+typedef struct
+{
+	FTM_UINT32	ulMaxCount;
+	FTM_UINT32	ulCount;
+	FTM_STATISTICS_PTR	pElements;
+}   FTM_GET_STATISTICS_LIST_PARAMS, _PTR_ FTM_GET_STATISTICS_LIST_PARAMS_PTR;
+
+static 
+FTM_INT	FTM_DB_getStatisticsListCB
+(
+	FTM_VOID_PTR	pData, 
+ 	FTM_INT			nArgc, 
+ 	FTM_CHAR_PTR	ppArgv[],
+ 	FTM_CHAR_PTR	ppColName[]
+)
+{
+	FTM_GET_STATISTICS_LIST_PARAMS_PTR	pParams = (FTM_GET_STATISTICS_LIST_PARAMS_PTR)pData;
+
+	if ((nArgc != 0) && (pParams->ulCount < pParams->ulMaxCount))
+	{    
+		FTM_INT	i;
+
+		for(i = 0 ; i < nArgc ; i++) 
+		{    
+			if (strcmp(ppColName[i], "_TIME") == 0)
+			{    
+				pParams->pElements[pParams->ulCount].xTime.xTimeval.tv_sec = (time_t)strtoul(ppArgv[i], 0, 10);
+			}    
+			else if (strcmp(ppColName[i], "_CPU") == 0)
+			{    
+				pParams->pElements[pParams->ulCount].fCPU = (float)strtoul(ppArgv[i], 0, 10) / 100;
+			}    
+			else if (strcmp(ppColName[i], "_TOTAL_MEM") == 0)
+			{    
+				pParams->pElements[pParams->ulCount].xMemory.ulTotal = strtoul(ppArgv[i], 0, 10);
+			}    
+			else if (strcmp(ppColName[i], "_FREE_MEM") == 0)
+			{    
+				pParams->pElements[pParams->ulCount].xMemory.ulFree = strtoul(ppArgv[i], 0, 10);
+			}    
+			else if (strcmp(ppColName[i], "_NET_RX") == 0)
+			{    
+				pParams->pElements[pParams->ulCount].xNet.ulRxBytes = strtoul(ppArgv[i], 0, 10);
+			}    
+			else if (strcmp(ppColName[i], "_NET_TX") == 0)
+			{    
+				pParams->pElements[pParams->ulCount].xNet.ulTxBytes = strtoul(ppArgv[i], 0, 10);
+			}    
+		}    
+
+		pParams->ulCount++;
+	}    
+
+	return  FTM_RET_OK;
+}
+
+FTM_RET	FTM_DB_getStatisticsList
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32		ulMaxCount,
+	FTM_STATISTICS_PTR		pStatistics,
+	FTM_UINT32_PTR	pCount
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pStatistics != NULL);
+	ASSERT(pCount != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+    FTM_GET_STATISTICS_LIST_PARAMS	xParams;
+	FTM_CHAR		pQuery[FTM_DB_QUERY_LEN+1];
+	FTM_UINT32		ulQueryLen = 0;
+	FTM_CHAR_PTR	pErrorMsg;
+	FTM_BOOL		bFirstCondition = FTM_TRUE;
+
+	xParams.ulMaxCount = ulMaxCount;
+	xParams.ulCount = 0;
+	xParams.pElements 	= pStatistics;
+
+	memset(pQuery, 0, sizeof(pQuery));
+
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s", pDB->pStatisticsTableName);
+
+	if (ulStartTime != 0)
+	{
+		if (!bFirstCondition)
+		{
+			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " AND");	
+		}
+		else
+		{
+			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
+			bFirstCondition = FTM_FALSE;
+		}	
+
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (%u <= _TIME)", ulStartTime);	
+	}
+
+	if (ulEndTime != 0)
+	{
+		if (!bFirstCondition)
+		{
+			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " AND");	
+		}
+		else
+		{
+			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
+			bFirstCondition = FTM_FALSE;
+		}	
+
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (_TIME <= %u)", ulEndTime);	
+	}
+
+	if ((ulStartTime != 0) || (ulEndTime != 0))
+	{
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " ORDER BY _TIME DESC");
+	}
+	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " LIMIT %u", ulMaxCount);
+
+	INFO("SQL : %s", pQuery);
+	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getStatisticsListCB, &xParams, &pErrorMsg) < 0)
+	{
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query!");
+	}
+	else
+	{
+		*pCount = xParams.ulCount;	
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_DB_getStatisticsInfo
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32_PTR	pCount,
+	FTM_UINT32_PTR	pulStartTime,
+	FTM_UINT32_PTR	pulEndTime
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pCount != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+    FTM_GET_LOG_LIST_PARAMS	xParams;
+	FTM_LOG			xStatistics;
+	FTM_CHAR		pQuery[FTM_DB_QUERY_LEN+1];
+	FTM_UINT32		ulQueryLen = 0;
+	FTM_CHAR_PTR	pErrorMsg;
+
+	xRet =FTM_DB_getElementCount(pDB, pDB->pStatisticsTableName, pCount);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get element count of table %s!", pDB->pStatisticsTableName);
+		return	xRet;
+	}
+
+	xParams.ulMaxCount = 1;
+	xParams.ulCount = 0;
+	xParams.pElements 	= &xStatistics;
+
+	memset(pQuery, 0, sizeof(pQuery));
+
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME ASC LIMIT 1", pDB->pStatisticsTableName);
+	INFO("SQL : %s", pQuery);
+	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getStatisticsListCB, &xParams, &pErrorMsg) < 0)
+	{
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query!");
+		goto finished;
+	}
+	else
+	{
+		if (xParams.ulCount)
+		{
+			*pulStartTime = xParams.pElements[0].ulTime;	
+		}
+	}
+
+	xParams.ulMaxCount = 1;
+	xParams.ulCount = 0;
+	xParams.pElements 	= &xStatistics;
+
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME DESC LIMIT 1", pDB->pStatisticsTableName);
+	INFO("SQL : %s", pQuery);
+	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getStatisticsListCB, &xParams, &pErrorMsg) < 0)
+	{
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query!");
+		goto finished;
+	}
+	else
+	{
+		if (xParams.ulCount)
+		{
+			*pulEndTime = xParams.pElements[0].ulTime;	
+		}
+	}
+
+finished:
+	return	xRet;
+}
+
+FTM_RET	FTM_DB_getStatisticsListFrom
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulMaxCount,
+	FTM_STATISTICS_PTR		pElements,
+	FTM_UINT32_PTR	pCount
+
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pElements!= NULL);
+	ASSERT(pCount != NULL);
+	FTM_RET	xRet = FTM_RET_OK;
+    FTM_GET_STATISTICS_LIST_PARAMS	xParams;
+
+	xParams.ulMaxCount 	= ulMaxCount;
+	xParams.ulCount 	= 0;
+	xParams.pElements 	= pElements;
+
+	xRet = FTM_DB_getElementListOrderByTime(pDB, pDB->pStatisticsTableName, ulIndex, ulMaxCount, FTM_DB_getStatisticsListCB, (FTM_VOID_PTR)&xParams);
+	if (xRet == FTM_RET_OK)
+	{
+		*pCount = xParams.ulCount;
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_DB_getStatisticsListOfTimePeriod
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32		ulMaxCount,
+	FTM_STATISTICS_PTR		pElements,
+	FTM_UINT32_PTR	pCount
+
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pElements!= NULL);
+	ASSERT(pCount != NULL);
+	FTM_RET	xRet = FTM_RET_OK;
+    FTM_GET_STATISTICS_LIST_PARAMS	xParams;
+
+	xParams.ulMaxCount = ulMaxCount;
+	xParams.ulCount = 0;
+	xParams.pElements 	= pElements;
+
+	xRet = FTM_DB_getElementListOfTimePeriod(pDB, pDB->pStatisticsTableName, ulStartTime, ulEndTime, ulMaxCount, FTM_DB_getStatisticsListCB, (FTM_VOID_PTR)&xParams);
+	if (xRet == FTM_RET_OK)
+	{
+		*pCount = xParams.ulCount;
+	}
+
+	return	xRet;
+}
+
+
+FTM_RET	FTM_DB_deleteStatistics
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32		ulCount
+)
+{
+	ASSERT(pDB != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_CHAR		pQuery[FTM_DB_QUERY_LEN+1];
+	FTM_UINT32		ulQueryLen = 0;
+	FTM_CHAR_PTR	pErrorMsg;
+	FTM_BOOL		bFirstCondition = FTM_TRUE;
+
+	memset(pQuery, 0, sizeof(pQuery));
+
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s", pDB->pStatisticsTableName);
+
+	if (ulStartTime != 0)
+	{
+		if (!bFirstCondition)
+		{
+			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " AND");	
+		}
+		else
+		{
+			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
+			bFirstCondition = FTM_FALSE;
+		}	
+
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (%u <= _TIME)", ulStartTime);	
+	}
+
+	if (ulEndTime != 0)
+	{
+		if (!bFirstCondition)
+		{
+			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " AND");	
+		}
+		else
+		{
+			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
+			bFirstCondition = FTM_FALSE;
+		}	
+
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (_TIME <= %u)", ulEndTime);	
+	}
+
+	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " ORDER BY _TIME DESC");
+
+	if (ulCount != 0)
+	{
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " LIMIT %u", ulCount);
+	}
+
+	INFO("SQL : %s", pQuery);
+	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, NULL, &pErrorMsg) < 0)
+	{
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query!");
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_DB_deleteStatisticsFrom
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulCount
+)
+{
+	ASSERT(pDB != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_CHAR		pQuery[FTM_DB_QUERY_LEN+1];
+	FTM_UINT32		ulQueryLen = 0;
+	FTM_CHAR_PTR	pErrorMsg;
+
+	memset(pQuery, 0, sizeof(pQuery));
+
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _TIME IN ( SELECT _TIME FROM %s ", pDB->pStatisticsTableName, pDB->pStatisticsTableName);
+
+	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " ORDER BY _TIME DESC");
+
+	if (ulCount != 0)
+	{
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " LIMIT %u", ulCount);
+	}
+
+	if (ulIndex != 0)
+	{
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " OFFSET %u", ulIndex);
+	}
+
+	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ");");
+
+	INFO("SQL : %s", pQuery);
+	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, NULL, &pErrorMsg) < 0)
+	{
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query!");
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_DB_removeExpiredStatistics
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulRetentionPeriod
+)
+{
+	ASSERT(pDB != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	time_t		xCurrentTime;
+	time_t		xCurrentDate;
+	FTM_UINT32	ulRetentionTime;
+	struct tm 	xTM;
+
+	INFO("Remove expired log : %s", FTM_TIME_printfCurrent(NULL));
+
+	ulRetentionTime = ulRetentionPeriod*24*3600;
+
+	xCurrentTime = time(NULL);
+	localtime_r(&xCurrentTime, &xTM);
+
+	xTM.tm_sec = 0;
+	xTM.tm_min = 0;
+	xTM.tm_hour= 0;
+
+	xCurrentDate = mktime(&xTM);
+
+	if(xCurrentDate > ulRetentionTime)
+	{
+		FTM_CHAR		pQuery[FTM_DB_QUERY_LEN+1];
+		FTM_CHAR_PTR	pErrorMsg;
+		FTM_UINT32		ulExpirationDate;
+
+		ulExpirationDate = xCurrentDate - ulRetentionTime;
+
+		memset(pQuery, 0, sizeof(pQuery));
+		snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE (%u > _TIME)", pDB->pStatisticsTableName, ulExpirationDate);
+
+		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+		{
+			xRet = FTM_RET_ERROR;
+			sqlite3_free(pErrorMsg);
+		}
+	}
+
+	return	xRet;
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+//
+/////////////////////////////////////////////////////////////////////////////////////

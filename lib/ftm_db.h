@@ -8,6 +8,7 @@
 #include "ftm_alarm.h"
 #include "ftm_log.h"
 #include "ftm_trace.h"
+#include "ftm_utils.h"
 
 #define	FTM_DB_QUERY_LEN	1024
 
@@ -52,6 +53,7 @@ typedef	struct	FTM_DB_STRUCT
 	FTM_CHAR	pLogTableName[FTM_NAME_LEN+1];
 	FTM_CHAR	pDenyTableName[FTM_NAME_LEN+1];
 	FTM_CHAR	pSwitchTableName[FTM_NAME_LEN+1];
+	FTM_CHAR	pStatisticsTableName[FTM_NAME_LEN+1];
 
 	sqlite3 _PTR_	pSQLite3;
 }	FTM_DB, _PTR_ FTM_DB_PTR;
@@ -409,6 +411,87 @@ FTM_RET	FTM_DB_getACList
 	FTM_SWITCH_AC_PTR	pElements,
 	FTM_UINT32			ulMaxCount,
 	FTM_UINT32_PTR		pCount
+);
+
+FTM_RET	FTM_DB_createStatisticsTable
+(
+	FTM_DB_PTR		pDB
+);
+
+FTM_RET	FTM_DB_isStatisticsTableExist
+(
+	FTM_DB_PTR		pDB,
+	FTM_BOOL_PTR	pExist
+);
+
+FTM_RET	FTM_DB_getStatisticsCount
+(
+	FTM_DB_PTR 		pDB, 
+	FTM_UINT32_PTR 	pCount
+);
+
+FTM_RET	FTM_DB_getStatisticsInfo
+(
+	FTM_DB_PTR 		pDB, 
+	FTM_UINT32_PTR 	pCount,
+	FTM_UINT32_PTR 	pFirstTime,
+	FTM_UINT32_PTR 	pLastTime
+);
+
+FTM_RET	FTM_DB_addStatistics
+(
+	FTM_DB_PTR		pDB,
+	FTM_STATISTICS_PTR	pStatistics
+);
+
+FTM_RET	FTM_DB_deleteStatistics
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32		ulCount
+);
+
+FTM_RET	FTM_DB_deleteStatisticsFrom
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulCount
+);
+
+FTM_RET	FTM_DB_getStatisticsList
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32		ulMaxCount,
+	FTM_STATISTICS_PTR		pStatistics,
+	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_DB_getStatisticsListFrom
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulMaxCount,
+	FTM_STATISTICS_PTR		pStatistics,
+	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_DB_getStatisticsListOfTimePeriod
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32		ulMaxCount,
+	FTM_STATISTICS_PTR		pStatistics,
+	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_DB_removeExpiredStatistics
+(
+	FTM_DB_PTR		pDB,
+	FTM_UINT32		ulExpirationDate
 );
 
 #endif

@@ -23,7 +23,51 @@ FTM_RET	FTM_getLocalIP
 	FTM_RET	xRet = FTM_RET_OK;
     FILE *pFP;
 	
-	pFP = popen("ifconfig enp0s3 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'", "r");
+	pFP = popen("ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'", "r");
+    if(pFP != NULL) 
+	{
+        if (fgets(pBuff, ulBuffSize, pFP) == NULL)
+		{
+			xRet = FTM_RET_NET_INTERFACE_ERROR;
+		}
+    	pclose(pFP);
+    }
+	else
+	{
+		xRet = FTM_RET_NET_INTERFACE_ERROR;	
+	}
+
+	if (xRet == FTM_RET_OK)
+	{
+		FTM_INT32	i;
+
+		for(i = 0 ; i < strlen(pBuff) ; i++)
+		{
+			if (!isprint(pBuff[i]))
+			{
+				pBuff[i] = '\0';	
+			}
+		}
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_getNetworkInterfaceInfo
+(
+	FTM_CHAR_PTR	pInterface,
+	FTM_CHAR_PTR	pIP,
+	FTM_CHAR_PTR	pNetmask,
+	FTM_CHAR_PTR	pGateway,
+	FTM_UINT32		ulBuffSize
+) 
+{
+	ASSERT(pBuff != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+    FILE *pFP;
+	
+	pFP = popen("ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'", "r");
     if(pFP != NULL) 
 	{
         if (fgets(pBuff, ulBuffSize, pFP) == NULL)
@@ -518,3 +562,70 @@ FTM_RET	FTM_getMemoryUtilization
 	return	FTM_RET_OK;
 }
 
+FTM_RET	FTM_getNetStatistics
+(
+	FTM_NET_STATISTICS_PTR	pStatistics
+)
+{
+	ASSERT(pStatistics != NULL);
+
+	FTM_CHAR	pBuffer[128];
+    FILE *pFP;
+	FTM_UINT32	ulRxBytes = 0;
+	FTM_UINT32	ulTxBytes = 0;
+
+	pFP = popen("cat /proc/net/dev | grep eth0 | awk '{print $2 \" \" $10}'", "r");
+    if(pFP != NULL) 
+	{
+		sscanf(pBuffer, "%d %d", &ulRxBytes, &ulTxBytes);
+    	pclose(pFP);
+    }
+
+	pStatistics->ulRxBytes = ulRxBytes;
+	pStatistics->ulTxBytes = ulTxBytes;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_getStatistics
+(
+	FTM_STATISTICS_PTR	pStatistics
+)
+{
+	ASSERT(pStatistics != NULL);
+
+	FTM_TIME_getCurrent(&pStatistics->xTime);
+	FTM_getCPUUtilization(&pStatistics->fCPU);
+	FTM_getMemoryUtilization(&pStatistics->xMemory.ulTotal, &pStatistics->xMemory.ulFree);
+	FTM_getNetStatistics(&pStatistics->xNet);
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_getBootTime
+(
+	FTM_TIME_PTR	pTime
+)
+{
+	ASSERT(pTime != NULL);
+
+	FTM_CHAR	pBuffer[128];
+	FTM_TIME	xTime;
+	FTM_UINT32	ulUPTime = 0;
+    FILE *pFP;
+
+	FTM_TIME_getCurrent(&xTime);
+	pFP = popen("cat /proc/uptime | awk '{print $1}'", "r");
+    if(pFP != NULL) 
+	{
+        if (fgets(pBuffer, sizeof(pBuffer) - 1, pFP) != NULL)
+		{
+			
+			ulUPTime = (FTM_UINT32)strtod(pBuffer, NULL);
+		}
+    	pclose(pFP);
+    }
+
+
+	return	FTM_TIME_subSecs(&xTime, ulUPTime, pTime);
+}
