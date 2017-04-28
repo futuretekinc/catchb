@@ -1,7 +1,7 @@
 MODEL=i686
 
 TOPDIR=$(shell pwd)
-SUBDIR=libssh lib catchb
+SUBDIR=lib libssh libtelnet catchb cgi
 
 export TOPDIR
 

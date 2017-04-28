@@ -4,6 +4,9 @@
 #include "ftm_cgi.h"
 #include "ftm_cgi_command.h"
 
+#undef	__MODULE__
+#define	__MODULE__ "cgi"
+
 FTM_RET	FTM_CGI_addCCTV
 (
 	FTM_CLIENT_PTR pClient,
@@ -131,12 +134,14 @@ FTM_RET	FTM_CGI_getCCTV
 	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
+		ERROR(xRet, "CCTV ID not found!");
 		goto finish;
 	}
 
 	xRet = FTM_CLIENT_getCCTVProperties(pClient, pID, &xConfig);
 	if (xRet != FTM_RET_OK)
 	{
+		ERROR(xRet, "CCTV[%s] not found!", pID);
 		goto finish;
 	}
 

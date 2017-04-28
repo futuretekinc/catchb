@@ -537,6 +537,97 @@ FTM_RET	FTM_TELNET_CLIENT_readline
 	FTM_UINT32	ulRcvdLen = 0;
 	FTM_UINT32	ulLen = 0;
 	FTM_UINT8	nData;
+	FTM_BOOL	bFound = FTM_FALSE;
+	FTM_UINT32	ulSkip = 0;
+
+	if (pClient->pHandler == NULL)
+	{
+		xRet = FTM_RET_SOCKET_CLOSED;
+		goto finished;
+	}
+
+	FTM_LOCK_set(pClient->pLock);
+
+	FTM_BUFFER_getSize(pClient->pBuffer, &ulRcvdLen);
+	if (ulRcvdLen == 0)
+	{
+		goto finished;
+	}
+
+	for(FTM_INT32	i = 0 ; i < ulRcvdLen ; i++)
+	{
+		xRet = FTM_BUFFER_getAt(pClient->pBuffer, i, &nData);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to get first data in buffer!");
+			goto finished;
+		}
+
+		if (nData != '\n')
+		{
+			bFound = FTM_TRUE;
+			break;	
+		}
+
+		ulRcvdLen--;
+	}
+
+	if (!bFound)
+	{
+		goto finished;	
+	}
+
+	for(FTM_INT32	i = 0 ; i < ulRcvdLen  && i < ulBufferSize ; i++)
+	{
+		xRet = FTM_BUFFER_popFront(pClient->pBuffer, &nData, 1, &ulLen);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to get first data from buffer!");
+			goto finished;	
+		}
+
+		if(nData == '\n')
+		{
+			break;	
+		}
+		else if (nData == '\r')
+		{
+		}
+		if (nData == 0x1b)
+		{
+			ulSkip = 2;
+		}
+		else if (ulSkip == 0)
+		{
+			pBuffer[ulReadLen++] = nData;
+		}
+	}
+
+finished:
+	FTM_LOCK_reset(pClient->pLock);
+
+	*pReadLen = ulReadLen;
+	pBuffer[ulReadLen ] = 0;
+	return	xRet;
+}
+
+FTM_RET	FTM_TELNET_CLIENT_readline2
+(
+	FTM_TELNET_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR			pBuffer,
+	FTM_UINT32				ulBufferSize,
+	FTM_UINT32_PTR			pReadLen
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pBuffer != NULL);
+	ASSERT(pReadLen != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_UINT32	ulReadLen = 0;
+	FTM_UINT32	ulRcvdLen = 0;
+	FTM_UINT32	ulLen = 0;
+	FTM_UINT8	nData;
 
 	if (pClient->pHandler == NULL)
 	{

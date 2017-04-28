@@ -396,6 +396,18 @@ FTM_TRACE_CONFIG	xTraceConfig =
 	}
 };
 
+FTM_CHAR	*xModuleName[] =
+{
+//	"analyzer",
+	"catchb",
+	"telnet",
+	"ssh",
+	"switch",
+	"cgi",
+	"database",
+	NULL
+};
+
 FTM_RET		FTM_TRACE_CONFIG_setDefault
 (
 	FTM_TRACE_CONFIG_PTR	pConfig
@@ -767,6 +779,24 @@ FTM_VOID	FTM_TRACE_Out
 	if (!pConfig->bEnable)
 	{
 		return;
+	}
+
+	bEnable = FTM_FALSE;
+
+	if (pModuleName != 0)
+	{
+		for(int i = 0 ; xModuleName[i] != NULL ; i++)
+		{
+			if (strcmp(pModuleName, xModuleName[i]) == 0)
+			{
+				bEnable =FTM_TRUE;
+				break;	
+			}
+		}
+	}
+	if (!bEnable)
+	{
+		return;	
 	}
 
 	FTM_LOCK_set(&xLock);

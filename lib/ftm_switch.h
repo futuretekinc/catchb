@@ -46,6 +46,20 @@ typedef	struct	FTM_SWITCH_AC_STRUCT
 	FTM_SWITCH_AC_POLICY	xPolicy;
 }	FTM_SWITCH_AC, _PTR_ FTM_SWITCH_AC_PTR;
 
+typedef	struct
+{
+	FTM_CHAR_PTR		pPrompt;
+	FTM_CHAR			pInput[256];
+	FTM_UINT32			ulSubIndex;
+	FTM_UINT32			pNext[8];
+	FTM_UINT32			ulNextCount;
+}	FTM_SWS_CMD, _PTR_ FTM_SWS_CMD_PTR;
+
+typedef	struct
+{
+	FTM_SWS_CMD	pCommands[32];
+}	FTM_SWITCH_SCRIPT, _PTR_ FTM_SWITCH_SCRIPT_PTR;
+
 FTM_RET	FTM_SWITCH_CONFIG_create
 (
 	FTM_SWITCH_CONFIG_PTR _PTR_ ppConfig
@@ -145,6 +159,20 @@ FTM_RET	FTM_SWITCH_getInfo
 (
 	FTM_SWITCH_PTR	pSwitch,
 	FTM_SWITCH_INFO_PTR _PTR_ ppInfo
+);
+
+FTM_RET	FTM_SWITCH_TELNET_setAC
+(
+	FTM_SWITCH_PTR	pSwitch,
+	FTM_CHAR_PTR	pTargetIP,
+	FTM_SWITCH_SCRIPT_PTR	pScript 
+);
+
+FTM_RET	FTM_SWITCH_SSH_setAC
+(
+	FTM_SWITCH_PTR	pSwitch,
+	FTM_CHAR_PTR	pTargetIP,
+	FTM_SWITCH_SCRIPT_PTR	pScript 
 );
 
 #include "ftm_switch_nst.h"

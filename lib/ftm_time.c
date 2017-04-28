@@ -542,14 +542,15 @@ FTM_CHAR_PTR	FTM_TIME_printf2
 )
 {
 	static	FTM_CHAR	pString[64];
+	time_t	xTime	= (time_t)ulTime;
 
 	if (pFormat != NULL)
 	{
-		strftime(pString, sizeof(pString) - 1, pFormat, localtime((const time_t *)&ulTime));
+		strftime(pString, sizeof(pString) - 1, pFormat, localtime(&xTime));
 	}
 	else
 	{
-		strftime(pString, sizeof(pString) - 1, "%Y-%m-%d %H:%M:%S", localtime((const time_t *)&ulTime));
+		strftime(pString, sizeof(pString) - 1, "%Y-%m-%d %H:%M:%S", localtime(&xTime));
 	}
 
 	return	pString;
@@ -566,13 +567,15 @@ FTM_CHAR_PTR	FTM_TIME_printfCurrent
 
 	gettimeofday(&xTimeval, NULL);
 
+	time_t	xTime	= (time_t)xTimeval.tv_sec;
+
 	if (pFormat != NULL)
 	{
-		strftime(pString, sizeof(pString) - 1, pFormat, localtime((const time_t *)&xTimeval.tv_sec));
+		strftime(pString, sizeof(pString) - 1, pFormat, localtime(&xTime));
 	}
 	else
 	{
-		strftime(pString, sizeof(pString) - 1, "%Y-%m-%d %H:%M:%S", localtime((const time_t *)&xTimeval.tv_sec));
+		strftime(pString, sizeof(pString) - 1, "%Y-%m-%d %H:%M:%S", localtime(&xTime));
 	}
 
 	return	pString;

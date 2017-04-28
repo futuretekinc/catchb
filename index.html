@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>title</title>
+<link rel="stylesheet" type="text/css" href="../../css/bootstrap.min_2.css" />
+<link rel="stylesheet" type="text/css" href="../../css/bootstrap-datetimepicker.min_2.css" />
+<link rel="stylesheet" type="text/css" href="../../css/common_2.css" />
+<script>
+$(document).ready(function(){
+    //tooltip 설정
+    $('[data-toggle="tooltip"]').tooltip();
+    //Checkbox 전체선택
+    $("#checkAll").change(function () {
+        $(".box-main .table input:checkbox").prop('checked', $(this).prop("checked"));
+    });
+});
+</script>
+</head>
+<body>
+<!-- Header -->
+<header>
+    <nav>
+        <h1 class="logo"><a href="index.html">Catch-B</a></h1>
+		<!-- GNB -->
+		<ul class="nav navbar-nav">
+			<li>
+			    <!-- active 클래스로 현재 메뉴 활성화 표시 -->
+				<a href="index.html" class="active">대시보드</a>
+			</li>		
+			<li>
+				<a href="policy/policy.html">정책설정</a>
+			</li>
+			<li>
+				<a href="log/log.html">로그</a>
+			</li>
+			<li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">환경설정<img src="resources/images/ico_dropdown.png"></a>
+				<ul class="dropdown-menu">
+					<li>
+						<a href="config/admin.html">관리자 설정</a>
+					</li>
+					<li>
+						<a href="config/ui.html">인터페이스 설정</a>
+					</li>
+					<li>
+						<a href="config/system.html">시스템 정보</a>
+					</li>
+					<li>
+						<a href="config/update.html">업데이트</a>
+					</li>
+					<li>
+						<a href="config/external.html">외부장비 연결</a>
+					</li>
+					<li>
+						<a href="config/block.html">차단장비 설정</a>
+					</li>
+					<li>
+						<a href="config/alarm.html">알람설정</a>
+					</li>
+				</ul>
+			</li>
+		</ul>
+       <!-- // GNB -->
+        <div class="toolbox">
+            <span>대시보드</span>
+            <a class="btn-logout text-indx radius-cc" data-toggle="tooltip" data-placement="bottom" title="Logout">로그아웃</a>
+        </div>
+    </nav>
+</header>
+<!-- // Header -->
+<!-- Container -->
+<div id="container">
+   <div class="col-xs-9 box-set">
+        <div class="box box-main">
+            <h3 class="title">
+                <span class="inline-block col-xs-6"><i class="ico color-green ico-list"></i>카메라 리스트</span>
+                <span class="inline-block col-xs-6"><i class="ico color-green ico-chart"></i>카메라 그래프<span id="mainTimer" class="pull-right timer-box">51</span></span>
+            </h3>
+            <!-- 카메라 리스트 -->
+            <div class="gridset col-xs-6">
+                <table class="table table-bordered table-reset">
+                   <colgroup>
+                       <col width="30">
+                       <col width="80">
+                       <col width="110">
+                       <col width="*">
+                   </colgroup>
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="checkAll"></th>
+                            <th>ID</th>
+                            <th>IP</th>
+                            <th>설명</th>
+                        </tr>
+                    </thead>
+                </table>
+                <!-- 2016.12.16 max-height 설정 -->
+                <div class="scroll-y table-box" style="max-height:190px;">
+                    <table class="table table-bordered table-reset">
+                       <colgroup>
+                           <col width="30">
+                           <col width="80">
+                           <col width="110">
+                           <col width="*">
+                       </colgroup>
+                        <tbody>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>CC-123</td>
+                                <td>122.126.16.11</td>
+                                <td><span class="ellipsis elp-1" data-toggle="tooltip" title="카메라설명이 나옵니다.">카메라설명이 나옵니다.</span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>CC-123</td>
+                                <td>122.126.16.11</td>
+                                <td class="ellipsis-cell"><span class="ellipsis" data-toggle="tooltip" title="카메라설명이 나옵니다. 카메라설명이 나옵니다. 카메라설명이 나옵니다.">카메라설명이 나옵니다. 카메라설명이 나옵니다. 카메라설명이 나옵니다.</span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>CC-123</td>
+                                <td>122.126.16.11</td>
+                                <td><span class="ellipsis elp-1" data-toggle="tooltip" title="카메라설명이 나옵니다.">카메라설명이 나옵니다.</span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>CC-123</td>
+                                <td>122.126.16.11</td>
+                                <td><span class="ellipsis elp-1" data-toggle="tooltip" title="카메라설명이 나옵니다.">카메라설명이 나옵니다.</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pull-right pt-10">
+                    <button type="button" class="btn btn-info ">선택</button>
+                </div>
+            </div>
+            <!-- // 카메라 리스트 -->
+            <!-- 카메라 그래프 차트 -->
+            <div class="gridset col-xs-6">
+               <div class="clearfix">
+                    <mark class="tip pull-left">CPU 최소 사용률 : 0.2(2016-12-15 09:04:54.0)</br>CPU 최대 사용률 : 12.7(2016-12-15 09:04:54.0)</mark>
+                    <ul class="nav nav-pills pull-right tab-lite">
+                        <li class="active"><a href="#">일자</a></li>
+                        <li><a href="#">시간별</a></li>
+                    </ul>
+                </div>
+                <div class="chartbox-in">카메라 그래프 차트 영역</div>
+            </div>
+            <!-- // 카메라 그래프 차트 -->
+        </div>
+        <div class="box box-bottom">
+           <h3 class="title">
+               <i class="ico color-sky ico-barchart"></i>누적 사용률
+               <span id="mainTimer" class="pull-right timer-box">51</span>
+           </h3>
+            <!-- CPU 사용률 -->
+            <div class="chartbox col-xs-6">CPU 사용률 차트 영역</div>
+            <!-- // CPU 사용률 -->
+            <!-- 메모리 사용률 -->
+            <div class="chartbox col-xs-6">메모리 사용률 차트 영역</div>
+            <!-- // 메모리 사용률 -->
+            <!-- TX -->
+            <div class="chartbox col-xs-6">TX 차트 영역</div>
+            <!-- // TX -->
+            <!-- RX -->
+            <div class="chartbox col-xs-6">RX 차트 영역</div>
+            <!-- // RX -->
+        </div>
+    </div>
+    <div class="col-xs-3 box-set">
+        <div class="box box-side">
+            <h3 class="title"><i class="ico color-sky ico-piechart"></i>실시간 사용률</h3>
+            <!-- 현재 CPU 사용률 -->
+            <div class="chartbox">현재 CPU 사용률 차트 영역</div>
+            <!-- // 현재 CPU 사용률 -->
+            <!-- 현재 Memory 사용률 -->
+            <div class="chartbox">현재 Memory 사용률 차트 영역</div>
+            <!-- // 현재 Memory 사용률 -->
+            <!-- 현재 Traffic 상태 -->
+            <div class="chartbox">현재 Traffic 상태 차트 영역</div>
+            <!-- // 현재 Traffic 상태 -->
+        </div>    
+    </div>
+</div>
+<!-- // Container -->
+
+<script type="text/javascript" src="../../js/jquery-3.2.1.min_2.js"></script>
+<script type="text/javascript" src="../../js/bootstrap-datetimepicker_2.js"></script>
+<script type="text/javascript" src="../../js/bootstrap.min_2.js"></script>
+</body>
+</html>

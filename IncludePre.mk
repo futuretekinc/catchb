@@ -1,4 +1,4 @@
-MODEL=i686
+MODEL=ftm-50
 TARGET=$(TOPDIR)/target/$(MODEL)
 EXEC_PREFIX=$(TARGET)/usr/bin
 INC_PREFIX=$(TARGET)/usr/include
@@ -29,10 +29,12 @@ CC=gcc
 
 CFLAGS:= $(CFLAGS) \
 		-I/usr/local/include \
+		-I/usr/local/ssl/include \
 		-I/usr/local/include/cjson 
 
 LDFLAGS:= $(LDFLAGS)\
-		-L/usr/local/lib
+		-L/usr/local/lib\
+		-L/usr/local/ssl/lib
 endif
 
 ifeq ($(MODEL), ftm-50)

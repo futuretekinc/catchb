@@ -23,7 +23,7 @@ FTM_RET	FTM_getLocalIP
 	FTM_RET	xRet = FTM_RET_OK;
     FILE *pFP;
 	
-	pFP = popen("ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'", "r");
+	pFP = popen("ifconfig enp0s3 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'", "r");
     if(pFP != NULL) 
 	{
         if (fgets(pBuff, ulBuffSize, pFP) == NULL)

@@ -10,17 +10,18 @@ BIN_CFLAGS:=$(CFLAGS)\
 		-I/home/xtra/ftm/build/ftm-50s/_root/usr/include/cjson\
 
 BIN_LDFLAGS:=$(LDFLAGS)\
-		-lz\
 		-lcatchb\
 		-lssh\
+		-ltelnet\
+		-lcjson \
+		-lqdecoder\
 		-lcurl\
 		-lssl\
 		-lcrypto\
 		-lpthread \
-		-lcjson \
-		-lmxml\
-		-lqdecoder\
+		-lz\
 		-lm\
+		-ldl\
 		-lrt
 BIN_OBJS=$(patsubst %.c,%.o,$(wildcard *.c))
 

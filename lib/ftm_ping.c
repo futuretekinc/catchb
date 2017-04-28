@@ -502,7 +502,7 @@ FTM_RET	FTM_PING_printPacket
 	FTM_RET	xRet;
     register struct icmphdr *icp;
     register int i;
-    register u_char *cp,*dp;
+    register u_char *cp;
     /*#if 0*/
     register u_long l;
     register int j;
@@ -583,6 +583,8 @@ FTM_RET	FTM_PING_printPacket
 #else
             cp = (u_char*)icp->icmp_data + 8;
 #endif
+#if 0
+    register u_char *dp;
             dp = &outpack[8 + sizeof(struct timeval)];
             for (i = 8; i < datalen; ++i, ++cp, ++dp) 
 			{
@@ -602,6 +604,7 @@ FTM_RET	FTM_PING_printPacket
                     break;
                 }
             }
+#endif
         }
     } 
 	else 

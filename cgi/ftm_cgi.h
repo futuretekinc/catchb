@@ -5,7 +5,6 @@
 #include "ftm_types.h"
 #include "ftm_client.h"
 #include "qdecoder.h"
-#include "mxml.h"
 #include "cJSON.h"
 
 typedef	struct FTM_CGI_COMMAND_STRUCT
@@ -49,13 +48,6 @@ FTM_RET	FTM_CGI_sys
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t *pReq
-);
-
-const 
-char *FTM_CGI_whitespaceCB
-(
-	mxml_node_t *node,
-	int			where
 );
 
 FTM_RET	FTM_CGI_getUINT16

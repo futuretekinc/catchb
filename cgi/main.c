@@ -8,6 +8,8 @@
 #include "ftm_trace.h"
 
 // ftm manager
+#undef	__MODULE__
+#define	__MODULE__	"cgi"
 
 FTM_CGI_COMMAND	pCmds[] =
 {
@@ -58,7 +60,8 @@ FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 	else	
 	{
 		FTM_CLIENT_PTR	pClient;
-		
+
+		INFO("Command Found!");
 		xRet = FTM_CLIENT_create(&xClientConfig, &pClient);
 		if (xRet != FTM_RET_OK)
 		{

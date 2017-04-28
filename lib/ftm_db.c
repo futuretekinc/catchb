@@ -1642,7 +1642,7 @@ FTM_RET	FTM_DB_deleteLogFrom
 
 	memset(pQuery, 0, sizeof(pQuery));
 
-	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s", pDB->pLogTableName);
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _TIME IN ( SELECT _TIME FROM %s ", pDB->pLogTableName, pDB->pLogTableName);
 
 	if (pID != NULL)
 	{
@@ -1667,6 +1667,8 @@ FTM_RET	FTM_DB_deleteLogFrom
 	{
 		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " OFFSET %u", ulIndex);
 	}
+
+	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ");");
 
 	INFO("SQL : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, NULL, &pErrorMsg) < 0)

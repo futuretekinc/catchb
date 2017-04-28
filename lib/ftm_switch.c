@@ -1,8 +1,15 @@
+#include <ctype.h>
 #include <string.h>
 #include "ftm_types.h"
 #include "ftm_trace.h"
 #include "ftm_mem.h"
 #include "ftm_switch.h"
+#include "ftm_telnet.h"
+#include "ftm_ssh.h"
+#include "ftm_timer.h"
+
+#undef	__MODULE__ 
+#define	__MODULE__ "switch"
 
 FTM_SWITCH_INFO	pSwitchInfos[] = 
 {
@@ -513,3 +520,165 @@ FTM_CHAR_PTR	FTM_getSwitchModelName
 
 	return	pInfo->pName;
 }
+
+FTM_RET	FTM_SWITCH_TELNET_setAC
+(
+	FTM_SWITCH_PTR	pSwitch,
+	FTM_CHAR_PTR	pTargetIP,
+	FTM_SWITCH_SCRIPT_PTR	pScript 
+)
+{
+	ASSERT(pSwitch != NULL);
+	ASSERT(pTargetIP != NULL);
+
+	FTM_RET		xRet;
+	FTM_TELNET_CLIENT_PTR	pClient;
+
+
+	xRet = FTM_TELNET_CLIENT_create(&pClient);
+	if (xRet != FTM_RET_OK)
+	{
+		printf("Failed to create client!\n");	
+		goto finished;
+	}
+
+	xRet = FTM_TELNET_CLIENT_open(pClient, pSwitch->xConfig.pIP, 23);
+	if (xRet == FTM_RET_OK)
+	{
+		FTM_UINT32	ulCommandLine = 0;
+		printf("telnet open success!\n");	
+
+		while(pScript->pCommands[ulCommandLine].pPrompt != NULL)
+		{
+			FTM_CHAR	pReadLine[512];
+			FTM_UINT32	ulReadLen;
+			usleep(1000);
+
+			memset(pReadLine, 0, sizeof(pReadLine));
+
+			xRet = FTM_TELNET_CLIENT_readline(pClient, pReadLine, sizeof(pReadLine), &ulReadLen);
+			if ((ulReadLen != 0) && isprint(pReadLine[0]))
+			{
+				INFO("READ : %s", pReadLine);
+				if (strncasecmp(pReadLine, pScript->pCommands[ulCommandLine].pPrompt, strlen(pScript->pCommands[ulCommandLine].pPrompt)) == 0)
+				{
+					FTM_TELNET_CLIENT_writel(pClient, pScript->pCommands[ulCommandLine].pInput, strlen(pScript->pCommands[ulCommandLine].pInput));
+					ulCommandLine++;
+				}
+			}
+		}
+
+		xRet = FTM_TELNET_CLIENT_close(pClient);
+		if (xRet != FTM_RET_OK)
+		{
+			printf("Failed to close telnet!\n");	
+		}
+	}
+	else
+	{
+		printf("telnet open failed!\n");	
+	}
+
+	xRet = FTM_TELNET_CLIENT_destroy(&pClient);
+	if (xRet != FTM_RET_OK)
+	{
+		printf("Failed to destroy telnet clinet!\n");
+	}
+
+finished:
+
+	return	xRet;
+}
+
+
+FTM_RET	FTM_SWITCH_SSH_setAC
+(
+	FTM_SWITCH_PTR	pSwitch,
+	FTM_CHAR_PTR	pTargetIP,
+	FTM_SWITCH_SCRIPT_PTR	pScript 
+)
+{
+	ASSERT(pSwitch != NULL);
+	ASSERT(pTargetIP != NULL);
+
+	FTM_RET		xRet;
+	FTM_SSH_PTR	pSSH = NULL;
+	FTM_SSH_CHANNEL_PTR	pChannel = NULL;
+	FTM_TIMER	xTimer;
+
+	xRet = FTM_SSH_create(&pSSH);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create SSH!");	
+		goto finished;
+	}
+
+	xRet = FTM_SSH_connect(pSSH, pSwitch->xConfig.pIP, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create channel!");	
+		goto finished;
+	}
+
+	xRet = FTM_SSH_CHANNEL_create(pSSH, &pChannel);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create channel!");	
+		goto finished;
+	}
+
+	FTM_TIMER_initMS(&xTimer, 1000);
+
+	xRet = FTM_SSH_CHANNEL_open(pChannel);
+	if (xRet == FTM_RET_OK)
+	{
+		FTM_UINT32	ulCommandLine = 0;
+
+		while(pScript->pCommands[ulCommandLine].pPrompt != NULL)
+		{
+			FTM_CHAR	pReadLine[512];
+			FTM_UINT32	ulReadLen = 0;
+
+			xRet = FTM_SSH_CHANNEL_readLine(pChannel, pReadLine, sizeof(pReadLine), &ulReadLen);
+			if ((ulReadLen != 0) && isprint(pReadLine[0]))
+			{
+				if (strncasecmp(pReadLine, pScript->pCommands[ulCommandLine].pPrompt, strlen(pScript->pCommands[ulCommandLine].pPrompt)) == 0)
+				{
+					FTM_SSH_CHANNEL_writeLine(pChannel, pScript->pCommands[ulCommandLine].pInput);
+					ulCommandLine++;
+				}
+				else if (strncasecmp(pReadLine, "Press any key", 12) == 0)
+				{
+					FTM_SSH_CHANNEL_writeLine(pChannel, "\n");
+				}
+			}
+
+			usleep(1000);
+		}
+
+		FTM_SSH_CHANNEL_close(pChannel);
+	}
+	else
+	{
+		ERROR(xRet, "Failed to open channel.");	
+	}
+
+	FTM_SSH_disconnect(pSSH);
+
+finished:
+	
+	if (pChannel != NULL)
+	{
+		INFO("FTM_SSH_CHANNEL_destroy");
+		FTM_SSH_CHANNEL_destroy(&pChannel);	
+	}
+
+	if (pSSH != NULL)
+	{
+		INFO("FTM_SSH_destroy");
+		FTM_SSH_destroy(&pSSH);	
+	}
+
+	return	xRet;
+}
+

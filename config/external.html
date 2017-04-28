@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>title</title>
+<script type="text/javascript" src="../resources/js/jquery-3.1.0.min_2.js"></script>
+<script type="text/javascript" src="../resources/js/bootstrap-datetimepicker_2.js"></script>
+<script type="text/javascript" src="../resources/js/bootstrap.min_2.js"></script>
+<link rel="stylesheet" type="text/css" href="../resources/css/bootstrap.min_2.css" />
+<link rel="stylesheet" type="text/css" href="../resources/css/bootstrap-datetimepicker.min_2.css" />
+<link rel="stylesheet" type="text/css" href="../resources/css/common_2.css" />
+<script>
+$(document).ready(function(){
+    //tooltip 설정
+    $('[data-toggle="tooltip"]').tooltip();
+	//Checkbox 전체선택
+    $("#checkAll").change(function () {
+        $(".table input:checkbox").prop('checked', $(this).prop("checked"));
+    });
+});
+</script>
+</head>
+<body>
+<!-- Header -->
+<header>
+    <nav>
+        <h1 class="logo"><a href="../index.html">Catch-B</a></h1>
+		<!-- GNB -->
+		<ul class="nav navbar-nav">
+			<li>
+			    <!-- active 클래스로 현재 메뉴 활성화 표시 -->
+				<a href="../index.html">대시보드</a>
+			</li>		
+			<li>
+				<a href="../policy/policy.html">정책설정</a>
+			</li>
+			<li>
+				<a href="../log/log.html">로그</a>
+			</li>
+			<li class="dropdown">
+				<a href="#" class="dropdown-toggle active" data-toggle="dropdown" aria-expanded="false">환경설정<img src="../resources/images/ico_dropdown.png"></a>
+				<ul class="dropdown-menu">
+					<li>
+						<a href="../config/admin.html">관리자 설정</a>
+					</li>
+					<li>
+						<a href="../config/ui.html">인터페이스 설정</a>
+					</li>
+					<li>
+						<a href="../config/system.html">시스템 정보</a>
+					</li>
+					<li>
+						<a href="../config/update.html">업데이트</a>
+					</li>
+					<li>
+						<a href="../config/external.html">외부장비 연결</a>
+					</li>
+					<li>
+						<a href="../config/block.html">차단장비 설정</a>
+					</li>
+					<li>
+						<a href="../config/alarm.html">알람설정</a>
+					</li>
+				</ul>
+			</li>
+		</ul>
+       <!-- // GNB -->
+        <div class="toolbox">
+            <span>외부장비 연결</span>
+            <a class="btn-logout text-indx radius-cc" data-toggle="tooltip" data-placement="bottom" title="Logout">로그아웃</a>
+        </div>
+    </nav>
+</header>
+<!-- // Header -->
+<!-- Container -->
+<div id="container">
+   <div class="col-xs-12">
+        <div class="box">
+            <h3 class="title">
+                <span class="inline-block col-xs-12"><i class="ico color-sky ico-list"></i>외부장비 연결</span>
+            </h3>
+            <!-- Contents -->
+            <div class="contents">
+            	<!-- 장비 추가-->
+				<table class="table table-bordered table-reset">
+				   <colgroup>
+					   <col width="230">
+					   <col width="180">
+					   <col width="*">
+				   </colgroup>
+					<thead>
+						<tr>
+							<th>Server명</th>
+							<th>Server IP</th>
+							<th>설명</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><input class="form-control" type="text"></td>
+							<td><input class="form-control" type="text"></td>
+							<td><input class="form-control" type="text"></td>
+						</tr>
+					</tbody>
+				</table>
+				<div class="mt-10 clearfix">
+					<button class="btn btn btn-default pull-right">추가</button>
+				</div>
+                <!-- // 장비 추가 -->
+                <!-- 추가 적용-->
+                <div class="list_box">
+					<table class="table table-bordered table-reset">
+					   <colgroup>
+						   <col width="230">
+						   <col width="180">
+						   <col width="*">
+					   </colgroup>
+						<thead>
+							<tr>
+								<th>Server명</th>
+								<th>Server IP</th>
+								<th>설명</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>서버1</td>
+								<td>210.220.230.1</td>
+								<td>서버 설명이 나옵니다.</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="mt-10 clearfix">
+					<button class="btn btn-info pull-right">적용</button>
+				</div>
+                <!-- // 추가 적용 -->
+                <!-- 목록 -->
+                <div class="list_box">
+					<table class="table table-bordered table-reset">
+					   <colgroup>
+						   <col width="30">
+						   <col width="200">
+						   <col width="180">
+						   <col width="*">
+					   </colgroup>
+						<thead>
+							<tr>
+								<th><input type="checkbox" id="checkAll"></th>
+								<th>Server명</th>
+								<th>Server IP</th>
+								<th>설명</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td><input type="checkbox"></td>
+								<td>서버1</td>
+								<td>210.220.230.1</td>
+								<td>서버 설명이 나옵니다.</td>
+							</tr>
+							<tr>
+								<td><input type="checkbox"></td>
+								<td>서버2</td>
+								<td>210.220.230.1</td>
+								<td>서버 설명이 나옵니다.</td>
+							</tr>
+							<tr>
+								<td><input type="checkbox"></td>
+								<td>서버3</td>
+								<td>210.220.230.1</td>
+								<td>서버 설명이 나옵니다.</td>
+							</tr>
+							<tr>
+								<td><input type="checkbox"></td>
+								<td>서버4</td>
+								<td>210.220.230.1</td>
+								<td>서버 설명이 나옵니다.</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<!-- 페이지네이션 -->
+                <nav aria-label="Page navigation" class="pagination-set">
+					<ul class="pagination">
+						<li>
+							<a href="#" aria-label="Previous">
+							<span aria-hidden="true">&laquo;</span>
+							</a>
+						</li>
+						<!-- 현재 페이지번호에 active 클래스 -->
+						<li class="active"><a href="#">1</a></li>
+						<!--
+						<li><a href="#">2</a></li>
+						<li><a href="#">3</a></li>
+						<li><a href="#">4</a></li>
+						<li><a href="#">5</a></li>
+						<li><a href="#">6</a></li>
+						<li><a href="#">7</a></li>
+						<li><a href="#">8</a></li>
+						<li><a href="#">9</a></li>
+						<li><a href="#">10</a></li>
+						-->
+						<li>
+							<a href="#" aria-label="Next">
+							<span aria-hidden="true">&raquo;</span>
+							</a>
+						</li>
+					</ul>
+					<div class="btn-right">
+						<button class="btn btn-default">등록</button>
+						<button class="btn btn-default">수정</button>
+						<button class="btn btn-info">선택삭제</button>
+					</div>
+				</nav>
+                <!-- // 페이지네이션 -->
+                <!-- // 목록 -->
+            </div>
+            <!-- // Contents -->
+        </div>
+    </div>
+</div>
+<!-- // Container -->
+
+</body>
+</html>
