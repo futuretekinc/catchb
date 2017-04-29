@@ -15,6 +15,7 @@ FTM_RET	FTM_SHELL_CMD_notifier(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR
 FTM_RET	FTM_SHELL_CMD_switch(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_trace(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_config(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
+FTM_RET	FTM_SHELL_CMD_net(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 
 FTM_SHELL_CMD	pCatchBShellCmdList[] = 
 {
@@ -108,6 +109,17 @@ FTM_SHELL_CMD	pCatchBShellCmdList[] =
 					  "    - Show logs from <INDEX>.\n"
 					  "  del [--index <INDEX>] [--count <COUNT>]\n"
 					  "    - Delete log from <INDEX>.\n",
+		.pData		= NULL
+	},
+	{
+		.pString	= "net",
+		.function	= FTM_SHELL_CMD_net,
+		.pShortHelp	= "Network management.",
+		.pHelp		= "<cmd>\n"
+					  "  Network settings.\n"
+					  "COMMANDS:\n"
+					  "  info\n"
+					  "    - Show network.\n",
 		.pData		= NULL
 	},
 	{

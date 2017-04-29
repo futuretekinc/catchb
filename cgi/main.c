@@ -43,6 +43,7 @@ FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 
 	FTM_TRACE_setConfig(&xTraceConfig);
 
+	INFO("CGI Start!");
 	while(pCmd->pName != NULL)
 	{
 		if (strcasecmp(pCmd->pName, pArgv[0]) == 0)
@@ -55,6 +56,7 @@ FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 
 	if (pCmd->pName == NULL)
 	{
+		INFO("Command not found[%s]!", pArgv[0]);
 		qcgires_error(pReq, "Not supported command!");
 	}
 	else	

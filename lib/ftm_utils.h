@@ -39,13 +39,36 @@ typedef	struct
 	FTM_CHAR	pName[32];
 	FTM_CHAR	pIP[32];	
 	FTM_CHAR	pNetmask[32];	
-	FTM_CHAR	pGateway[32];	
-}	FTM_NETWORK_INTERFACE_INFO, _PTR_ FTM_NETWORK_INTERFACE_INFO_PTR;
+}	FTM_NET_IF_INFO, _PTR_ FTM_NET_IF_INFO_PTR;
+
+typedef	struct
+{
+	FTM_UINT32		ulIFCount;
+	FTM_NET_IF_INFO	pIF[4];
+	FTM_CHAR		pGateway[32];	
+}	FTM_NET_INFO, _PTR_ FTM_NET_INFO_PTR;
 
 FTM_RET	FTM_getLocalIP
 (
 	FTM_CHAR_PTR	pBuff,
 	FTM_UINT32		ulBuffSize
+);
+
+FTM_RET	FTM_getNetInfo
+(
+	FTM_NET_INFO_PTR	pNetInfo
+);
+
+FTM_RET	FTM_getNetIFInfo
+(
+	FTM_CHAR_PTR	pName,
+	FTM_NET_IF_INFO_PTR	pInfo
+);
+
+FTM_RET	FTM_getGateway
+(
+	FTM_CHAR_PTR	pGateway,
+	FTM_UINT32		ulGatewayLen
 );
 
 FTM_RET	FTM_portScan

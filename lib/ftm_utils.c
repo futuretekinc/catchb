@@ -12,6 +12,9 @@
 #include "ftm_trace.h"
 #include "libsha1.h"
 
+#undef	__MODULE__
+#define	__MODULE__	"utils"
+
 FTM_RET	FTM_getLocalIP
 (
 	FTM_CHAR_PTR	pBuff,
@@ -53,47 +56,164 @@ FTM_RET	FTM_getLocalIP
 	return	xRet;
 }
 
-FTM_RET	FTM_getNetworkInterfaceInfo
+FTM_RET	FTM_getNetInfo
 (
-	FTM_CHAR_PTR	pInterface,
-	FTM_CHAR_PTR	pIP,
-	FTM_CHAR_PTR	pNetmask,
-	FTM_CHAR_PTR	pGateway,
-	FTM_UINT32		ulBuffSize
+	FTM_NET_INFO_PTR	pNetInfo
+)
+{
+	ASSERT(pNetInfo != NULL);
+	
+	FILE*	pFP;
+	FTM_UINT32	ulIFCount = 0;
+	FTM_CHAR	pBuffer[256];
+	FTM_CHAR	pIFNames[4][64];
+
+	memset(pNetInfo, 0, sizeof(FTM_NET_INFO));
+	memset(pIFNames, 0, sizeof(pIFNames));
+
+	pFP = popen("cat /proc/net/dev | awk '{ if ($1 ~ /:/) print $1}' | sed 's/://'", "r");
+	while(fgets(pBuffer, sizeof(pBuffer) - 1, pFP) != NULL)
+	{
+		if (strncmp(pBuffer, "lo", 2) != 0)
+		{
+			sscanf(pBuffer, "%s", pIFNames[ulIFCount++]);
+		}
+	}
+	pclose(pFP);
+
+	for(FTM_UINT32 i = 0 ; i < ulIFCount && pNetInfo->ulIFCount < sizeof(pNetInfo->pIF) / sizeof(pNetInfo->pIF[0]) ; i++)
+	{
+		if (FTM_getNetIFInfo(pIFNames[i], &pNetInfo->pIF[pNetInfo->ulIFCount]) ==  FTM_RET_OK)
+		{
+			pNetInfo->ulIFCount++;	
+		}
+	}
+
+	FTM_getGateway(pNetInfo->pGateway, sizeof(pNetInfo->pGateway));
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_getNetIFInfo
+(
+	FTM_CHAR_PTR		pIFName,
+	FTM_NET_IF_INFO_PTR	pIFInfo
 ) 
 {
-	ASSERT(pBuff != NULL);
+	ASSERT(pIFName != NULL);
+	ASSERT(pIFInfo != NULL);
 
 	FTM_RET	xRet = FTM_RET_OK;
     FILE *pFP;
+	FTM_CHAR	pCommandLine[256];
+	FTM_CHAR	pBuffer[256];
 	
-	pFP = popen("ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'", "r");
-    if(pFP != NULL) 
-	{
-        if (fgets(pBuff, ulBuffSize, pFP) == NULL)
-		{
-			xRet = FTM_RET_NET_INTERFACE_ERROR;
-		}
-    	pclose(pFP);
-    }
-	else
+	sprintf(pCommandLine, "ifconfig %s | grep 'inet addr:'", pIFName);
+	pFP = popen(pCommandLine, "r");
+	if (pFP == NULL)
 	{
 		xRet = FTM_RET_NET_INTERFACE_ERROR;	
+		ERROR(xRet, "Failed to run shell command!");
+		goto finished;
 	}
 
-	if (xRet == FTM_RET_OK)
+	if (fgets(pBuffer, sizeof(pBuffer), pFP) == NULL)
 	{
-		FTM_INT32	i;
+		xRet = FTM_RET_NET_INTERFACE_ERROR;
+		ERROR(xRet, "Failed to get shell result!");
+		goto finished;
+	}
+	pclose(pFP);
+	pFP = NULL;
 
-		for(i = 0 ; i < strlen(pBuff) ; i++)
+	FTM_CHAR_PTR	pStart = strstr(pBuffer, "inet addr:");
+	if (pStart == NULL)
+	{
+		xRet = FTM_RET_NET_INTERFACE_ERROR;
+		ERROR(xRet, "Failed to get ip!");
+		goto finished;
+	}
+
+	FTM_CHAR_PTR	pToken= strtok(pStart + 10, " ");
+	if (pToken == NULL)
+	{
+		xRet = FTM_RET_NET_INTERFACE_ERROR;
+		ERROR(xRet, "Failed to get ip!");
+		goto finished;
+	}
+
+	strncpy(pIFInfo->pIP, pToken, sizeof(pIFInfo->pIP) - 1);
+	pStart = pToken+strlen(pToken) + 1;
+
+	pStart = strstr(pStart, "Mask:");
+	if (pStart == NULL)
+	{
+		xRet = FTM_RET_NET_INTERFACE_ERROR;
+		ERROR(xRet, "Failed to get netmask!");
+		goto finished;
+	}
+
+	pToken = strtok(pStart+5, " \n");
+	if (pToken== NULL)
+	{
+		xRet = FTM_RET_NET_INTERFACE_ERROR;
+		goto finished;
+	}
+
+	strncpy(pIFInfo->pNetmask, pToken, sizeof(pIFInfo->pNetmask) - 1);
+
+	strncpy(pIFInfo->pName, pIFName, sizeof(pIFInfo->pName) - 1);
+finished:
+	if (pFP != NULL)
+	{
+		pclose(pFP);	
+	}
+	return	xRet;
+}
+
+FTM_RET	FTM_getGateway
+(
+	FTM_CHAR_PTR	pGateway,
+	FTM_UINT32		ulGatewayLen
+)
+{
+	FTM_RET	xRet = FTM_RET_OK;
+	FILE	*pFP;
+
+	pFP = popen("route -n", "r");
+	if (pFP == NULL)
+	{
+		xRet = FTM_RET_NET_INTERFACE_ERROR;
+		goto finished;
+	}
+
+	while(1)
+	{
+		FTM_CHAR	pBuffer[256];
+		FTM_CHAR	pArg1[64];
+		FTM_CHAR	pArg2[64];
+
+		if (fgets(pBuffer, sizeof(pBuffer), pFP) == NULL)
 		{
-			if (!isprint(pBuff[i]))
-			{
-				pBuff[i] = '\0';	
-			}
+			break;	
+		}
+	
+		
+		if (sscanf(pBuffer, "%s %s", pArg1, pArg2) != 2)
+		{
+			break;
+		}
+
+		if (strcmp(pArg1, "0.0.0.0") == 0)
+		{
+			strncpy(pGateway, pArg2, ulGatewayLen);	
+			break;
 		}
 	}
-
+	pclose(pFP);	
+	
+finished:
+	
 	return	xRet;
 }
 

@@ -405,6 +405,7 @@ FTM_CHAR	*xModuleName[] =
 	"switch",
 	"cgi",
 	"database",
+	"utils",
 	NULL
 };
 
