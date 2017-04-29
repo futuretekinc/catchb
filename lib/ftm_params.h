@@ -5,6 +5,7 @@
 #include "ftm_cctv.h"
 #include "ftm_switch.h"
 #include "ftm_alarm.h"
+#include "ftm_utils.h"
 #include "ftm_log.h"
 
 #define	FTM_PARAM_MAX_LEN	1500
@@ -40,6 +41,12 @@ typedef	enum
 	FTM_CMD_GET_ALARM,
 	FTM_CMD_SET_ALARM,
 	FTM_CMD_GET_ALARM_NAME_LIST,
+
+	FTM_CMD_GET_STAT_INFO,
+	FTM_CMD_GET_STAT_COUNT,
+	FTM_CMD_GET_STAT_LIST,
+	FTM_CMD_DEL_STAT,
+
 }	FTM_CMD, _PTR_ FTM_CMD_PTR;
 
 typedef	struct
@@ -359,5 +366,59 @@ typedef	struct
 	FTM_UINT32		ulCount;
 	FTM_NAME		pNameList[];
 }	FTM_RESP_GET_ALARM_NAME_LIST_PARAMS, _PTR_ FTM_RESP_GET_ALARM_NAME_LIST_PARAMS_PTR;
+
+typedef	struct
+{
+	FTM_REQ_PARAMS	xCommon;
+}	FTM_REQ_GET_STAT_INFO_PARAMS, _PTR_ FTM_REQ_GET_STAT_INFO_PARAMS_PTR;
+
+typedef	struct
+{
+	FTM_RESP_PARAMS	xCommon;
+	FTM_UINT32		ulCount;
+	FTM_UINT32		ulFirstTime;
+	FTM_UINT32		ulLastTime;
+}	FTM_RESP_GET_STAT_INFO_PARAMS, _PTR_ FTM_RESP_GET_STAT_INFO_PARAMS_PTR; 
+
+typedef	struct
+{
+	FTM_REQ_PARAMS	xCommon;
+}	FTM_REQ_GET_STAT_COUNT_PARAMS, _PTR_ FTM_REQ_GET_STAT_COUNT_PARAMS_PTR;
+
+typedef	struct
+{
+	FTM_RESP_PARAMS	xCommon;
+	FTM_UINT32		ulCount;
+}	FTM_RESP_GET_STAT_COUNT_PARAMS, _PTR_ FTM_RESP_GET_STAT_COUNT_PARAMS_PTR; 
+
+typedef	struct
+{
+	FTM_REQ_PARAMS	xCommon;
+	FTM_UINT32		ulIndex;
+	FTM_UINT32		ulCount;
+}	FTM_REQ_GET_STAT_LIST_PARAMS, _PTR_ FTM_REQ_GET_STAT_LIST_PARAMS_PTR;
+
+typedef	struct
+{
+	FTM_RESP_PARAMS	xCommon;
+	FTM_UINT32		ulIndex;
+	FTM_UINT32		ulCount;
+	FTM_STATISTICS	pStatList[];
+}	FTM_RESP_GET_STAT_LIST_PARAMS, _PTR_ FTM_RESP_GET_STAT_LIST_PARAMS_PTR; 
+
+typedef	struct
+{
+	FTM_REQ_PARAMS	xCommon;
+	FTM_UINT32		ulIndex;
+	FTM_UINT32		ulCount;
+}	FTM_REQ_DEL_STAT_PARAMS, _PTR_ FTM_REQ_DEL_STAT_PARAMS_PTR;
+
+typedef	struct
+{
+	FTM_RESP_PARAMS	xCommon;
+	FTM_UINT32		ulCount;
+	FTM_UINT32		ulFirstTime;
+	FTM_UINT32		ulLastTime;
+}	FTM_RESP_DEL_STAT_PARAMS, _PTR_ FTM_RESP_DEL_STAT_PARAMS_PTR; 
 
 #endif

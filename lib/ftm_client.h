@@ -251,4 +251,36 @@ FTM_RET	FTM_CLIENT_getAlarmNameList
 	FTM_UINT32_PTR	pCount
 );
 
+FTM_RET	FTM_CLIENT_getStatInfo
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32_PTR	pulCount,
+	FTM_UINT32_PTR	pulFirstTime,
+	FTM_UINT32_PTR	pulLastTime
+);
+
+FTM_RET	FTM_CLIENT_getStatCount
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32_PTR	pulCount
+);
+
+FTM_RET	FTM_CLIENT_delStat
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulCount,
+	FTM_UINT32_PTR	pulRemainCount,
+	FTM_UINT32_PTR	pulFirstTime,
+	FTM_UINT32_PTR	pulLastTime
+);
+
+FTM_RET	FTM_CLIENT_getStatList
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulCount,
+	FTM_STATISTICS_PTR		pStatList,
+	FTM_UINT32_PTR	pulCount
+);
 #endif

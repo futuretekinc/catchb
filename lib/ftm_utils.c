@@ -689,18 +689,28 @@ FTM_RET	FTM_getNetStatistics
 {
 	ASSERT(pStatistics != NULL);
 
-	FTM_CHAR	pBuffer[128];
     FILE *pFP;
 	FTM_UINT32	ulRxBytes = 0;
 	FTM_UINT32	ulTxBytes = 0;
+	FTM_CHAR	pBuffer[256];
 
-	pFP = popen("cat /proc/net/dev | grep eth0 | awk '{print $2 \" \" $10}'", "r");
-    if(pFP != NULL) 
+	pFP = popen("cat /proc/net/dev | awk '{ if ($1 ~ /:/) print $1, $2, $10}' | sed 's/://'", "r");
+	while(fgets(pBuffer, sizeof(pBuffer) - 1, pFP) != NULL)
 	{
-		sscanf(pBuffer, "%d %d", &ulRxBytes, &ulTxBytes);
-    	pclose(pFP);
-    }
+		if (strncmp(pBuffer, "lo", 2) != 0)
+		{
+			FTM_CHAR	pName[64];
+			FTM_UINT32	ulRx = 0;
+			FTM_UINT32	ulTx = 0;
+			sscanf(pBuffer, "%s %d %d", pName, &ulRx, &ulTx);
 
+			ulRxBytes += ulRx;
+			ulTxBytes += ulTx;
+		}
+	}
+	pclose(pFP);
+
+	INFO("RxBytes : %d, TxBytes : %d", ulRxBytes, ulTxBytes);
 	pStatistics->ulRxBytes = ulRxBytes;
 	pStatistics->ulTxBytes = ulTxBytes;
 

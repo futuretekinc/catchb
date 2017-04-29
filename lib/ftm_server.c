@@ -64,6 +64,11 @@ static FTM_SERVER_CMD_SET	pCmdSet[] =
 	MK_CMD_SET(FTM_CMD_SET_ALARM,				FTM_SERVER_setAlarm),
 	MK_CMD_SET(FTM_CMD_GET_ALARM_NAME_LIST,		FTM_SERVER_getAlarmNameList),
 
+	MK_CMD_SET(FTM_CMD_GET_STAT_COUNT,			FTM_SERVER_getStatCount),
+	MK_CMD_SET(FTM_CMD_GET_STAT_INFO,			FTM_SERVER_getStatInfo),
+	MK_CMD_SET(FTM_CMD_GET_STAT_LIST,			FTM_SERVER_getStatList),
+	MK_CMD_SET(FTM_CMD_DEL_STAT,				FTM_SERVER_delStat),
+	
 	MK_CMD_SET(FTM_CMD_UNKNOWN, 				NULL)
 };
 
@@ -1231,6 +1236,138 @@ FTM_RET	FTM_SERVER_getAlarmNameList
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
 	pResp->xCommon.ulLen= sizeof(FTM_RESP_GET_ALARM_NAME_LIST_PARAMS) + sizeof(FTM_NAME) * pResp->ulCount;;
+
+	return	xRet;
+}
+
+FTM_RET	FTM_SERVER_getStatList
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_GET_STAT_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_GET_STAT_LIST_PARAMS_PTR	pResp
+)
+{
+	FTM_RET			xRet;
+	FTM_CATCHB_PTR	pCatchB;
+	FTM_UINT32		ulMaxCount;
+	FTM_UINT32		ulCount = 0;
+
+	pCatchB = pServer->pCatchB;
+
+	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_GET_STAT_LIST_PARAMS)) / sizeof(FTM_STATISTICS);
+	if (ulMaxCount > pReq->ulCount)
+	{
+		ulMaxCount = pReq->ulCount;
+	}
+
+	xRet = FTM_CATCHB_getStatisticsList(pCatchB, pReq->ulIndex, ulMaxCount ,pResp->pStatList, &ulCount);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log list!");
+	}
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet = xRet;
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_STAT_LIST_PARAMS) + sizeof(FTM_STATISTICS) * ulCount;	
+	pResp->ulCount = ulCount;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_SERVER_delStat
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_DEL_STAT_PARAMS_PTR	pReq,
+	FTM_RESP_DEL_STAT_PARAMS_PTR	pResp
+)
+{
+	FTM_RET			xRet;
+	FTM_CATCHB_PTR	pCatchB;
+	FTM_UINT32		ulCount = 0;
+	FTM_UINT32		ulFirstTime= 0;
+	FTM_UINT32		ulLastTime = 0;
+
+	pCatchB = pServer->pCatchB;
+
+
+	xRet = FTM_CATCHB_delStatistics(pCatchB, pReq->ulIndex, pReq->ulCount);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to delete log list[%u:%u]!", pReq->ulIndex, pReq->ulCount);
+	}
+	else
+	{
+		xRet = FTM_CATCHB_getStatisticsInfo(pCatchB, &ulCount, &ulFirstTime, &ulLastTime);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to get log info!");
+		}
+	}
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet = xRet;
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_DEL_STAT_PARAMS);
+	pResp->ulCount 		= ulCount;
+	pResp->ulFirstTime	= ulFirstTime;
+	pResp->ulLastTime	= ulLastTime;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_SERVER_getStatCount
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_GET_STAT_COUNT_PARAMS_PTR	pReq,
+	FTM_RESP_GET_STAT_COUNT_PARAMS_PTR	pResp
+)
+{
+	FTM_RET			xRet;
+	FTM_CATCHB_PTR	pCatchB;
+	FTM_UINT32		ulCount = 0;
+
+	pCatchB = pServer->pCatchB;
+
+	xRet = FTM_CATCHB_getStatisticsCount(pCatchB, &ulCount);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log count!");
+	}
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet = xRet;
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_STAT_COUNT_PARAMS);
+	pResp->ulCount = ulCount;
+
+	return	xRet;
+}
+
+FTM_RET	FTM_SERVER_getStatInfo
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_GET_STAT_INFO_PARAMS_PTR	pReq,
+	FTM_RESP_GET_STAT_INFO_PARAMS_PTR	pResp
+)
+{
+	FTM_RET			xRet;
+	FTM_CATCHB_PTR	pCatchB;
+	FTM_UINT32		ulCount = 0;
+	FTM_UINT32		ulFirstTime= 0;
+	FTM_UINT32		ulLastTime = 0;
+
+	pCatchB = pServer->pCatchB;
+
+	xRet = FTM_CATCHB_getStatisticsInfo(pCatchB, &ulCount, &ulFirstTime, &ulLastTime);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log info!");
+	}
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet = xRet;
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_STAT_INFO_PARAMS);
+	pResp->ulCount = ulCount;
+	pResp->ulFirstTime= ulFirstTime;
+	pResp->ulLastTime= ulLastTime;
 
 	return	xRet;
 }

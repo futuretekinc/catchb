@@ -1346,3 +1346,185 @@ FTM_RET FTM_CLIENT_getAlarmNameList
 	return	xRet;
 }
 
+FTM_RET	FTM_CLIENT_getStatInfo
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32_PTR	pulCount,
+	FTM_UINT32_PTR	pulFirstTime,
+	FTM_UINT32_PTR	pulLastTime
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_GET_STAT_INFO_PARAMS	xReq;
+	FTM_RESP_GET_STAT_INFO_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_GET_STAT_INFO;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+	if (xRet == FTM_RET_OK)
+	{
+		*pulCount = xResp.ulCount;	
+		*pulFirstTime = xResp.ulFirstTime;	
+		*pulLastTime = xResp.ulLastTime;	
+	}
+
+	return	xRet;
+}
+FTM_RET	FTM_CLIENT_getStatCount
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32_PTR	pulCount
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_GET_STAT_COUNT_PARAMS	xReq;
+	FTM_RESP_GET_STAT_COUNT_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_GET_STAT_COUNT;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+	if (xRet == FTM_RET_OK)
+	{
+		*pulCount = xResp.ulCount;	
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CLIENT_delStat
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulCount,
+	FTM_UINT32_PTR	pulRemainCount,
+	FTM_UINT32_PTR	pulFirstTime,
+	FTM_UINT32_PTR	pulLastTime
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_DEL_STAT_PARAMS	xReq;
+	FTM_RESP_DEL_STAT_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_DEL_STAT;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+	xReq.ulIndex		=	ulIndex;
+	xReq.ulCount 		=   ulCount;
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+	if (xRet == FTM_RET_OK)
+	{
+		*pulRemainCount = xResp.ulCount;
+		*pulFirstTime = xResp.ulFirstTime;
+		*pulLastTime = xResp.ulLastTime;
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CLIENT_getStatList
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulMaxCount,
+	FTM_STATISTICS_PTR		pStatList,
+	FTM_UINT32_PTR	pulCount
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_GET_STAT_LIST_PARAMS	xReq;
+	FTM_RESP_GET_STAT_LIST_PARAMS_PTR	pResp;
+	FTM_UINT32	ulRespLen = 0;
+	FTM_UINT32	ulAllowedNumber = 0;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	if ((pStatList == NULL) || (pulCount == NULL))
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+	
+	ulAllowedNumber = (FTM_PARAM_MAX_LEN - sizeof(FTM_RESP_GET_STAT_LIST_PARAMS)) / sizeof(FTM_STATISTICS);
+	
+	if(ulAllowedNumber >= ulMaxCount)
+	{
+		ulRespLen = sizeof(FTM_RESP_GET_STAT_LIST_PARAMS) + sizeof(FTM_STATISTICS) * ulMaxCount;
+		pResp = (FTM_RESP_GET_STAT_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
+		if (pResp == NULL)
+		{
+			return	FTM_RET_NOT_ENOUGH_MEMORY;	
+		}
+
+		memset(&xReq, 0, sizeof(xReq));
+
+		xReq.xCommon.xCmd	=	FTM_CMD_GET_STAT_LIST;
+		xReq.xCommon.ulLen	=	sizeof(xReq);
+		xReq.ulIndex		=	ulIndex;
+		xReq.ulCount 		=   ulMaxCount;
+
+		xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)pResp, ulRespLen);
+		if (xRet == FTM_RET_OK)
+		{
+			*pulCount = pResp->ulCount;
+			memcpy(pStatList, pResp->pStatList, sizeof(FTM_STATISTICS) * pResp->ulCount);
+		}
+
+		if(pResp != NULL)
+		{
+			FTM_MEM_free(pResp);	
+		}
+	}
+	else
+	{
+		FTM_UINT32	ulTotalCount = 0;
+
+		while(ulMaxCount > 0)
+		{
+			FTM_UINT32	ulReqCount;
+			FTM_UINT32	ulRespCount = 0;
+
+			ulReqCount = (ulAllowedNumber > ulMaxCount)?ulMaxCount:ulAllowedNumber;
+
+			xRet = FTM_CLIENT_getStatList(pClient, ulIndex, ulReqCount, &pStatList[ulTotalCount], &ulRespCount);
+			if (xRet != FTM_RET_OK)
+			{
+				break;	
+			}
+
+			ulTotalCount += ulRespCount;
+			ulMaxCount -= ulRespCount;
+		}
+
+		if (xRet == FTM_RET_OK)
+		{
+			*pulCount = ulTotalCount;	
+		}
+	}
+
+	return	xRet;
+}

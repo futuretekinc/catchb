@@ -126,4 +126,22 @@ FTM_RET	FTM_CGI_getSysInfo
 	qentry_t _PTR_ pReq
 );
 
+FTM_RET	FTM_CGI_getStatInfo
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_delStat
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_getStatList
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
 #endif

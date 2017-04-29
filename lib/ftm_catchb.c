@@ -861,6 +861,19 @@ FTM_RET	FTM_CATCHB_initProcess
 		}	
 	}
 
+	xRet = FTM_DB_isStatisticsTableExist(pCatchB->pDB, &bExist);
+	if (bExist)
+	{
+	}
+	else
+	{
+		xRet = FTM_DB_createStatisticsTable(pCatchB->pDB);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to create statistics table!");	
+		}	
+	}
+
 	return	xRet;
 }
 
@@ -871,6 +884,7 @@ FTM_VOID_PTR	FTM_CATCHB_process
 {
 	ASSERT(pData != NULL);
 	FTM_RET	xRet;
+	FTM_TIMER	xTimer;
 	FTM_CATCHB_PTR	pCatchB = (FTM_CATCHB_PTR)pData;
 
 	INFO("%s started.", pCatchB->pName);
@@ -922,6 +936,8 @@ FTM_VOID_PTR	FTM_CATCHB_process
 	{
 		ERROR(xRet, "Failed to add event!");
 	}
+
+	FTM_TIMER_initS(&xTimer, 60);
 
 	pCatchB->bStop = FTM_FALSE;
 	while(!pCatchB->bStop)
@@ -1015,6 +1031,19 @@ FTM_VOID_PTR	FTM_CATCHB_process
 
 			FTM_MEM_free(pRcvdMsg);
 		}
+		
+		if (FTM_TIMER_isExpired(&xTimer))
+		{
+			FTM_STATISTICS	xStatistics;
+
+			FTM_getStatistics(&xStatistics);
+
+			INFO("%16s : %s %5.2f %u KB %u KB %u %u", "Statistics", FTM_TIME_printf(&xStatistics.xTime, "%Y/%m/%d %H:%M:%S"), 
+				xStatistics.fCPU, xStatistics.xMemory.ulTotal, xStatistics.xMemory.ulFree,
+				xStatistics.xNet.ulRxBytes, xStatistics.xNet.ulTxBytes);
+			FTM_CATCHB_addStatistics(pCatchB, &xStatistics);
+			FTM_TIMER_addS(&xTimer, 60);
+		}	
 	}
 
 	FTM_SERVER_stop(pCatchB->pServer);
@@ -2814,4 +2843,72 @@ FTM_RET	FTM_CATCHB_removeExpiredLog
 
 
 	return	FTM_DB_removeExpiredLog(pCatchB->pDB, ulRetentionPeriod);
+}
+
+FTM_RET	FTM_CATCHB_addStatistics
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_STATISTICS_PTR	pStatistics
+)
+{
+	return	FTM_DB_addStatistics(pCatchB->pDB, pStatistics);
+}
+
+FTM_RET	FTM_CATCHB_delStatistics
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulCount
+)
+{
+	return	FTM_DB_deleteStatisticsFrom(pCatchB->pDB, ulIndex, ulCount);
+}
+
+FTM_RET	FTM_CATCHB_getStatisticsCount
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32_PTR	pulCount
+)
+{
+	return	FTM_DB_getStatisticsCount(pCatchB->pDB, pulCount);
+}
+
+FTM_RET	FTM_CATCHB_getStatisticsInfo
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32_PTR	pulCount,
+	FTM_UINT32_PTR	pulFirstTime,
+	FTM_UINT32_PTR	pulLastTime
+)
+{
+	return	FTM_DB_getStatisticsInfo(pCatchB->pDB, pulCount, pulFirstTime, pulLastTime);
+}
+
+FTM_RET	FTM_CATCHB_getStatisticsList
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulMaxCount,
+	FTM_STATISTICS_PTR		pStatisticsList,
+	FTM_UINT32_PTR	pulCount
+)
+{
+	return	FTM_DB_getStatisticsListFrom(pCatchB->pDB, ulIndex, ulMaxCount, pStatisticsList, pulCount);
+}
+
+FTM_RET	FTM_CATCHB_removeExpiredStatistics
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulRetentionPeriod
+)
+{
+	ASSERT(pCatchB != NULL);
+
+	if (pCatchB->pDB == NULL)
+	{
+		return	FTM_RET_OK;
+	}
+
+
+	return	FTM_DB_removeExpiredStatistics(pCatchB->pDB, ulRetentionPeriod);
 }

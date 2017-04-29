@@ -67,6 +67,15 @@ FTM_CGI_COMMAND	pSysCmds[] =
 	{	NULL,		NULL					}
 };
 
+static 
+FTM_CGI_COMMAND	pStatCmds[] =
+{
+	{	"info", FTM_CGI_getStatInfo		},
+	{	"get",	FTM_CGI_getStatList		},
+	{	"del",	FTM_CGI_delStat			},
+	{	NULL,		NULL					}
+};
+
 FTM_RET	FTM_CGI_finish
 (
 	qentry_t _PTR_ pReq,
@@ -74,10 +83,13 @@ FTM_RET	FTM_CGI_finish
 	FTM_RET xRet
 )
 {
+	INFO("Called");
 	cJSON_AddStringToObject(pRoot, "result", (xRet == FTM_RET_OK)?"success":"failed");	
 
-	qcgires_setcontenttype(pReq, "text/xml");
+	INFO("Called");
+	qcgires_setcontenttype(pReq, "text/json");
 	printf("%s", cJSON_Print(pRoot));
+	INFO("Called");
 	INFO("%s",  cJSON_Print(pRoot));
 	if (pRoot != NULL)
 	{
@@ -130,6 +142,15 @@ FTM_RET	FTM_CGI_sys
 )
 {
 	return	FTM_CGI_service(pClient, pReq, pSysCmds);
+}
+
+FTM_RET	FTM_CGI_stat
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+)
+{
+	return	FTM_CGI_service(pClient, pReq, pStatCmds);
 }
 
 FTM_RET	FTM_CGI_service

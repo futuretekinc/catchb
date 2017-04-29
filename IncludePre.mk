@@ -28,13 +28,13 @@ ifeq ($(MODEL), i686)
 CC=gcc
 
 CFLAGS:= $(CFLAGS) \
-		-I/usr/local/include \
 		-I/usr/local/ssl/include \
+		-I/usr/local/include \
 		-I/usr/local/include/cjson 
 
 LDFLAGS:= $(LDFLAGS)\
-		-L/usr/local/lib\
-		-L/usr/local/ssl/lib
+		-L/usr/local/ssl/lib\
+		-L/usr/local/lib
 endif
 
 ifeq ($(MODEL), ftm-50)

@@ -2259,7 +2259,8 @@ FTM_RET	FTM_DB_addStatistics
 		pStatistics->xMemory.ulFree,
 		pStatistics->xNet.ulRxBytes,
 		pStatistics->xNet.ulTxBytes);
-	
+
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
@@ -2416,8 +2417,8 @@ FTM_RET	FTM_DB_getStatisticsInfo
 	ASSERT(pCount != NULL);
 
 	FTM_RET	xRet = FTM_RET_OK;
-    FTM_GET_LOG_LIST_PARAMS	xParams;
-	FTM_LOG			xStatistics;
+    FTM_GET_STATISTICS_LIST_PARAMS	xParams;
+	FTM_STATISTICS	xStatistics;
 	FTM_CHAR		pQuery[FTM_DB_QUERY_LEN+1];
 	FTM_UINT32		ulQueryLen = 0;
 	FTM_CHAR_PTR	pErrorMsg;
@@ -2435,7 +2436,7 @@ FTM_RET	FTM_DB_getStatisticsInfo
 
 	memset(pQuery, 0, sizeof(pQuery));
 
-	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME ASC LIMIT 1", pDB->pStatisticsTableName);
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME ASC LIMIT 1;", pDB->pStatisticsTableName);
 	INFO("SQL : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getStatisticsListCB, &xParams, &pErrorMsg) < 0)
 	{
@@ -2447,7 +2448,7 @@ FTM_RET	FTM_DB_getStatisticsInfo
 	{
 		if (xParams.ulCount)
 		{
-			*pulStartTime = xParams.pElements[0].ulTime;	
+			FTM_TIME_toSecs(&xParams.pElements[0].xTime, pulStartTime);
 		}
 	}
 
@@ -2455,7 +2456,7 @@ FTM_RET	FTM_DB_getStatisticsInfo
 	xParams.ulCount = 0;
 	xParams.pElements 	= &xStatistics;
 
-	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME DESC LIMIT 1", pDB->pStatisticsTableName);
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME DESC LIMIT 1;", pDB->pStatisticsTableName);
 	INFO("SQL : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getStatisticsListCB, &xParams, &pErrorMsg) < 0)
 	{
@@ -2467,7 +2468,7 @@ FTM_RET	FTM_DB_getStatisticsInfo
 	{
 		if (xParams.ulCount)
 		{
-			*pulEndTime = xParams.pElements[0].ulTime;	
+			FTM_TIME_toSecs(&xParams.pElements[0].xTime, pulEndTime);
 		}
 	}
 

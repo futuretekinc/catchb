@@ -320,4 +320,39 @@ FTM_RET	FTM_CATCHB_getLogList
 	FTM_UINT32_PTR	pulCount
 );
 
+FTM_RET	FTM_CATCHB_addStatistics
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_STATISTICS_PTR	pStatisticsistics
+);
+
+FTM_RET	FTM_CATCHB_delStatistics
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulCount
+);
+
+FTM_RET	FTM_CATCHB_getStatisticsInfo
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32_PTR	pulCount,
+	FTM_UINT32_PTR	pulFirstTime,
+	FTM_UINT32_PTR	pulLastTime
+);
+
+FTM_RET	FTM_CATCHB_getStatisticsCount
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32_PTR	pulCount
+);
+
+FTM_RET	FTM_CATCHB_getStatisticsList
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulMaxCount,
+	FTM_STATISTICS_PTR		pStatisticsList,
+	FTM_UINT32_PTR	pulCount
+);
 #endif
