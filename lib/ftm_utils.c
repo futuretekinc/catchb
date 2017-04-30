@@ -24,34 +24,23 @@ FTM_RET	FTM_getLocalIP
 	ASSERT(pBuff != NULL);
 
 	FTM_RET	xRet = FTM_RET_OK;
-    FILE *pFP;
-	
-	pFP = popen("ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'", "r");
-    if(pFP != NULL) 
+	FTM_NET_INFO	xNetInfo;
+
+	xRet = FTM_getNetInfo(&xNetInfo);
+	if (xRet != FTM_RET_OK)
 	{
-        if (fgets(pBuff, ulBuffSize, pFP) == NULL)
-		{
-			xRet = FTM_RET_NET_INTERFACE_ERROR;
-		}
-    	pclose(pFP);
-    }
-	else
-	{
-		xRet = FTM_RET_NET_INTERFACE_ERROR;	
+		ERROR(xRet, "Failed to get net info!");
+		return	xRet;
 	}
 
-	if (xRet == FTM_RET_OK)
+	if (xNetInfo.ulIFCount == 0)
 	{
-		FTM_INT32	i;
-
-		for(i = 0 ; i < strlen(pBuff) ; i++)
-		{
-			if (!isprint(pBuff[i]))
-			{
-				pBuff[i] = '\0';	
-			}
-		}
+		xRet = FTM_RET_NET_INTERFACE_ERROR;
+		ERROR(xRet, "Failed to get net interface!");
+		return	xRet;
 	}
+
+	strncpy(pBuff, xNetInfo.pIF[0].pIP, ulBuffSize);
 
 	return	xRet;
 }

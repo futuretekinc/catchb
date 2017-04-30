@@ -333,6 +333,13 @@ FTM_RET	FTM_CATCHB_delStatistics
 	FTM_UINT32		ulCount
 );
 
+FTM_RET	FTM_CATCHB_delStatistics2
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulFirstTime,
+	FTM_UINT32		ulLastTime
+);
+
 FTM_RET	FTM_CATCHB_getStatisticsInfo
 (
 	FTM_CATCHB_PTR	pCatchB,

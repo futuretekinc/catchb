@@ -50,7 +50,7 @@ FTM_RET	FTM_CGI_sys
 	qentry_t *pReq
 );
 
-FTM_RET	FTM_CGI_stat
+FTM_RET	FTM_CGI_status
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t *pReq
@@ -160,4 +160,17 @@ FTM_RET	FTM_CGI_getSwitchModel
 	FTM_BOOL	bAllowEmpty
 );
 
+FTM_RET FTM_CGI_getBeginTime
+(
+	qentry_t *pReq, 
+	FTM_UINT32_PTR	pulTime,
+	FTM_BOOL	bAllowEmpty
+);
+
+FTM_RET FTM_CGI_getEndTime
+(
+	qentry_t *pReq, 
+	FTM_UINT32_PTR	pulTime,
+	FTM_BOOL	bAllowEmpty
+);
 #endif

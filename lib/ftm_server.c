@@ -68,6 +68,7 @@ static FTM_SERVER_CMD_SET	pCmdSet[] =
 	MK_CMD_SET(FTM_CMD_GET_STAT_INFO,			FTM_SERVER_getStatInfo),
 	MK_CMD_SET(FTM_CMD_GET_STAT_LIST,			FTM_SERVER_getStatList),
 	MK_CMD_SET(FTM_CMD_DEL_STAT,				FTM_SERVER_delStat),
+	MK_CMD_SET(FTM_CMD_DEL_STAT2,				FTM_SERVER_delStat2),
 	
 	MK_CMD_SET(FTM_CMD_UNKNOWN, 				NULL)
 };
@@ -1307,6 +1308,46 @@ FTM_RET	FTM_SERVER_delStat
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
 	pResp->xCommon.ulLen= sizeof(FTM_RESP_DEL_STAT_PARAMS);
+	pResp->ulCount 		= ulCount;
+	pResp->ulFirstTime	= ulFirstTime;
+	pResp->ulLastTime	= ulLastTime;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_SERVER_delStat2
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_DEL_STAT2_PARAMS_PTR	pReq,
+	FTM_RESP_DEL_STAT2_PARAMS_PTR	pResp
+)
+{
+	FTM_RET			xRet;
+	FTM_CATCHB_PTR	pCatchB;
+	FTM_UINT32		ulCount = 0;
+	FTM_UINT32		ulFirstTime= 0;
+	FTM_UINT32		ulLastTime = 0;
+
+	pCatchB = pServer->pCatchB;
+
+
+	xRet = FTM_CATCHB_delStatistics2(pCatchB, pReq->ulBeginTime, pReq->ulEndTime);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to delete log list[%s ~ %s]!", FTM_TIME_printf2(pReq->ulBeginTime, NULL), FTM_TIME_printf2(pReq->ulEndTime, NULL));
+	}
+	else
+	{
+		xRet = FTM_CATCHB_getStatisticsInfo(pCatchB, &ulCount, &ulFirstTime, &ulLastTime);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to get log info!");
+		}
+	}
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet = xRet;
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_DEL_STAT2_PARAMS);
 	pResp->ulCount 		= ulCount;
 	pResp->ulFirstTime	= ulFirstTime;
 	pResp->ulLastTime	= ulLastTime;

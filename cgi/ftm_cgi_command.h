@@ -120,25 +120,31 @@ FTM_RET	FTM_CGI_getAlarmList
 	qentry_t _PTR_ pReq
 );
 
+FTM_RET	FTM_CGI_getAlarmInfo
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
 FTM_RET	FTM_CGI_getSysInfo
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getStatInfo
+FTM_RET	FTM_CGI_getStatusInfo
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_delStat
+FTM_RET	FTM_CGI_delStatus
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getStatList
+FTM_RET	FTM_CGI_getStatusList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq

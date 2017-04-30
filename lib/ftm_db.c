@@ -2554,7 +2554,7 @@ FTM_RET	FTM_DB_deleteStatistics
 
 	memset(pQuery, 0, sizeof(pQuery));
 
-	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s", pDB->pStatisticsTableName);
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _TIME IN ( SELECT _TIME FROM %s ", pDB->pStatisticsTableName, pDB->pStatisticsTableName);
 
 	if (ulStartTime != 0)
 	{
@@ -2592,6 +2592,8 @@ FTM_RET	FTM_DB_deleteStatistics
 	{
 		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " LIMIT %u", ulCount);
 	}
+
+	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ");");
 
 	INFO("SQL : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, NULL, &pErrorMsg) < 0)

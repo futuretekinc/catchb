@@ -390,3 +390,38 @@ finished:
 
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
+
+FTM_RET	FTM_CGI_getAlarmInfo
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReq != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_UINT32	ulCount = 0;
+	cJSON _PTR_	pRoot;
+
+	pRoot = cJSON_CreateObject();
+
+	xRet = FTM_CLIENT_getAlarmCount(pClient, &ulCount);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get alarm");
+		goto finished;	
+	}
+
+	cJSON _PTR_ pAlarm = cJSON_CreateObject();
+
+	cJSON_AddNumberToObject(pAlarm, "count", ulCount);
+
+	cJSON_AddItemToObject(pRoot, "alarm_info", pAlarm);
+
+finished:
+
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}
+
+

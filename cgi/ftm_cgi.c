@@ -57,6 +57,7 @@ FTM_CGI_COMMAND	pAlarmCmds[] =
 	{	"get",	FTM_CGI_getAlarm			},
 	{	"set",	FTM_CGI_setAlarm			},
 	{	"list",	FTM_CGI_getAlarmList		},
+	{	"info",	FTM_CGI_getAlarmInfo		},
 	{	NULL,		NULL					}
 };
 
@@ -68,11 +69,11 @@ FTM_CGI_COMMAND	pSysCmds[] =
 };
 
 static 
-FTM_CGI_COMMAND	pStatCmds[] =
+FTM_CGI_COMMAND	pStatusCmds[] =
 {
-	{	"info", FTM_CGI_getStatInfo		},
-	{	"get",	FTM_CGI_getStatList		},
-	{	"del",	FTM_CGI_delStat			},
+	{	"info", FTM_CGI_getStatusInfo		},
+	{	"get",	FTM_CGI_getStatusList		},
+	{	"del",	FTM_CGI_delStatus			},
 	{	NULL,		NULL					}
 };
 
@@ -144,13 +145,13 @@ FTM_RET	FTM_CGI_sys
 	return	FTM_CGI_service(pClient, pReq, pSysCmds);
 }
 
-FTM_RET	FTM_CGI_stat
+FTM_RET	FTM_CGI_status
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t *pReq
 )
 {
-	return	FTM_CGI_service(pClient, pReq, pStatCmds);
+	return	FTM_CGI_service(pClient, pReq, pStatusCmds);
 }
 
 FTM_RET	FTM_CGI_service
@@ -657,6 +658,7 @@ FTM_RET FTM_CGI_getBeginTime
 	ASSERT(pReq != NULL);
 	ASSERT(pulTime != NULL);
 
+		FTM_RET		xRet;
 	FTM_CHAR_PTR	pValue;
 
 	pValue = pReq->getstr(pReq, "begin", false);
@@ -664,28 +666,23 @@ FTM_RET FTM_CGI_getBeginTime
 	{
 		if(!bAllowEmpty)
 		{
-			return	FTM_RET_OBJECT_NOT_FOUND;	
+			xRet = FTM_RET_OBJECT_NOT_FOUND;	
+			ERROR(xRet, "Failed to get begin time!");
+			return	xRet;	
 		}
 	}
 	else
 	{
-		if (strlen(pValue) == 14)
-		{
-			FTM_RET		xRet;
-			FTM_TIME	xTime;
+		FTM_TIME	xTime;
 
-			xRet = FTM_TIME_setString(&xTime, pValue);
-			if (xRet != FTM_RET_OK)
-			{
-				return	xRet;	
-			}
-			
-			FTM_TIME_toSecs(&xTime, pulTime);	
-		}
-		else
+		xRet = FTM_TIME_setString(&xTime, pValue);
+		if (xRet != FTM_RET_OK)
 		{
-			*pulTime = strtoul(pValue, 0, 10);
+			ERROR(xRet, "Failed to set time!");
+			return	xRet;	
 		}
+			
+		FTM_TIME_toSecs(&xTime, pulTime);	
 	}
 	
 	return	FTM_RET_OK;
@@ -701,6 +698,7 @@ FTM_RET FTM_CGI_getEndTime
 	ASSERT(pReq != NULL);
 	ASSERT(pulTime != NULL);
 
+		FTM_RET		xRet;
 	FTM_CHAR_PTR	pValue;
 
 	pValue = pReq->getstr(pReq, "end", false);
@@ -708,28 +706,23 @@ FTM_RET FTM_CGI_getEndTime
 	{
 		if(!bAllowEmpty)
 		{
-			return	FTM_RET_OBJECT_NOT_FOUND;	
+			xRet = FTM_RET_OBJECT_NOT_FOUND;	
+			ERROR(xRet, "Failed to get end time!");
+			return	xRet;	
 		}
 	}
 	else
 	{
-		if (strlen(pValue) == 14)
-		{
-			FTM_RET		xRet;
-			FTM_TIME	xTime;
+		FTM_TIME	xTime;
 
-			xRet = FTM_TIME_setString(&xTime, pValue);
-			if (xRet != FTM_RET_OK)
-			{
-				return	xRet;	
-			}
+		xRet = FTM_TIME_setString(&xTime, pValue);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to set time!");
+			return	xRet;	
+		}
 			
 			FTM_TIME_toSecs(&xTime, pulTime);	
-		}
-		else
-		{
-			*pulTime = strtoul(pValue, 0, 10);
-		}
 	}
 	
 	return	FTM_RET_OK;

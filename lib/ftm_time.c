@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <string.h>
+#include <stdlib.h>
 #include "ftm_types.h"
 #include "ftm_time.h"
 #include "ftm_trace.h"
@@ -69,39 +70,61 @@ FTM_RET	FTM_TIME_setString
 	FTM_CHAR	pFormattedString[64];
 	FTM_UINT32	ulLen = 0;
 
-	if (strlen(pString) != 14)
+	if (strlen(pString) == 10)
 	{
-		return	FTM_RET_INVALID_FORMAT;	
-	}
-
-	for(i = 0 ; i < 14 ; i++)
-	{
-		if (isdigit(pString[i]) == 0)
+		if ((pString[4] != '/') || (pString[7] != '/'))
 		{
-			return	FTM_RET_INVALID_FORMAT;	
+			return	FTM_RET_INVALID_FORMAT;
 		}
+
+		strptime(pString, "%Y/%m/%d", &xTM);
 	}
+	else if (strlen(pString) == 14)
+	{
+		for(i = 0 ; i < 14 ; i++)
+		{
+			if (isdigit(pString[i]) == 0)
+			{
+				return	FTM_RET_INVALID_FORMAT;	
+			}
+		}
 
-	memcpy(&pFormattedString[ulLen], &pString[0], 4);
-	ulLen += 4;
-	pFormattedString[ulLen++] = '-';
-	memcpy(&pFormattedString[ulLen], &pString[4], 2);
-	ulLen += 2;
-	pFormattedString[ulLen++] = '-';
-	memcpy(&pFormattedString[ulLen], &pString[6], 2);
-	ulLen += 2;
-	pFormattedString[ulLen++] = ' ';
-	memcpy(&pFormattedString[ulLen], &pString[8], 2);
-	ulLen += 2;
-	pFormattedString[ulLen++] = ':';
-	memcpy(&pFormattedString[ulLen], &pString[10], 2);
-	ulLen += 2;
-	pFormattedString[ulLen++] = ':';
-	memcpy(&pFormattedString[ulLen], &pString[12], 2);
-	ulLen += 2;
-	pFormattedString[ulLen] = '\0';
+		memcpy(&pFormattedString[ulLen], &pString[0], 4);
+		ulLen += 4;
+		pFormattedString[ulLen++] = '-';
+		memcpy(&pFormattedString[ulLen], &pString[4], 2);
+		ulLen += 2;
+		pFormattedString[ulLen++] = '-';
+		memcpy(&pFormattedString[ulLen], &pString[6], 2);
+		ulLen += 2;
+		pFormattedString[ulLen++] = ' ';
+		memcpy(&pFormattedString[ulLen], &pString[8], 2);
+		ulLen += 2;
+		pFormattedString[ulLen++] = ':';
+		memcpy(&pFormattedString[ulLen], &pString[10], 2);
+		ulLen += 2;
+		pFormattedString[ulLen++] = ':';
+		memcpy(&pFormattedString[ulLen], &pString[12], 2);
+		ulLen += 2;
+		pFormattedString[ulLen] = '\0';
 
-	strptime(pFormattedString, "%Y-%m-%d %H:%M:%S", &xTM);
+		strptime(pFormattedString, "%Y-%m-%d %H:%M:%S", &xTM);
+	}
+	else
+	{
+		time_t	xTime;
+
+		for(FTM_UINT32 i = 0 ; i < strlen(pString) ; i++)
+		{
+			if (!isdigit(pString[i]))
+			{
+				return	FTM_RET_INVALID_FORMAT;	
+			}
+		}
+	
+		xTime = (time_t)strtoul(pString, 0, 10);
+		localtime_r(&xTime, &xTM);
+	}
 
 	pTime->xTimeval.tv_sec = mktime(&xTM);
 	pTime->xTimeval.tv_usec =0;

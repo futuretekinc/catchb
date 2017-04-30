@@ -275,6 +275,16 @@ FTM_RET	FTM_CLIENT_delStat
 	FTM_UINT32_PTR	pulLastTime
 );
 
+FTM_RET	FTM_CLIENT_delStat2
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32		ulBeginTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32_PTR	pulRemainCount,
+	FTM_UINT32_PTR	pulFirstTime,
+	FTM_UINT32_PTR	pulLastTime
+);
+
 FTM_RET	FTM_CLIENT_getStatList
 (
 	FTM_CLIENT_PTR	pClient,

@@ -46,6 +46,7 @@ typedef	enum
 	FTM_CMD_GET_STAT_COUNT,
 	FTM_CMD_GET_STAT_LIST,
 	FTM_CMD_DEL_STAT,
+	FTM_CMD_DEL_STAT2,
 
 }	FTM_CMD, _PTR_ FTM_CMD_PTR;
 
@@ -420,5 +421,20 @@ typedef	struct
 	FTM_UINT32		ulFirstTime;
 	FTM_UINT32		ulLastTime;
 }	FTM_RESP_DEL_STAT_PARAMS, _PTR_ FTM_RESP_DEL_STAT_PARAMS_PTR; 
+
+typedef	struct
+{
+	FTM_REQ_PARAMS	xCommon;
+	FTM_UINT32		ulBeginTime;
+	FTM_UINT32		ulEndTime;
+}	FTM_REQ_DEL_STAT2_PARAMS, _PTR_ FTM_REQ_DEL_STAT2_PARAMS_PTR;
+
+typedef	struct
+{
+	FTM_RESP_PARAMS	xCommon;
+	FTM_UINT32		ulCount;
+	FTM_UINT32		ulFirstTime;
+	FTM_UINT32		ulLastTime;
+}	FTM_RESP_DEL_STAT2_PARAMS, _PTR_ FTM_RESP_DEL_STAT2_PARAMS_PTR; 
 
 #endif

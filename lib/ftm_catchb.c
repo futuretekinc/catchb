@@ -2864,6 +2864,16 @@ FTM_RET	FTM_CATCHB_delStatistics
 	return	FTM_DB_deleteStatisticsFrom(pCatchB->pDB, ulIndex, ulCount);
 }
 
+FTM_RET	FTM_CATCHB_delStatistics2
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulFirstTime,
+	FTM_UINT32		ulLastTime
+)
+{
+	return	FTM_DB_deleteStatistics(pCatchB->pDB, ulFirstTime, ulLastTime, 0);
+}
+
 FTM_RET	FTM_CATCHB_getStatisticsCount
 (
 	FTM_CATCHB_PTR	pCatchB,

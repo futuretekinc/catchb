@@ -1444,6 +1444,43 @@ FTM_RET	FTM_CLIENT_delStat
 	return	xRet;
 }
 
+FTM_RET	FTM_CLIENT_delStat2
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_UINT32		ulBeginTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32_PTR	pulRemainCount,
+	FTM_UINT32_PTR	pulFirstTime,
+	FTM_UINT32_PTR	pulLastTime
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_DEL_STAT2_PARAMS	xReq;
+	FTM_RESP_DEL_STAT2_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_DEL_STAT2;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+	xReq.ulBeginTime	=	ulBeginTime;
+	xReq.ulEndTime		=   ulEndTime;
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+	if (xRet == FTM_RET_OK)
+	{
+		*pulRemainCount = xResp.ulCount;
+		*pulFirstTime = xResp.ulFirstTime;
+		*pulLastTime = xResp.ulLastTime;
+	}
+
+	return	xRet;
+}
+
 FTM_RET	FTM_CLIENT_getStatList
 (
 	FTM_CLIENT_PTR	pClient,
