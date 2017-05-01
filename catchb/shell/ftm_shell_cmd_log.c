@@ -17,6 +17,7 @@ FTM_RET	FTM_SHELL_CMD_showLogListFrom
 FTM_RET	FTM_SHELL_CMD_showLogList
 (
 	FTM_CATCHB_PTR	pCabchB,
+	FTM_LOG_TYPE	xType,
 	FTM_CHAR_PTR	pID,
 	FTM_CHAR_PTR	pIp,
 	FTM_CCTV_STAT	xStat,
@@ -94,7 +95,7 @@ FTM_RET	FTM_SHELL_CMD_logger
 
 				ulCount = strtoul(pArgv[3], 0, 10);
 
-				FTM_SHELL_CMD_showLogList(pCatchB, pArgv[2], NULL, 0, 0, 0, ulCount);	
+				FTM_SHELL_CMD_showLogList(pCatchB, 0, pArgv[2], NULL, 0, 0, 0, ulCount);	
 			}
 			else if (strcasecmp(pArgv[1], "ip") == 0)
 			{
@@ -102,7 +103,7 @@ FTM_RET	FTM_SHELL_CMD_logger
 
 				ulCount = strtoul(pArgv[3], 0, 10);
 
-				FTM_SHELL_CMD_showLogList(pCatchB, NULL, pArgv[2], 0, 0, 0, ulCount);	
+				FTM_SHELL_CMD_showLogList(pCatchB, 0, NULL, pArgv[2], 0, 0, 0, ulCount);	
 			}
 			else if (strcasecmp(pArgv[1], "stat") == 0)
 			{
@@ -128,7 +129,7 @@ FTM_RET	FTM_SHELL_CMD_logger
 
 				ulCount = strtoul(pArgv[3], 0, 10);
 
-				FTM_SHELL_CMD_showLogList(pCatchB, NULL, NULL, xStat, 0, 0, ulCount);	
+				FTM_SHELL_CMD_showLogList(pCatchB, 0, NULL, NULL, xStat, 0, 0, ulCount);	
 			}
 
 		}
@@ -230,7 +231,7 @@ FTM_RET	FTM_SHELL_CMD_logger
 				FTM_TIME_toSecs(&xEndTime, &ulEndTime);
 				ulCount = strtoul(pArgv[4], 0, 10);
 
-				FTM_SHELL_CMD_showLogList(pCatchB, NULL, NULL, 0, ulStartTime, ulEndTime, ulCount);
+				FTM_SHELL_CMD_showLogList(pCatchB, 0, NULL, NULL, 0, ulStartTime, ulEndTime, ulCount);
 			}
 		}
 		break;
@@ -279,6 +280,7 @@ FTM_RET	FTM_SHELL_CMD_showLogListFrom
 FTM_RET	FTM_SHELL_CMD_showLogList
 (
 	FTM_CATCHB_PTR	pCatchB,
+	FTM_LOG_TYPE	xType,
 	FTM_CHAR_PTR	pID,
 	FTM_CHAR_PTR	pIP,
 	FTM_CCTV_STAT	xStat,
@@ -298,7 +300,7 @@ FTM_RET	FTM_SHELL_CMD_showLogList
 		return	FTM_RET_NOT_ENOUGH_MEMORY;
 	}
 
-	xRet = FTM_DB_getLogList(pCatchB->pDB, pID, pIP, xStat, ulStartTime, ulEndTime, ulCount, pLogs, &ulCount);
+	xRet = FTM_DB_getLogList(pCatchB->pDB, xType, pID, pIP, xStat, ulStartTime, ulEndTime, 0,ulCount, pLogs, &ulCount);
 	if (xRet == FTM_RET_OK)
 	{
 		FTM_UINT32	i;

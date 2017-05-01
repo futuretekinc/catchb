@@ -51,6 +51,16 @@ FTM_RET	FTM_SHELL_CMD_showTraceConfig(FTM_VOID)
  		(xTraceConfig.xError.xLevel.bEnable)?"Yes":"No", 	(xTraceConfig.xError.xLevel.bDynamic)?"Yes":"No", 	xTraceConfig.xError.xLevel.ulSize,
 		xTraceConfig.xError.pFileName);
 
+	FTM_UINT32	ulCount = 0;
+	printf("\n");
+	printf("Trace Module List\n");
+	FTM_TRACE_getModuleCount(&ulCount);
+	for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
+	{
+		printf("%2d : %s\n", i+1, FTM_TRACE_getModuleName(i));
+	
+	}
+
 	return	FTM_RET_OK;
 }
 

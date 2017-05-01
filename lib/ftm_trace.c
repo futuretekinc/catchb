@@ -396,17 +396,10 @@ FTM_TRACE_CONFIG	xTraceConfig =
 	}
 };
 
-FTM_CHAR	*xModuleName[] =
+static FTM_UINT32	ulModuleCount = 0;
+static FTM_CHAR	xModuleName[32][32] =
 {
-//	"analyzer",
-	"catchb",
-	"telnet",
-	"ssh",
-	"switch",
-	"cgi",
-	"database",
-	"utils",
-	NULL
+	"",
 };
 
 FTM_RET		FTM_TRACE_CONFIG_setDefault
@@ -649,6 +642,27 @@ FTM_RET		FTM_TRACE_CONFIG_load
 		FTM_TRACE_TYPE_CONFIG_load(&pConfig->xError, pSection);	
 	}
 
+	pSection = cJSON_GetObjectItem(pRoot, "module");
+	if (pSection != NULL)
+	{
+		if (pSection->type == cJSON_Array)
+		{
+			FTM_UINT32	ulCount;
+
+			ulCount = cJSON_GetArraySize(pSection);
+			for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
+			{
+				cJSON _PTR_ pObject;
+
+				pObject = cJSON_GetArrayItem(pSection, i);
+				if ((pObject != NULL) && (ulModuleCount < 32))
+				{
+					strncpy(xModuleName[ulModuleCount++], pObject->valuestring, sizeof(xModuleName[0])-1);
+				}
+			}
+		}
+	}
+
 	return	FTM_RET_OK;
 }
 
@@ -786,7 +800,7 @@ FTM_VOID	FTM_TRACE_Out
 
 	if (pModuleName != 0)
 	{
-		for(int i = 0 ; xModuleName[i] != NULL ; i++)
+		for(int i = 0 ; i < ulModuleCount ; i++)
 		{
 			if (strcmp(pModuleName, xModuleName[i]) == 0)
 			{
@@ -795,6 +809,7 @@ FTM_VOID	FTM_TRACE_Out
 			}
 		}
 	}
+
 	if (!bEnable)
 	{
 		return;	
@@ -1108,3 +1123,25 @@ FTM_VOID	FTM_TRACE_asserted
  	free (ppStrings);
 }
 
+FTM_RET	FTM_TRACE_getModuleCount
+(
+	FTM_UINT32_PTR	pModuleCount
+)
+{
+	*pModuleCount = ulModuleCount;
+
+	return	FTM_RET_OK;
+}
+
+FTM_CHAR_PTR	FTM_TRACE_getModuleName
+(
+	FTM_UINT32	ulIndex
+)
+{
+	if (ulIndex < ulModuleCount)
+	{
+		return	xModuleName[ulIndex];
+	}
+
+	return	NULL;
+}

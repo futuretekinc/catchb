@@ -9,8 +9,9 @@ FTM_CHAR_PTR	FTM_LOG_TYPE_print
 	{
 	case	FTM_LOG_TYPE_NORMAL:	return	"Normal";
 	case	FTM_LOG_TYPE_ERROR:	return	"Error";
+	default:
+		return	"Unknown";
 	}
 
-	return	"Unknown";
 }
 

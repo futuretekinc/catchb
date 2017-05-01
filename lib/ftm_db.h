@@ -276,11 +276,13 @@ FTM_RET	FTM_DB_deleteLogFrom
 FTM_RET	FTM_DB_getLogList
 (
 	FTM_DB_PTR		pDB,
+	FTM_LOG_TYPE	xType,
 	FTM_CHAR_PTR	pID,
 	FTM_CHAR_PTR	pIP,
 	FTM_CCTV_STAT	xStat,
 	FTM_UINT32		ulStartTime,
 	FTM_UINT32		ulEndTime,
+	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulMaxCount,
 	FTM_LOG_PTR		pLogs,
 	FTM_UINT32_PTR	pCount

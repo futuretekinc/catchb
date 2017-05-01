@@ -320,6 +320,21 @@ FTM_RET	FTM_CATCHB_getLogList
 	FTM_UINT32_PTR	pulCount
 );
 
+FTM_RET	FTM_CATCHB_getLogList2
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_LOG_TYPE	xType,
+	FTM_CHAR_PTR	pCCTVID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xStat,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32		ulIndex,
+	FTM_UINT32		ulMaxCount,
+	FTM_LOG_PTR		pLogList,
+	FTM_UINT32_PTR	pulCount
+);
+
 FTM_RET	FTM_CATCHB_addStatistics
 (
 	FTM_CATCHB_PTR	pCatchB,

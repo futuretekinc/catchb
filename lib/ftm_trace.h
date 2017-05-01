@@ -95,6 +95,16 @@ FTM_VOID	FTM_TRACE_Out
 
 FTM_VOID	FTM_TRACE_asserted(FTM_VOID);
 
+FTM_RET	FTM_TRACE_getModuleCount
+(
+	FTM_UINT32_PTR	pModuleCount
+);
+
+FTM_CHAR_PTR	FTM_TRACE_getModuleName
+(
+	FTM_UINT32	ulIndex
+);
+
 #define	__MODULE__				NULL
 
 #define	OUTPUT(level, format, ...)	FTM_TRACE_Out(level, 				FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)

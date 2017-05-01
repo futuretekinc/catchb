@@ -200,6 +200,12 @@ FTM_RET	FTM_CLIENT_delLog
 FTM_RET	FTM_CLIENT_getLogList
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_LOG_TYPE	xType,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	pStat,
+	FTM_UINT32		ulBeginTime,
+	FTM_UINT32		ulEndTime,
 	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulCount,
 	FTM_LOG_PTR		pLogList,

@@ -59,13 +59,13 @@ FTM_RET	FTM_CGI_delLog
 	pRoot = cJSON_CreateObject();
 
 	xRet = FTM_CGI_getIndex(pReq, &ulIndex, FTM_TRUE);
-	xRet |= FTM_CGI_getCount(pReq, &ulCount, FTM_TRUE);
+	xRet |= FTM_CGI_getCount(pReq, &ulCount, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;
 	}
 
-	xRet = FTM_CLIENT_delLog(pClient, ulIndex, ulCount, &ulRemainCount, &ulFirstTime, &ulLastTime);
+	xRet = FTM_CLIENT_delLog(pClient,ulIndex, ulCount, &ulRemainCount, &ulFirstTime, &ulLastTime);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;
@@ -93,15 +93,29 @@ FTM_RET	FTM_CGI_getLogList
 
 	FTM_RET		xRet = FTM_RET_OK;
 	FTM_INT		i;
+	FTM_CHAR	pID[FTM_ID_LEN+1];
+	FTM_CHAR	pIP[FTM_IP_LEN+1];
+	FTM_LOG_TYPE	xLogType = FTM_LOG_TYPE_UNKNOWN;
+	FTM_CCTV_STAT	xStat = FTM_CCTV_STAT_UNREGISTERED;
+	FTM_UINT32	ulBeginTime = 0;
+	FTM_UINT32	ulEndTime = 0;
 	FTM_UINT32	ulIndex = 0;
 	FTM_UINT32	ulCount = 20;
 	FTM_LOG_PTR	pLogList = NULL;
 
 	cJSON _PTR_	pRoot;
 
+	memset(pID, 0, sizeof(pID));
+	memset(pIP, 0, sizeof(pIP));
+
 	pRoot = cJSON_CreateObject();
 
-	xRet = FTM_CGI_getIndex(pReq, &ulIndex, FTM_TRUE);
+	xRet = FTM_CGI_getLogType(pReq, &xLogType, FTM_TRUE);
+	xRet |= FTM_CGI_getID(pReq, pID, FTM_TRUE);
+	xRet |= FTM_CGI_getIPString(pReq, pIP, FTM_IP_LEN, FTM_TRUE);
+	xRet |= FTM_CGI_getBeginTime(pReq, &ulBeginTime, FTM_TRUE);
+	xRet |= FTM_CGI_getEndTime(pReq, &ulEndTime, FTM_TRUE);
+	xRet |= FTM_CGI_getIndex(pReq, &ulIndex, FTM_TRUE);
 	xRet |= FTM_CGI_getCount(pReq, &ulCount, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
@@ -114,7 +128,7 @@ FTM_RET	FTM_CGI_getLogList
 		goto finished;	
 	}
 
-	xRet = FTM_CLIENT_getLogList(pClient, ulIndex, ulCount, pLogList, &ulCount);
+	xRet = FTM_CLIENT_getLogList(pClient, xLogType, pID, pIP, xStat, ulBeginTime, ulEndTime, ulIndex, ulCount, pLogList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;

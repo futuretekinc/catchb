@@ -966,7 +966,7 @@ FTM_RET	FTM_SERVER_getLogList
 		ulMaxCount = pReq->ulCount;
 	}
 
-	xRet = FTM_CATCHB_getLogList(pCatchB, pReq->ulIndex, ulMaxCount ,pResp->pLogList, &ulCount);
+	xRet = FTM_CATCHB_getLogList2(pCatchB, pReq->xType, ((pReq->pID[0] == 0)?NULL:pReq->pID), ((pReq->pIP[0] == 0)?NULL:pReq->pIP), pReq->xStat, pReq->ulBeginTime, pReq->ulEndTime, pReq->ulIndex, ulMaxCount ,pResp->pLogList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get log list!");

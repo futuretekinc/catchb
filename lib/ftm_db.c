@@ -916,7 +916,7 @@ FTM_RET	FTM_DB_setCCTVProperties
 			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, ", ");
 			bFirst = FTM_FALSE;
 		}
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, "_COMMENT = %s", pConfig->pComment);
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, "_COMMENT = \"%s\"", pConfig->pComment);
 	}
 
 	if (ulFieldFlags & FTM_CCTV_FIELD_HASH)
@@ -941,6 +941,7 @@ FTM_RET	FTM_DB_setCCTVProperties
 
 	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, " WHERE _ID = '%s'", pID);
 
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
@@ -1264,11 +1265,13 @@ FTM_INT	FTM_DB_getLogListCB
 FTM_RET	FTM_DB_getLogList
 (
 	FTM_DB_PTR		pDB,
+	FTM_LOG_TYPE	xType,
 	FTM_CHAR_PTR	pID,
 	FTM_CHAR_PTR	pIP,
 	FTM_CCTV_STAT	xStat,
 	FTM_UINT32		ulStartTime,
 	FTM_UINT32		ulEndTime,
+	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulMaxCount,
 	FTM_LOG_PTR		pLogs,
 	FTM_UINT32_PTR	pCount
@@ -1292,9 +1295,24 @@ FTM_RET	FTM_DB_getLogList
 	memset(pQuery, 0, sizeof(pQuery));
 
 	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s", pDB->pLogTableName);
-	if (pID != NULL)
+	if (xType <= FTM_LOG_TYPE_ERROR )
 	{
 		if (bFirstCondition)
+		{
+			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
+			bFirstCondition = FTM_FALSE;
+		}
+
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (_TYPE = %d)", xType);	
+	}
+
+	if (pID != NULL)
+	{
+		if (!bFirstCondition)
+		{
+			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " AND");	
+		}
+		else
 		{
 			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
@@ -1368,6 +1386,11 @@ FTM_RET	FTM_DB_getLogList
 		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " ORDER BY _TIME DESC");
 	}
 	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " LIMIT %u", ulMaxCount);
+
+	if (ulIndex != 0)
+	{
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " OFFSET %u", ulIndex);
+	}
 
 	INFO("SQL : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)

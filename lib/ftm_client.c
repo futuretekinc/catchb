@@ -1033,6 +1033,12 @@ FTM_RET	FTM_CLIENT_delLog
 FTM_RET	FTM_CLIENT_getLogList
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_LOG_TYPE	xType,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xStat,
+	FTM_UINT32		ulBeginTime,
+	FTM_UINT32		ulEndTime,
 	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulMaxCount,
 	FTM_LOG_PTR		pLogList,
@@ -1070,6 +1076,18 @@ FTM_RET	FTM_CLIENT_getLogList
 
 		xReq.xCommon.xCmd	=	FTM_CMD_GET_LOG_LIST;
 		xReq.xCommon.ulLen	=	sizeof(xReq);
+		xReq.xType			= 	xType;
+		if (pID != NULL)
+		{
+			strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
+		}
+		if (pIP != NULL)
+		{
+			strncpy(xReq.pIP, pIP, sizeof(xReq.pIP) - 1);
+		}
+		xReq.xStat			=	xStat;
+		xReq.ulBeginTime	=	ulBeginTime;
+		xReq.ulEndTime		=	ulEndTime;
 		xReq.ulIndex		=	ulIndex;
 		xReq.ulCount 		=   ulMaxCount;
 
@@ -1096,14 +1114,20 @@ FTM_RET	FTM_CLIENT_getLogList
 
 			ulReqCount = (ulAllowedNumber > ulMaxCount)?ulMaxCount:ulAllowedNumber;
 
-			xRet = FTM_CLIENT_getLogList(pClient, ulIndex, ulReqCount, &pLogList[ulTotalCount], &ulRespCount);
+			xRet = FTM_CLIENT_getLogList(pClient, xType, pID, pIP, xStat, ulBeginTime, ulEndTime, ulIndex, ulReqCount, &pLogList[ulTotalCount], &ulRespCount);
 			if (xRet != FTM_RET_OK)
 			{
 				break;	
 			}
 
+			ulIndex += ulRespCount;
 			ulTotalCount += ulRespCount;
 			ulMaxCount -= ulRespCount;
+
+			if (ulRespCount == 0)
+			{
+				break;
+			}
 		}
 
 		if (xRet == FTM_RET_OK)

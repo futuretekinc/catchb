@@ -173,4 +173,11 @@ FTM_RET FTM_CGI_getEndTime
 	FTM_UINT32_PTR	pulTime,
 	FTM_BOOL	bAllowEmpty
 );
+
+FTM_RET	FTM_CGI_getLogType
+(
+	qentry_t *pReq, 
+	FTM_LOG_TYPE_PTR	pType,
+	FTM_BOOL	bAllowEmpty
+);
 #endif

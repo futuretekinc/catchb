@@ -812,3 +812,38 @@ FTM_RET	FTM_CGI_getSwitchModel
 	return	FTM_RET_OK;
 }
 
+FTM_RET	FTM_CGI_getLogType
+(
+	qentry_t *pReq, 
+	FTM_LOG_TYPE_PTR	pType,
+	FTM_BOOL	bAllowEmpty
+)
+{
+	ASSERT(pReq != NULL);
+	ASSERT(pType!= NULL);
+	
+	FTM_CHAR_PTR	pValue;
+
+	pValue = pReq->getstr(pReq, "type", false);
+	if(pValue == NULL)
+	{
+		if(!bAllowEmpty)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;	
+		}
+	}
+	else if(strcasecmp(pValue, "normal") == 0)
+	{
+		*pType = FTM_LOG_TYPE_NORMAL;	
+	}
+	else if(strcasecmp(pValue, "error") == 0)
+	{
+		*pType = FTM_LOG_TYPE_ERROR;	
+	}
+	else
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+
+	return	FTM_RET_OK;
+}
