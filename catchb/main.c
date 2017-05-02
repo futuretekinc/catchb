@@ -8,6 +8,9 @@
 #include "ftm_shell.h"
 #include "ftm_mem.h"
 
+#undef	__MODULE__
+#define	__MODULE__	"catchb"
+
 extern	
 FTM_CHAR_PTR	program_invocation_short_name;
 extern	
@@ -51,7 +54,6 @@ FTM_INT	main
 		goto finished;
 	}
 
-#if 1
 	xRet = FTM_ReadPID(program_invocation_short_name, &ulPID);
 	if (xRet == FTM_RET_OK)
 	{
@@ -62,13 +64,6 @@ FTM_INT	main
 			ERROR(xRet ,"%s is already running!!\n", program_invocation_short_name);
 			goto finished;
 		}
-	}
-#endif
-
-	xRet = FTM_createPIDFile(program_invocation_short_name, getpid());
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to create PID file!.");	
 	}
 
 	xRet = FTM_CONFIG_create(&pConfig);
@@ -89,7 +84,19 @@ FTM_INT	main
 	
     if (!bDebugMode)
 	{
-        daemon(0, 0);
+		pid_t	pid ;
+		
+		pid = fork();
+		if (pid != 0)
+		{
+			return	0;
+		}
+	}
+
+	xRet = FTM_createPIDFile(program_invocation_short_name, getpid());
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create PID file!.");	
 	}
 
 	xRet = FTM_CATCHB_create(&pCatchB);
@@ -139,9 +146,11 @@ finished:
 	{
 		FTM_CONFIG_destroy(&pConfig);
 	}
-	
-	FTM_destroyPIDFile(program_invocation_short_name);
 
+	if (xRet != FTM_RET_ALREADY_RUNNING)
+	{
+		FTM_destroyPIDFile(program_invocation_short_name);
+	}
 	FTM_MEM_final();
 
     return 0;

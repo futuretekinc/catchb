@@ -469,8 +469,9 @@ FTM_RET	FTM_areDuplicatesRunning
 	ASSERT(pProcessName != NULL);
 	ASSERT(pDuplicated != NULL);
 	FTM_CHAR	pCmd[128];
+	FTM_RET		xRet = FTM_RET_OK;
+	FILE*		pFP;
 #if 0
-	FTM_RET		xRet;
 	FTM_UINT32	ulProcessCount = 0;
 	
 	xRet = FTM_getProcessCount(pProcessName, &ulProcessCount);
@@ -483,11 +484,28 @@ FTM_RET	FTM_areDuplicatesRunning
 	*pDuplicated = (ulProcessCount != 1);
 #endif
 	memset(pCmd, 0, sizeof(pCmd));
-	snprintf(pCmd, sizeof(pCmd) - 1, "ps -ax | egrep %d | awk '{if($1 ~ %d) print \"found\"}'", ulPID, ulPID);
+	snprintf(pCmd, sizeof(pCmd) - 1, "ps -a | egrep %d | awk '{if($1 ~ %d) print \"found\"}'", ulPID, ulPID);
+	pFP = popen(pCmd, "r");
+	if (pFP == NULL)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to execute shell command[%s]", pCmd);
 
-	*pDuplicated = (strcasecmp(pCmd, "found") == 0);
+		*pDuplicated = FTM_FALSE;
+	}
+	else
+	{
+		INFO("pCmd : %s", pCmd);
+		memset(pCmd, 0, sizeof(pCmd));
+		fgets(pCmd, sizeof(pCmd), pFP);	
+		pclose(pFP);
+
+		INFO("pCmd : %s", pCmd);
+		*pDuplicated = (strncasecmp(pCmd, "found", 5) == 0);
+	}
+
 	
-	return	FTM_RET_OK;
+	return	xRet;
 }
 
 FTM_RET	FTM_checkPIDFile

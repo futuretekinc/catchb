@@ -707,6 +707,8 @@ FTM_RET	FTM_ANALYZER_process
 			INFO("PCAP start!");
 			FTM_ANALYZER_PCAP_start(pAnalyzer);
 
+			FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);
+
 			pCCTV->ulPortCount = 0;
 			for(j =0 ;j < pAnalyzer->xConfig.ulPortCount ; j++)
 			{
