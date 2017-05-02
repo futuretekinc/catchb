@@ -4,6 +4,9 @@
 #include "ftm_cgi.h"
 #include "ftm_cgi_command.h"
 
+#undef	__MODULE__
+#define	__MODULE__	"cgi"
+
 FTM_RET	FTM_CGI_addAlarm
 (
 	FTM_CLIENT_PTR pClient, 

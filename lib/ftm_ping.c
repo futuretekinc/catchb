@@ -31,6 +31,9 @@ char pkg[] = "netkit-base-0.10";
 #include "ftm_types.h"
 #include "ftm_trace.h"
 
+#undef	__MODULE__
+#define	__MODULE__	"ping"
+
 #if defined(__GLIBC__) && (__GLIBC__ >= 2)
 #define icmphdr			icmp
 #else
@@ -462,6 +465,7 @@ FTM_VOID	FTM_PING_sender(FTM_VOID)
     icp->icmp_seq = ntransmitted++;
     icp->icmp_id = ident;           /* ID */
 
+	INFO("send ping...");
     CLR(icp->icmp_seq % mx_dup_ck);
 
     if (timing)

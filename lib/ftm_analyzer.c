@@ -63,6 +63,7 @@ FTM_RET	FTM_ANALYZER_CONFIG_setDefault
 	pConfig->pPortList[pConfig->ulPortCount++] = 4520; 
 	pConfig->pPortList[pConfig->ulPortCount++] = 49152;
 
+	strcpy(pConfig->pIFName, "lan");
 	pConfig->ulIPCheckInterval 	= FTM_CATCHB_ANALYZER_DEFAULT_IP_CHECK_INTERVAL;
 
 	pConfig->xTest.bEnable 		= FTM_CATCHB_ANALYZER_DEFAULT_TEST_ENABLE;
@@ -85,6 +86,12 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 	cJSON _PTR_ 	pItem;
 	FTM_UINT16_PTR	pPortList = NULL;
 	FTM_UINT32		ulPortCount = 0;
+
+	pSection = cJSON_GetObjectItem(pRoot, "ifname");
+	if (pSection != NULL)
+	{
+		strncpy(pConfig->pIFName, pSection->valuestring, sizeof(pConfig->pIFName));
+	}
 
 	pSection = cJSON_GetObjectItem(pRoot, "port");
 	if (pSection != NULL)
@@ -314,7 +321,7 @@ FTM_RET	FTM_ANALYZER_create
 		goto finished;
 	}
 
-	xRet = FTM_PCAP_create(&pAnalyzer->pPCAP);
+	xRet = FTM_PCAP_create(&pAnalyzer->pPCAP, pAnalyzer->xConfig.pIFName);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to create pcap!");

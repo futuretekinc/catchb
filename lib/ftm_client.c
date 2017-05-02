@@ -10,6 +10,9 @@
 #include "ftm_trace.h"
 #include "ftm_mem.h"
 
+#undef	__MODULE__
+#define	__MODULE__	"client"
+
 #define	MAX_FRAME_SIZE	1500
 
 typedef struct FTM_CLIENT_STRUCT
@@ -1096,6 +1099,10 @@ FTM_RET	FTM_CLIENT_getLogList
 		{
 			*pulCount = pResp->ulCount;
 			memcpy(pLogList, pResp->pLogList, sizeof(FTM_LOG) * pResp->ulCount);
+		}
+		else
+		{
+			ERROR(xRet, "Failed to get log!");	
 		}
 
 		if(pResp != NULL)

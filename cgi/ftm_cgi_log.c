@@ -4,6 +4,9 @@
 #include "ftm_cgi.h"
 #include "ftm_cgi_command.h"
 
+#undef	__MODULE__
+#define	__MODULE__	"cgi"
+
 FTM_RET	FTM_CGI_getLogInfo
 (
 	FTM_CLIENT_PTR pClient, 
@@ -119,18 +122,21 @@ FTM_RET	FTM_CGI_getLogList
 	xRet |= FTM_CGI_getCount(pReq, &ulCount, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
+		ERROR(xRet, "Failed to get log because invalid arguments!");
 		goto finished;
 	}
 
 	pLogList = (FTM_LOG_PTR)FTM_MEM_malloc(sizeof(FTM_LOG) * ulCount);
 	if (pLogList == NULL)
 	{
+		ERROR(xRet, "Failed to get log because not enough memory!");
 		goto finished;	
 	}
 
 	xRet = FTM_CLIENT_getLogList(pClient, xLogType, pID, pIP, xStat, ulBeginTime, ulEndTime, ulIndex, ulCount, pLogList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
+		ERROR(xRet, "Failed to get log!");
 		goto finished;
 	}
 

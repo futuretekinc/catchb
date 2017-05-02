@@ -10,6 +10,9 @@
 #include "ftm_trace.h"
 #include "ftm_mem.h"
 
+#undef	__MODULE__
+#define	__MODULE__	"utils"
+
 FTM_VOID	FTM_PCAP_callback
 (
 	u_char * pData, 
@@ -19,7 +22,8 @@ FTM_VOID	FTM_PCAP_callback
 
 FTM_RET	FTM_PCAP_create
 (
-	FTM_PCAP_PTR _PTR_ ppPCap
+	FTM_PCAP_PTR _PTR_ ppPCap,
+	FTM_CHAR_PTR	pIFName
 )
 {
 	ASSERT(ppPCap != NULL);
@@ -33,6 +37,11 @@ FTM_RET	FTM_PCAP_create
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
 		ERROR(xRet, "Failed to create pcap!");
 		goto finished;
+	}
+
+	if (pIFName != NULL)
+	{
+		strcpy(pPCap->pDev, pIFName);
 	}
 
 	*ppPCap = pPCap;
@@ -80,8 +89,8 @@ FTM_RET	FTM_PCAP_open
 
 	FTM_RET			xRet = FTM_RET_OK;
 	FTM_INT			nRet;
-	FTM_CHAR_PTR	pDev;
 
+#if 0
 	pDev = pcap_lookupdev(pPCap->pErrorBuff);
 	if (pDev == NULL)
 	{
@@ -89,15 +98,16 @@ FTM_RET	FTM_PCAP_open
 		ERROR(xRet, "Failed to lookup device[%s]!", pPCap->pErrorBuff);
 		return	xRet;
 	}
-
-	nRet = pcap_lookupnet(pDev, &pPCap->xNet, &pPCap->xMask, pPCap->pErrorBuff);
+#endif
+	nRet = pcap_lookupnet(pPCap->pDev, &pPCap->xNet, &pPCap->xMask, pPCap->pErrorBuff);
 	if (nRet == -1)
 	{
 		xRet = FTM_RET_PCAP_ERROR;
+		ERROR(xRet, "Failed to lookup device[%s]!", pPCap->pErrorBuff);
 		return	xRet;	
 	}
 
-	pPCap->pPCD = pcap_open_live(pDev, BUFSIZ, 0, -1, pPCap->pErrorBuff);
+	pPCap->pPCD = pcap_open_live(pPCap->pDev, BUFSIZ, 0, -1, pPCap->pErrorBuff);
 	if (pPCap->pPCD == NULL)
 	{
 		xRet = FTM_RET_PCAP_OPEN_FAILED;

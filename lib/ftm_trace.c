@@ -396,10 +396,12 @@ FTM_TRACE_CONFIG	xTraceConfig =
 	}
 };
 
-static FTM_UINT32	ulModuleCount = 0;
+static FTM_UINT32	ulModuleCount = 3;
 static FTM_CHAR	xModuleName[32][32] =
 {
-	"",
+	"cgi",
+	"server",
+	"clienti",
 };
 
 FTM_RET		FTM_TRACE_CONFIG_setDefault

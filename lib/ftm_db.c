@@ -1295,7 +1295,7 @@ FTM_RET	FTM_DB_getLogList
 	memset(pQuery, 0, sizeof(pQuery));
 
 	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s", pDB->pLogTableName);
-	if (xType <= FTM_LOG_TYPE_ERROR )
+	if (xType != FTM_LOG_TYPE_UNKNOWN)
 	{
 		if (bFirstCondition)
 		{

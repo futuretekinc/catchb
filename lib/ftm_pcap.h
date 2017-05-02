@@ -8,7 +8,7 @@ typedef	struct FTM_PCAP_STRUCT
 {
 	pcap_t _PTR_	pPCD;		// packet capture descriptor	
 
-	FTM_CHAR_PTR	pDev;
+	FTM_CHAR		pDev[32];
 	bpf_u_int32		xNet;
 	bpf_u_int32		xMask;
 	FTM_CHAR_PTR	pOptions;
@@ -26,7 +26,8 @@ typedef	struct FTM_PCAP_STRUCT
 
 FTM_RET	FTM_PCAP_create
 (
-	FTM_PCAP_PTR _PTR_ ppPCAP
+	FTM_PCAP_PTR _PTR_ ppPCAP,
+	FTM_CHAR_PTR		pIFName	
 );
 
 FTM_RET	FTM_PCAP_destroy

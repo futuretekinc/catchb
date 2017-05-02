@@ -22,13 +22,13 @@
 #define	FTM_CATCHB_ANALYZER_DEFAULT_TEST_ENABLE			FTM_FALSE
 #define	FTM_CATCHB_ANALYZER_DEFAULT_TEST_ERROR_RATE		10
 
-#define	FTM_CATCHB_DEFAULT_SMTP_SERVER			"smtp.cafe24.com"
-#define	FTM_CATCHB_DEFAULT_SMTP_PORT			587
-#define	FTM_CATCHB_DEFAULT_SMTP_USER_ID			"devweb@futuretek.co.kr"
-#define	FTM_CATCHB_DEFAULT_SMTP_PASSWD			"futuretek1204"
-#define	FTM_CATCHB_DEFAULT_SMTP_SENDER			"devweb@futuretek.co.kr"
+#define	FTM_CATCHB_DEFAULT_SMTP_SERVER			"smtp.catchb.com"
+#define	FTM_CATCHB_DEFAULT_SMTP_PORT			25
+#define	FTM_CATCHB_DEFAULT_SMTP_USER_ID			"admin@catchb.com"
+#define	FTM_CATCHB_DEFAULT_SMTP_PASSWD			"admin"
+#define	FTM_CATCHB_DEFAULT_SMTP_SENDER			"catchb@catchb.com"
 
-#define	FTM_CATCHB_DB_DEFAULT_FILE_NAME			"./catchb.db"
+#define	FTM_CATCHB_DB_DEFAULT_FILE_NAME			"/var/catchb.db"
 
 #define	FTM_CATCHB_LOGGER_DEFAULT_RETENTION		30
 

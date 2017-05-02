@@ -15,7 +15,7 @@ FTM_SHELL_CMD	pCatchBShellCmdList[];
 extern	
 FTM_UINT32	ulCatchBShellCmdCount;
 
-static	FTM_BOOL	bDebugMode = FTM_TRUE;
+static	FTM_BOOL	bDebugMode = FTM_FALSE;
 static	FTM_CHAR	pConfigFileName[FTM_PATH_LEN + FTM_FILE_NAME_LEN] = "";
 
 FTM_RET	FTM_showUsage();

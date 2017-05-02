@@ -13,6 +13,7 @@
 
 typedef	struct	FTM_ANALYZER_CONFIG_STRUCT
 {
+	FTM_CHAR		pIFName[32];
 	FTM_UINT16		pPortList[32];
 	FTM_UINT32		ulPortCount;
 	FTM_UINT32		ulIPCheckInterval;

@@ -109,7 +109,6 @@ FTM_RET	FTM_getNetIFInfo
 	if (fgets(pBuffer, sizeof(pBuffer), pFP) == NULL)
 	{
 		xRet = FTM_RET_NET_INTERFACE_ERROR;
-		ERROR(xRet, "Failed to get shell result!");
 		goto finished;
 	}
 	pclose(pFP);
@@ -625,7 +624,7 @@ FTM_RET	FTM_getCPUUtilization
 	memset(pBuffer, 0, sizeof(pBuffer));
 	sprintf(pBuffer, "0");
 
-	pFP = popen("mpstat | tail -1 | awk '{print 100-$13}'", "r");
+	pFP = popen("mpstat | tail -1 | awk '{print 100-$11}'", "r");
     if(pFP != NULL) 
 	{
         fgets(pBuffer, sizeof(pBuffer) - 1, pFP);
