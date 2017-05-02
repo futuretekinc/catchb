@@ -2844,6 +2844,7 @@ FTM_RET	FTM_CATCHB_getLogList2
 	FTM_UINT32_PTR	pulCount
 )
 {
+	INFO("Start : %u, End : %u", ulStartTime, ulEndTime);
 	return	FTM_DB_getLogList(pCatchB->pDB, xType, pCCTVID, pIP, xStat, ulStartTime, ulEndTime, ulIndex, ulMaxCount, pLogList, pulCount);
 }
 

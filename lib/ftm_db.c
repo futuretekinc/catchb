@@ -1381,7 +1381,7 @@ FTM_RET	FTM_DB_getLogList
 		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (_TIME <= %u)", ulEndTime);	
 	}
 
-	if ((ulStartTime != 0) || (ulEndTime != 0))
+//	if ((ulStartTime != 0) || (ulEndTime != 0))
 	{
 		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " ORDER BY _TIME DESC");
 	}

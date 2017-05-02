@@ -1063,7 +1063,8 @@ FTM_RET	FTM_CLIENT_getLogList
 	{
 		return	FTM_RET_INVALID_ARGUMENTS;	
 	}
-	
+
+	INFO("Begin : %u, End : %u", ulBeginTime, ulEndTime);
 	ulAllowedNumber = (FTM_PARAM_MAX_LEN - sizeof(FTM_RESP_GET_LOG_LIST_PARAMS)) / sizeof(FTM_LOG);
 	
 	if(ulAllowedNumber >= ulMaxCount)

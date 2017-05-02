@@ -675,6 +675,7 @@ FTM_RET FTM_CGI_getBeginTime
 	{
 		FTM_TIME	xTime;
 
+		INFO("Begin Time : %s", pValue);
 		xRet = FTM_TIME_setString(&xTime, pValue);
 		if (xRet != FTM_RET_OK)
 		{
@@ -715,6 +716,7 @@ FTM_RET FTM_CGI_getEndTime
 	{
 		FTM_TIME	xTime;
 
+		INFO("End Time : %s", pValue);
 		xRet = FTM_TIME_setString(&xTime, pValue);
 		if (xRet != FTM_RET_OK)
 		{

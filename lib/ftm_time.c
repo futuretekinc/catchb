@@ -77,6 +77,7 @@ FTM_RET	FTM_TIME_setString
 			return	FTM_RET_INVALID_FORMAT;
 		}
 
+		memset(&xTM, 0, sizeof(xTM));
 		strptime(pString, "%Y/%m/%d", &xTM);
 	}
 	else if (strlen(pString) == 14)

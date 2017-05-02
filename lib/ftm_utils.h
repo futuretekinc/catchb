@@ -16,6 +16,14 @@ typedef	struct
 
 typedef	struct
 {
+	FTM_UINT32	ulCount;
+	struct {
+		FTM_CHAR	pName[32];
+		FTM_CHAR	pRate[16];
+	}	xPartitions[16];
+}	FTM_DISK_STATISTICS, _PTR_ FTM_DISK_STATISTICS_PTR;
+typedef	struct
+{
 	FTM_UINT32	ulRxBytes;
 	FTM_UINT32	ulTxBytes;
 }	FTM_NET_STATISTICS, _PTR_ FTM_NET_STATISTICS_PTR;
@@ -25,6 +33,7 @@ typedef	struct
 	FTM_TIME	xTime;
 	FTM_FLOAT	fCPU;
 	FTM_MEMORY_STATISTICS	xMemory;
+	FTM_DISK_STATISTICS		xDisk;
 	FTM_NET_STATISTICS		xNet;
 }	FTM_STATISTICS, _PTR_ FTM_STATISTICS_PTR;
 
@@ -147,6 +156,11 @@ FTM_RET	FTM_getNetStatistics
 (
 	FTM_NET_STATISTICS_PTR	pStatistics
 );
+
+FTM_RET	FTM_getDiskUtilization
+(
+	FTM_DISK_STATISTICS_PTR	pInfo
+) ;
 
 FTM_RET	FTM_getStatistics
 (

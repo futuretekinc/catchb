@@ -642,7 +642,13 @@ FTM_RET	FTM_getCPUUtilization
 	memset(pBuffer, 0, sizeof(pBuffer));
 	sprintf(pBuffer, "0");
 
+#if MODEL == ftm-50
 	pFP = popen("mpstat | tail -1 | awk '{print 100-$11}'", "r");
+#elif MODEL == i686
+	pFP = popen("mpstat | tail -1 | awk '{print 100-$13}'", "r");
+#else
+	#error "Model undefined"
+#endif
     if(pFP != NULL) 
 	{
         fgets(pBuffer, sizeof(pBuffer) - 1, pFP);
@@ -723,6 +729,40 @@ FTM_RET	FTM_getNetStatistics
 	return	FTM_RET_OK;
 }
 
+FTM_RET	FTM_getDiskUtilization
+(
+	FTM_DISK_STATISTICS_PTR	pInfo
+) 
+{
+	FTM_CHAR	pBuffer[128];
+    FILE *pFP;
+	FTM_CHAR	pName[64];
+	FTM_CHAR	pRate[64];
+
+	memset(pInfo, 0, sizeof(FTM_DISK_STATISTICS));
+
+	memset(pBuffer, 0, sizeof(pBuffer));
+	sprintf(pBuffer, "0");
+
+	pInfo->ulCount = 0;
+	pFP = popen("df | awk '{ if ($1 != \"Filesystem\") print $1, $5}'", "r");
+    if(pFP != NULL) 
+	{
+        while(fgets(pBuffer, sizeof(pBuffer) - 1, pFP) != NULL)
+		{
+			if (sscanf(pBuffer, "%s %s", pName, pRate) == 2)
+			{
+				strncpy(pInfo->xPartitions[pInfo->ulCount].pName, pName, sizeof(pInfo->xPartitions[pInfo->ulCount].pName) - 1);
+				strncpy(pInfo->xPartitions[pInfo->ulCount].pRate, pRate, sizeof(pInfo->xPartitions[pInfo->ulCount].pRate) - 1);
+
+				pInfo->ulCount++;
+			}
+		}
+    	pclose(pFP);
+    }
+
+	return	FTM_RET_OK;
+}
 FTM_RET	FTM_getStatistics
 (
 	FTM_STATISTICS_PTR	pStatistics
@@ -733,6 +773,7 @@ FTM_RET	FTM_getStatistics
 	FTM_TIME_getCurrent(&pStatistics->xTime);
 	FTM_getCPUUtilization(&pStatistics->fCPU);
 	FTM_getMemoryUtilization(&pStatistics->xMemory.ulTotal, &pStatistics->xMemory.ulFree);
+	FTM_getDiskUtilization(&pStatistics->xDisk);
 	FTM_getNetStatistics(&pStatistics->xNet);
 
 	return	FTM_RET_OK;

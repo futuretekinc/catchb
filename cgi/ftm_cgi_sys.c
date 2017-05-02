@@ -23,6 +23,7 @@ FTM_RET	FTM_CGI_getSysInfo
 	FTM_FLOAT	fCPUUtilization = 0;
 	FTM_UINT32	ulTotalMemory = 0;
 	FTM_UINT32	ulFreeMemory = 0;
+	FTM_DISK_STATISTICS	xDisk;
 	FTM_NET_INFO	xNetInfo;
 
 	INFO("System information called!");
@@ -36,6 +37,7 @@ FTM_RET	FTM_CGI_getSysInfo
 
 	FTM_getCPUUtilization(&fCPUUtilization);
 	FTM_getMemoryUtilization(&ulTotalMemory, &ulFreeMemory);
+	FTM_getDiskUtilization(&xDisk);
 	FTM_getNetInfo(&xNetInfo);
 
 	INFO("         CPU : %5.2f %%", fCPUUtilization);
@@ -60,6 +62,19 @@ FTM_RET	FTM_CGI_getSysInfo
 	cJSON_AddNumberToObject(pUtilization, "cpu", fCPUUtilization);
 	cJSON_AddNumberToObject(pUtilization, "total memory", ulTotalMemory);
 	cJSON_AddNumberToObject(pUtilization, "free memory", ulFreeMemory);
+
+	cJSON	_PTR_ pDiskUtils = cJSON_CreateArray();
+	for(FTM_INT32 i = 0 ; i < xDisk.ulCount ; i++)
+	{
+		cJSON	_PTR_ pPartition = cJSON_CreateObject();
+
+		cJSON_AddStringToObject(pPartition, "name", xDisk.xPartitions[i].pName);
+		cJSON_AddStringToObject(pPartition, "use", xDisk.xPartitions[i].pRate);
+
+		cJSON_AddItemToArray(pDiskUtils, pPartition);
+	}
+	cJSON_AddItemToObject(pUtilization, "disk", pDiskUtils);
+
 	cJSON_AddItemToObject(pRoot, "utilization", pUtilization);
 
 	cJSON _PTR_ pNet= cJSON_CreateObject();
