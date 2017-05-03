@@ -22,12 +22,13 @@ typedef	struct FTM_PCAP_STRUCT
 	FTM_UINT32		ulCaptureCount;
 	FTM_UINT32		ulMaxCaptureCount;
 	FTM_UINT8_PTR _PTR_	ppCapturePackets;
+
+	FTM_UINT32		ulPacketCount;
 }	FTM_PCAP, _PTR_ FTM_PCAP_PTR;
 
 FTM_RET	FTM_PCAP_create
 (
-	FTM_PCAP_PTR _PTR_ ppPCAP,
-	FTM_CHAR_PTR		pIFName	
+	FTM_PCAP_PTR _PTR_ ppPCAP
 );
 
 FTM_RET	FTM_PCAP_destroy
@@ -37,7 +38,8 @@ FTM_RET	FTM_PCAP_destroy
 
 FTM_RET	FTM_PCAP_open
 (
-	FTM_PCAP_PTR	pPCAP
+	FTM_PCAP_PTR	pPCAP,
+	FTM_CHAR_PTR		pIFName	
 );
 
 FTM_RET	FTM_PCAP_close
@@ -54,6 +56,12 @@ FTM_RET	FTM_PCAP_start
 FTM_RET	FTM_PCAP_stop
 (
 	FTM_PCAP_PTR	pPCAP
+);
+
+FTM_RET	FTM_PCAP_setIFName
+(
+	FTM_PCAP_PTR	pPCAP,
+	FTM_CHAR_PTR		pIFName	
 );
 
 FTM_RET	FTM_PCAP_setFilter

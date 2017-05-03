@@ -338,6 +338,7 @@ FTM_RET	FTM_DB_addSwitch
 	FTM_CHAR_PTR	pUser,
 	FTM_CHAR_PTR	pPasswd,
 	FTM_CHAR_PTR	pIP,
+	FTM_BOOL		bSecure,
 	FTM_CHAR_PTR	pComment	
 );
 

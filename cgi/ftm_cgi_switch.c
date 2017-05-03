@@ -29,6 +29,7 @@ FTM_RET	FTM_CGI_addSwitch
 	xRet |= FTM_CGI_getIPString(pReq, xConfig.pIP, FTM_IP_LEN, FTM_TRUE);
 	xRet |= FTM_CGI_getUserID(pReq, xConfig.pUserID, FTM_TRUE);
 	xRet |= FTM_CGI_getPasswd(pReq, xConfig.pPasswd, FTM_TRUE);
+	xRet |= FTM_CGI_getSecure(pReq, &xConfig.bSecure, FTM_TRUE);
 	xRet |= FTM_CGI_getComment(pReq, xConfig.pComment, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
@@ -54,6 +55,7 @@ FTM_RET	FTM_CGI_addSwitch
 	cJSON_AddStringToObject(pSwitch, "ip", 		xConfig.pIP);
 	cJSON_AddStringToObject(pSwitch, "userid", 	xConfig.pUserID);
 	cJSON_AddStringToObject(pSwitch, "passwd", 	xConfig.pPasswd);
+	cJSON_AddStringToObject(pSwitch, "secure", 	(xConfig.bSecure?"on":"off"));
 	cJSON_AddStringToObject(pSwitch, "comment", xConfig.pComment);
 
 	cJSON_AddItemToObject(pRoot, "switch", pSwitch);
@@ -139,6 +141,7 @@ FTM_RET	FTM_CGI_getSwitch
 	cJSON_AddStringToObject(pSwitch, "ip", xConfig.pIP);
 	cJSON_AddStringToObject(pSwitch, "userid", xConfig.pUserID);
 	cJSON_AddStringToObject(pSwitch, "passwd", xConfig.pPasswd);
+	cJSON_AddStringToObject(pSwitch, "secure", (xConfig.bSecure?"on":"off"));
 	cJSON_AddStringToObject(pSwitch, "comment", xConfig.pComment);
 
 	cJSON_AddItemToObject(pRoot, "switch", pSwitch);
@@ -190,6 +193,12 @@ FTM_RET	FTM_CGI_setSwitch
 		ulFieldFlags |= FTM_SWITCH_FIELD_PASSWD;
 	}
 
+	xRet = FTM_CGI_getSecure(pReq, &xConfig.bSecure, FTM_FALSE);
+	if (xRet == FTM_RET_OK)
+	{
+		ulFieldFlags |= FTM_SWITCH_FIELD_SECURE;
+	}
+
 	xRet = FTM_CGI_getComment(pReq, xConfig.pComment, FTM_FALSE);
 	if (xRet == FTM_RET_OK)
 	{
@@ -216,6 +225,7 @@ FTM_RET	FTM_CGI_setSwitch
 	cJSON_AddStringToObject(pSwitch, "ip", xConfig.pIP);
 	cJSON_AddStringToObject(pSwitch, "userid", xConfig.pUserID);
 	cJSON_AddStringToObject(pSwitch, "passwd", xConfig.pPasswd);
+	cJSON_AddStringToObject(pSwitch, "secure", (xConfig.bSecure?"on":"off"));
 	cJSON_AddStringToObject(pSwitch, "comment", xConfig.pComment);
 
 	cJSON_AddItemToObject(pRoot, "switch", pSwitch);

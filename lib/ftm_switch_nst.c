@@ -118,6 +118,14 @@ FTM_RET	FTM_SWITCH_NST_setAC
 		pCommand++;
 	}
 
-	return	FTM_SWITCH_SSH_setAC(pSwitch, pTargetIP, pScript);
+	if (pSwitch->xConfig.bSecure)
+	{
+		return	FTM_SWITCH_SSH_setAC(pSwitch, pTargetIP, pScript);
+	}
+	else
+	{
+		return	FTM_SWITCH_TELNET_setAC(pSwitch, pTargetIP, pScript);
+	}
+	
 }
 

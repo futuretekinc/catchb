@@ -464,6 +464,7 @@ FTM_RET	FTM_CATCHB_setConfig
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_RET	xRet1;
 
+	INFO_ENTRY();
 	if (pCatchB->pDB != NULL)
 	{
 		xRet1 = FTM_DB_setConfig(pCatchB->pDB, &pConfig->xDB);
@@ -1750,6 +1751,7 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 					}
 				}
 				xLogType = FTM_LOG_TYPE_ERROR;
+				memset(pCCTV->xConfig.pHash, 0, sizeof(pCCTV->xConfig.pHash));
 			}
 			break;
 		}
@@ -1958,6 +1960,22 @@ FTM_RET	FTM_CATCHB_getCCTVProperties
 
 	return	xRet;
 }
+
+FTM_RET	FTM_CATCHB_resetCCTV
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pID
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pID != NULL);
+	FTM_UINT32	ulTime;
+	
+	FTM_TIME_getCurrentSecs(&ulTime);
+
+	return	FTM_CATCHB_setCCTVStat(pCatchB, pID, FTM_CCTV_STAT_UNREGISTERED, ulTime);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////
 FTM_RET		FTM_CATCHB_foundNewSwitchInDB
 (
@@ -2171,7 +2189,7 @@ FTM_RET	FTM_CATCHB_addSwitch
 		goto error;
 	}
 
-	xRet = FTM_DB_addSwitch(pCatchB->pDB, pConfig->pID, pConfig->xModel, pConfig->pUserID, pConfig->pPasswd, pConfig->pIP, pConfig->pComment);
+	xRet = FTM_DB_addSwitch(pCatchB->pDB, pConfig->pID, pConfig->xModel, pConfig->pUserID, pConfig->pPasswd, pConfig->pIP, pConfig->bSecure, pConfig->pComment);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to add switch to DB!");	

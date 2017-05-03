@@ -87,9 +87,11 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 	FTM_UINT16_PTR	pPortList = NULL;
 	FTM_UINT32		ulPortCount = 0;
 
+	INFO_ENTRY();	
 	pSection = cJSON_GetObjectItem(pRoot, "ifname");
 	if (pSection != NULL)
 	{
+	INFO_ENTRY();	
 		strncpy(pConfig->pIFName, pSection->valuestring, sizeof(pConfig->pIFName));
 	}
 
@@ -142,6 +144,7 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 	pItem = cJSON_GetObjectItem(pRoot, "interval");
 	if (pItem != NULL)
 	{
+		INFO("Analyzer interval : %d", pItem->valueint);
 		if (FTM_CATCHB_ANALYZER_MINIMUM_IP_CHECK_INTERVAL <= pItem->valueint)
 		{
 			pConfig->ulIPCheckInterval = pItem->valueint;	
@@ -260,7 +263,8 @@ FTM_RET	FTM_ANALYZER_CONFIG_show
 	OUTPUT(xLevel, "");
 	OUTPUT(xLevel, "[ Analyzer Configuration ]");
 	OUTPUT(xLevel, "%16s : %d ms", 	"Interval", pConfig->ulIPCheckInterval);
-	OUTPUT(xLevel, "%16s : %s", "Port", pBuffer);
+	OUTPUT(xLevel, "%16s : %s", 	"Interface Name", pConfig->pIFName);
+	OUTPUT(xLevel, "%16s : %s", 	"Port", pBuffer);
 	OUTPUT(xLevel, "%16s : %s", 	"Test Enabled", (pConfig->xTest.bEnable)?"yes":"no");
 	OUTPUT(xLevel, "%16s : %d %", 	"Test Error Rate", pConfig->xTest.ulErrorRate);
 
@@ -321,7 +325,7 @@ FTM_RET	FTM_ANALYZER_create
 		goto finished;
 	}
 
-	xRet = FTM_PCAP_create(&pAnalyzer->pPCAP, pAnalyzer->xConfig.pIFName);
+	xRet = FTM_PCAP_create(&pAnalyzer->pPCAP);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to create pcap!");
@@ -519,12 +523,14 @@ FTM_VOID_PTR FTM_ANALYZER_threadMain
 
 	INFO("%s started.", pAnalyzer->pName);
 
-	xRet = FTM_PCAP_open(pAnalyzer->pPCAP);
+#if 0
+	xRet = FTM_PCAP_open(pAnalyzer->pPCAP, pAnalyzer->xConfig.pIFName);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to open pcap!");
 		goto finished;
 	}
+#endif
 
 	pAnalyzer->bStop = FTM_FALSE;
 
@@ -559,11 +565,11 @@ FTM_VOID_PTR FTM_ANALYZER_threadMain
 		}
 	}
 
-	FTM_PCAP_close(pAnalyzer->pPCAP);
+	//FTM_PCAP_close(pAnalyzer->pPCAP);
 
 	INFO("%s stopped.", pAnalyzer->pName);
 
-finished:
+//finished:
 
 	return	0;
 }
@@ -578,7 +584,7 @@ FTM_VOID_PTR FTM_ANALYZER_threadPCAP
 
 	INFO("%s started.", pAnalyzer->pName);
 
-	xRet = FTM_PCAP_open(pAnalyzer->pPCAP);
+	xRet = FTM_PCAP_open(pAnalyzer->pPCAP, pAnalyzer->xConfig.pIFName);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to open pcap!");
@@ -627,7 +633,6 @@ FTM_RET	FTM_ANALYZER_process
 
 	FTM_LOCK_set(pAnalyzer->pLock);
 
-
 	xRet = FTM_LIST_count(pAnalyzer->pList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
@@ -659,21 +664,52 @@ FTM_RET	FTM_ANALYZER_process
 
 	if (FTM_TIMER_isExpired(&pCCTV->xExpiredTimer) == FTM_TRUE)
 	{
+		FTM_CHAR		pMAC[64]; 
+		FTM_CHAR		pLocalIP[32];
 		FTM_CHAR		pHashData[1024];
 		FTM_UINT32		ulHashDataLen = 0;
 		FTM_CHAR		pHashValue[64];
+		FTM_CHAR		pOptions[512];
+		FTM_UINT32		ulOptionLen = 0;
 		FTM_UINT32		ulReplyCount = 0;
 		FTM_UINT32		ulTime;
+
+		INFO("CCTV[%s] : Start status analysis!", pID);
 
 		memset(pHashData, 0, sizeof(pHashData));
 		memset(pHashValue, 0, sizeof(pHashValue));
 
-		INFO("CCTV[%s] : Start status analysis!", pID);
+		FTM_getLocalIP(pLocalIP,sizeof(pLocalIP));
 
+		ulOptionLen += sprintf(&pOptions[ulOptionLen], "src host %s", pCCTV->xConfig.pIP);
+		ulOptionLen += sprintf(&pOptions[ulOptionLen], " && dst host %s", pLocalIP);
+		ulOptionLen += sprintf(&pOptions[ulOptionLen], " && (ip proto 1");
+
+		if (pAnalyzer->xConfig.ulPortCount != 0)
+		{
+			ulOptionLen += sprintf(&pOptions[ulOptionLen], " || (ip proto 6 && (");
+			for(FTM_UINT32	i = 0 ; i < pAnalyzer->xConfig.ulPortCount ; i++)
+			{
+				if (i == 0)
+				{
+					ulOptionLen += sprintf(&pOptions[ulOptionLen], "src port %d", pAnalyzer->xConfig.pPortList[i]);
+				}
+				else
+				{
+					ulOptionLen += sprintf(&pOptions[ulOptionLen], " || src port %d", pAnalyzer->xConfig.pPortList[i]);
+				}
+			}
+			ulOptionLen += sprintf(&pOptions[ulOptionLen], " ))");
+		}
+		ulOptionLen += sprintf(&pOptions[ulOptionLen], ")");
+		FTM_PCAP_setFilter(pAnalyzer->pPCAP, pOptions);
+//		FTM_PCAP_setFilterIP(pAnalyzer->pPCAP, inet_addr(pCCTV->xConfig.pIP), inet_addr(pLocalIP));
+//		FTM_PCAP_setFilterPorts(pAnalyzer->pPCAP, pAnalyzer->xConfig.pPortList, pAnalyzer->xConfig.ulPortCount);
+
+		FTM_ANALYZER_PCAP_start(pAnalyzer);
 		FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);
 
 		FTM_TIME_getCurrentSecs(&ulTime);
-
 
 		if(ulReplyCount == 0)
 		{ 
@@ -682,32 +718,23 @@ FTM_RET	FTM_ANALYZER_process
 			{
 				FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_UNUSED, ulTime);
 			}
+
+			FTM_ANALYZER_PCAP_stop(pAnalyzer);
 		}
 		else
 		{
 			FTM_UINT32	j;
-			FTM_CHAR	pMAC[64]; 
-			FTM_CHAR	pOptions[128];
-			FTM_CHAR	pLocalIP[32];
 			FTM_SCORE	xScore;
 
 			memset(&xScore, 0, sizeof(xScore));
 
-			FTM_getLocalIP(pLocalIP,sizeof(pLocalIP));
 
 			FTM_ARP_parsing(pCCTV->xConfig.pIP, pMAC); 
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen , "[ip : %s, mac : %s]", pCCTV->xConfig.pIP, pMAC);
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, " [port :");
 
-			sprintf(pOptions, "ip.src == %s && ip.dst == %s", pCCTV->xConfig.pIP, pLocalIP);
-			FTM_PCAP_setFilter(pAnalyzer->pPCAP, pOptions);
-			FTM_PCAP_setFilterIP(pAnalyzer->pPCAP, inet_addr(pCCTV->xConfig.pIP), inet_addr(pLocalIP));
-			FTM_PCAP_setFilterPorts(pAnalyzer->pPCAP, pAnalyzer->xConfig.pPortList, pAnalyzer->xConfig.ulPortCount);
 
-			INFO("PCAP start!");
-			FTM_ANALYZER_PCAP_start(pAnalyzer);
-
-			FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);
+			//FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);
 
 			pCCTV->ulPortCount = 0;
 			for(j =0 ;j < pAnalyzer->xConfig.ulPortCount ; j++)
@@ -731,9 +758,7 @@ FTM_RET	FTM_ANALYZER_process
 
 			usleep(1000000);	
 
-			INFO("PCAP request stop!");
 			FTM_ANALYZER_PCAP_stop(pAnalyzer);
-			INFO("PCAP finished !");
 
 			FTM_ANALIZER_PCAP_calcScore(pAnalyzer, &xScore);
 			INFO("xScore.fValue = %f", xScore.fValue);
@@ -784,7 +809,6 @@ FTM_RET	FTM_ANALYZER_process
 		FTM_LIST_remove(pAnalyzer->pList, pID);
 		FTM_LIST_append(pAnalyzer->pList, pID);
 	}
-
 	FTM_CCTV_unlock(pCCTV);
 
 
@@ -1009,6 +1033,7 @@ FTM_RET	FTM_ANALIZER_PCAP_calcScore
 	
 	FTM_UINT32	i;
 
+	INFO("Packet captured[%d]", pAnalyzer->pPCAP->ulCaptureCount); 
 	for(i = 0 ; i < pAnalyzer->pPCAP->ulCaptureCount ; i++)
 	{
 		FTM_SCORE_processIP(pScore, pAnalyzer->pPCAP->ppCapturePackets[i], 64);

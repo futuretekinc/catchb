@@ -69,6 +69,11 @@ FTM_VOID	FTM_SCORE_processTCP
 	struct iphdr* pIPHdr 	= ((struct iphdr*)(pPacket + 14));
 	FTM_UINT32	ulIPHdrLen 	= pIPHdr->ihl * 4;  // obtain the length of header in bytes to check for options
 
+	if (pIPHdr->protocol != 6)
+	{
+		return;
+	}
+
 	struct tcphdr* pTCPHdr = ((struct tcphdr*)(pPacket + 14 + ulIPHdrLen));
 	FTM_UINT32	ulTCPHdrLen = pTCPHdr->doff * 4;  // obtain the length of header in bytes to check for options
 	FTM_UINT32	ulTCPOptLen = ulTCPHdrLen - 20;

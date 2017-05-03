@@ -289,3 +289,94 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
+FTM_RET	FTM_CGI_setCCTVPolicy
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReq != NULL);
+
+	FTM_RET		xRet;
+	FTM_SWITCH_AC_POLICY	xPolicy;
+	FTM_CHAR	pID[FTM_ID_LEN+1];
+	cJSON _PTR_	pRoot;
+
+	pRoot = cJSON_CreateObject();
+
+	memset(pID, 0, sizeof(pID));
+
+	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finish;
+	}
+
+	xRet = FTM_CGI_getPolicy(pReq, &xPolicy, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finish;
+	}
+
+	xRet = FTM_CLIENT_setCCTVPolicy(pClient, pID, xPolicy);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finish;
+	}
+
+	cJSON _PTR_ pCCTV = cJSON_CreateObject();
+	cJSON_AddStringToObject(pCCTV, "id", pID);
+
+	cJSON_AddItemToObject(pRoot, "ccrv", pCCTV);
+
+finish:
+
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}
+
+FTM_RET	FTM_CGI_resetCCTV
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReq != NULL);
+
+	FTM_RET		xRet;
+	FTM_CHAR	pID[FTM_ID_LEN+1];
+	FTM_CHAR	pHash[FTM_HASH_LEN+1];
+	cJSON _PTR_	pRoot;
+
+	pRoot = cJSON_CreateObject();
+
+	memset(pID, 0, sizeof(pID));
+
+	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finish;
+	}
+
+	xRet = FTM_CGI_getHash(pReq, pHash, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finish;
+	}
+
+	xRet = FTM_CLIENT_resetCCTV(pClient, pID, pHash);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finish;
+	}
+
+	cJSON _PTR_ pCCTV = cJSON_CreateObject();
+	cJSON_AddStringToObject(pCCTV, "id", pID);
+
+	cJSON_AddItemToObject(pRoot, "ccrv", pCCTV);
+finish:
+
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}
+

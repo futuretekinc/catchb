@@ -146,50 +146,6 @@ FTM_RET	FTM_SHELL_CMD_db
 
 			FTM_MEM_free(pSwitchArray);
 		}
-		else
-		{
-			if ((strcasecmp(pArgv[2], "add") == 0) && (nArgc == 8))
-			{
-				FTM_SWITCH_MODEL	xModel;
-
-				if (strcasecmp(pArgv[4], "nst") == 0)
-				{
-					xModel = FTM_SWITCH_MODEL_NST;
-				}
-				else if (strcasecmp(pArgv[4], "dasan") == 0)
-				{
-					xModel = FTM_SWITCH_MODEL_DASAN;
-				}
-				else if (strcasecmp(pArgv[4], "juniper") == 0)
-				{
-					xModel = FTM_SWITCH_MODEL_JUNIPER;
-				}
-				else
-				{
-					printf("Unknown switch type[%s]\n", pArgv[4]);
-					goto finished;	
-				}
-
-				xRet = FTM_DB_addSwitch(pCatchB->pDB, pArgv[3], xModel, pArgv[5], pArgv[6], pArgv[7], "");
-				if (xRet != FTM_RET_OK)
-				{
-					printf("Failed to insert cctv[%s] to DB!\n", pArgv[3]);
-				}
-			}
-			else if ((strcasecmp(pArgv[2], "del") == 0) && (nArgc == 4))
-			{
-				xRet = FTM_DB_deleteSwitch(pCatchB->pDB, pArgv[3]);
-				if (xRet != FTM_RET_OK)
-				{
-					printf("Failed to delete switch[%s] from DB!\n", pArgv[3]);	
-				}
-			}
-			else
-			{
-				xRet = FTM_RET_INVALID_COMMAND;
-				goto finished;	
-			}
-		}
 	}
 
 finished:

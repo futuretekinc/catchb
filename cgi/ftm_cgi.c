@@ -25,7 +25,9 @@ FTM_CGI_COMMAND	pCCTVCmds[] =
 	{	"del",		FTM_CGI_delCCTV			},
 	{	"get",		FTM_CGI_getCCTV			},
 	{	"set",		FTM_CGI_setCCTV			},
-	{	"list",		FTM_CGI_getCCTVIDList		},
+	{	"list",		FTM_CGI_getCCTVIDList	},
+	{	"polic",	FTM_CGI_setCCTVPolicy	},
+	{	"reset",	FTM_CGI_resetCCTV		},
 	{	NULL,		NULL					}
 };
 
@@ -368,6 +370,34 @@ FTM_RET	FTM_CGI_getPasswd
 	return	FTM_RET_OK;
 }
 
+FTM_RET	FTM_CGI_getSecure
+(
+	qentry_t *pReq, 
+	FTM_BOOL_PTR	pSecure,
+	FTM_BOOL	bAllowEmpty
+)
+{
+	ASSERT(pReq != NULL);
+	ASSERT(pSecure != NULL);
+
+	FTM_CHAR_PTR	pValue;
+
+	pValue = pReq->getstr(pReq, "secure", false);
+	if(pValue == NULL)
+	{
+		if(!bAllowEmpty)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;	
+		}
+	}
+	else 
+	{
+		*pSecure = (strcasecmp(pValue, "on") == 0);
+	}
+	
+	return	FTM_RET_OK;
+}
+
 FTM_RET	FTM_CGI_getSwitchID
 (
 	qentry_t *pReq, 
@@ -433,6 +463,38 @@ FTM_RET	FTM_CGI_getEnable
 		return	FTM_RET_INVALID_ARGUMENTS;	
 	}
 
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_CGI_getHash
+(
+	qentry_t *pReq, 
+	FTM_CHAR_PTR pHash,
+	FTM_BOOL	bAllowEmpty
+)
+{
+	ASSERT(pReq != NULL);
+	ASSERT(pHash != NULL);
+
+	FTM_CHAR_PTR	pValue;
+
+	pValue = pReq->getstr(pReq, "hash", false);
+	if(pValue == NULL)
+	{
+		if(!bAllowEmpty)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;	
+		}
+	}
+	else if((strlen(pValue) > FTM_HASH_LEN))
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+	else
+	{
+		strcpy(pHash, pValue);
+	}
+	
 	return	FTM_RET_OK;
 }
 
@@ -841,6 +903,42 @@ FTM_RET	FTM_CGI_getLogType
 	else if(strcasecmp(pValue, "error") == 0)
 	{
 		*pType = FTM_LOG_TYPE_ERROR;	
+	}
+	else
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_CGI_getPolicy
+(
+	qentry_t *pReq, 
+	FTM_SWITCH_AC_POLICY_PTR	pPolicy,
+	FTM_BOOL	bAllowEmpty
+)
+{
+	ASSERT(pReq != NULL);
+	ASSERT(pPolicy != NULL);
+	
+	FTM_CHAR_PTR	pValue;
+
+	pValue = pReq->getstr(pReq, "policy", false);
+	if(pValue == NULL)
+	{
+		if(!bAllowEmpty)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;	
+		}
+	}
+	else if(strcasecmp(pValue, "allow") == 0)
+	{
+		*pPolicy = FTM_SWITCH_AC_POLICY_ALLOW;	
+	}
+	else if(strcasecmp(pValue, "deny") == 0)
+	{
+		*pPolicy = FTM_SWITCH_AC_POLICY_DENY;	
 	}
 	else
 	{

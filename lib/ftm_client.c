@@ -644,6 +644,83 @@ FTM_RET	FTM_CLIENT_getCCTVList
 
 	return	xRet;
 }
+
+FTM_RET	FTM_CLIENT_setCCTVPolicy
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pID,
+	FTM_SWITCH_AC_POLICY	xPolicy
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_SET_CCTV_POLICY_PARAMS	xReq;
+	FTM_RESP_SET_CCTV_POLICY_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	if (pID == NULL)
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_SET_CCTV_POLICY;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+
+	strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
+	xReq.xPolicy = xPolicy;
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+	if (xRet != FTM_RET_OK)
+	{
+		return	xRet;
+	}
+	
+	return	xResp.xCommon.xRet;
+}
+
+FTM_RET	FTM_CLIENT_resetCCTV
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pHash
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_RESET_CCTV_PARAMS		xReq;
+	FTM_RESP_RESET_CCTV_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	if (pID == NULL)
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_RESET_CCTV;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+
+	strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
+	strncpy(xReq.pHash, pHash, sizeof(xReq.pHash) - 1);
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+	if (xRet != FTM_RET_OK)
+	{
+		return	xRet;
+	}
+	
+	return	xResp.xCommon.xRet;
+}
+
 /*****************************************************************
  *
  *****************************************************************/

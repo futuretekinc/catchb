@@ -103,6 +103,13 @@ FTM_RET	FTM_CGI_getPasswd
 	FTM_BOOL	bAllowEmpty
 );
 
+FTM_RET	FTM_CGI_getSecure
+(
+	qentry_t *pReq, 
+	FTM_BOOL_PTR	pSecure,
+	FTM_BOOL	bAllowEmpty
+);
+
 FTM_RET	FTM_CGI_getSwitchID
 (
 	qentry_t *pReq, 
@@ -114,6 +121,13 @@ FTM_RET	FTM_CGI_getEnable
 (
 	qentry_t *pReq, 
 	FTM_BOOL_PTR	pEnable	,
+	FTM_BOOL	bAllowEmpty
+);
+
+FTM_RET	FTM_CGI_getHash
+(
+	qentry_t *pReq, 
+	FTM_CHAR_PTR pHash,
 	FTM_BOOL	bAllowEmpty
 );
 
@@ -180,4 +194,12 @@ FTM_RET	FTM_CGI_getLogType
 	FTM_LOG_TYPE_PTR	pType,
 	FTM_BOOL	bAllowEmpty
 );
+
+FTM_RET	FTM_CGI_getPolicy
+(
+	qentry_t *pReq, 
+	FTM_SWITCH_AC_POLICY_PTR	pPolicy,
+	FTM_BOOL	bAllowEmpty
+);
+
 #endif

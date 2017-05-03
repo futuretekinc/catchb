@@ -41,6 +41,18 @@ FTM_RET	FTM_CGI_setCCTVIDList
 	qentry_t _PTR_ pReq
 );
 
+FTM_RET	FTM_CGI_setCCTVPolicy
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_resetCCTV
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
 FTM_RET	FTM_CGI_addSwitch
 (
 	FTM_CLIENT_PTR pClient, 

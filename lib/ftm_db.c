@@ -1799,6 +1799,7 @@ FTM_RET	FTM_DB_addSwitch
 	FTM_CHAR_PTR		pUser,
 	FTM_CHAR_PTR		pPasswd,
 	FTM_CHAR_PTR		pIP,
+	FTM_BOOL			bSecure,
 	FTM_CHAR_PTR		pComment	
 )
 {
@@ -1809,8 +1810,8 @@ FTM_RET	FTM_DB_addSwitch
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_ID, _MODEL, _IP, _USERID, _PASSWD, _COMMENT) VALUES('%s', %d, '%s', '%s', '%s', '%s');", 
-		pDB->pSwitchTableName, pID, xModel, (pIP)?pIP:"", (pUser)?pUser:"", (pPasswd)?pPasswd:"", (pComment)?pComment:"");
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_ID, _MODEL, _IP, _USERID, _PASSWD, _SECURE, _COMMENT) VALUES('%s', %d, '%s', '%s', '%s', %d, '%s');", 
+		pDB->pSwitchTableName, pID, xModel, (pIP)?pIP:"", (pUser)?pUser:"", (pPasswd)?pPasswd:"", bSecure, (pComment)?pComment:"");
 
 	INFO("QUERY : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
@@ -1905,6 +1906,17 @@ FTM_RET	FTM_DB_setSwitchProperties
 		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _PASSWD = '%s'", pConfig->pPasswd);
 	}
 
+	if (ulFieldFlags & FTM_SWITCH_FIELD_SECURE)
+	{
+		if (!bNew)
+		{
+			ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ",");
+			bNew = FTM_FALSE;
+		}
+
+		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _SECURE = '%d'", pConfig->bSecure);
+	}
+
 	if (ulFieldFlags & FTM_SWITCH_FIELD_COMMENT)
 	{
 		if (!bNew)
@@ -1966,6 +1978,10 @@ FTM_INT	FTM_DB_getSwitchListCB
 			else if (strcmp(ppColName[i], "_PASSWD") == 0)
 			{    
 				strcpy(pParams->pElements[pParams->ulCount].pPasswd, ppArgv[i]);
+			}    
+			else if (strcmp(ppColName[i], "_SECURE") == 0)
+			{    
+				pParams->pElements[pParams->ulCount].bSecure = strtoul(ppArgv[i],0, 10);
 			}    
 			else if (strcmp(ppColName[i], "_COMMENT") == 0)
 			{

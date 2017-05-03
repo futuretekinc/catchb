@@ -39,14 +39,18 @@ FTM_RET	FTM_SHELL_CMD_switch
 		xRet = FTM_CATCHB_getSwitchIDList(pCatchB, 10, pIDList, &ulCount);
 		if (xRet == FTM_RET_OK)
 		{
-			printf("%16s %16s %16s %16s %16s %s\n", "ID", "MODEL", "IP", "USER", "PASSWD", "COMMENT");
+			printf("%16s %16s %16s %16s %16s %8s %s\n", "ID", "MODEL", "IP", "USER", "PASSWD", "SECURE", "COMMENT");
 			for(i = 0 ; i < ulCount ; i++)
 			{
 				FTM_SWITCH_PTR	pSwitch;
 				xRet = FTM_CATCHB_getSwitch(pCatchB, pIDList[i], &pSwitch);
 				if (xRet == FTM_RET_OK)
 				{
-					printf("%16s %16s %16s %16s %16s %s\n", pSwitch->xConfig.pID, FTM_getSwitchModelName(pSwitch->xConfig.xModel), pSwitch->xConfig.pIP, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd, pSwitch->xConfig.pComment);
+					printf("%16s %16s %16s %16s %16s %8s %s\n", pSwitch->xConfig.pID, 
+						FTM_getSwitchModelName(pSwitch->xConfig.xModel), 
+						pSwitch->xConfig.pIP, 
+						pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd, 
+						(pSwitch->xConfig.bSecure?"secure":"normal"), pSwitch->xConfig.pComment);
 				
 				}
 			}
@@ -93,6 +97,17 @@ FTM_RET	FTM_SHELL_CMD_switch
 			{
 				strncpy(xConfig.pPasswd, pArgv[i+1], sizeof(xConfig.pPasswd) - 1);
 			}
+			else if (strcasecmp(pArgv[i], "--secure") == 0)
+			{
+				if ((strcasecmp(pArgv[i+1], "on") == 0) || (strcasecmp(pArgv[i+1], "yes") == 0))
+				{
+					xConfig.bSecure = FTM_TRUE;
+				}
+				else
+				{
+					xConfig.bSecure = FTM_FALSE;
+				}
+			}
 			else if (strcasecmp(pArgv[i], "--comment") == 0)
 			{
 				strncpy(xConfig.pComment, pArgv[i+1], sizeof(xConfig.pComment) - 1);
@@ -108,6 +123,10 @@ FTM_RET	FTM_SHELL_CMD_switch
 		if (xRet != FTM_RET_OK)
 		{
 			printf("Error : Failed to create switch!\n");	
+		}
+		else
+		{
+			printf("The switch[%s] was created successfully!\n", pArgv[2]);	
 		}
 
 	}
@@ -187,6 +206,18 @@ FTM_RET	FTM_SHELL_CMD_switch
 			{
 				strncpy(xConfig.pPasswd, pArgv[i+1], sizeof(xConfig.pPasswd) - 1);
 				xFieldFlags |= FTM_SWITCH_FIELD_PASSWD;
+			}
+			else if (strcasecmp(pArgv[i], "--secure") == 0)
+			{
+				if ((strcasecmp(pArgv[i+1], "on") == 0)|| (strcasecmp(pArgv[i+1], "yes") == 0))
+				{
+					xConfig.bSecure = FTM_TRUE;
+				}
+				else
+				{
+					xConfig.bSecure = FTM_FALSE;
+				}
+				xFieldFlags |= FTM_SWITCH_FIELD_SECURE;
 			}
 			else if (strcasecmp(pArgv[i], "--comment") == 0)
 			{

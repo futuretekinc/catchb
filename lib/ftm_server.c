@@ -43,6 +43,8 @@ static FTM_SERVER_CMD_SET	pCmdSet[] =
 	MK_CMD_SET(FTM_CMD_SET_CCTV_PROPERTIES,		FTM_SERVER_setCCTVProperties),
 	MK_CMD_SET(FTM_CMD_GET_CCTV_ID_LIST,		FTM_SERVER_getCCTVIDList),
 	MK_CMD_SET(FTM_CMD_GET_CCTV_LIST,			FTM_SERVER_getCCTVList),
+	MK_CMD_SET(FTM_CMD_SET_CCTV_POLICY,			FTM_SERVER_setCCTVPolicy),
+	MK_CMD_SET(FTM_CMD_RESET_CCTV,				FTM_SERVER_resetCCTV),
 
 	MK_CMD_SET(FTM_CMD_ADD_SWITCH,				FTM_SERVER_addSwitch),
 	MK_CMD_SET(FTM_CMD_DEL_SWITCH,				FTM_SERVER_delSwitch),
@@ -753,6 +755,100 @@ FTM_RET	FTM_SERVER_getCCTVList
 	pResp->ulCount = ulCount;
 
 	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_SERVER_setCCTVPolicy
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_SET_CCTV_POLICY_PARAMS_PTR	pReq,
+	FTM_RESP_SET_CCTV_POLICY_PARAMS_PTR	pResp
+)
+{
+	FTM_RET			xRet;
+	FTM_CATCHB_PTR	pCatchB;
+	FTM_CCTV_PTR	pCCTV;
+	FTM_SWITCH_PTR	pSwitch;
+
+	pCatchB = pServer->pCatchB;
+
+	xRet = FTM_CATCHB_getCCTV(pCatchB, pReq->pID, &pCCTV);
+	if (xRet == FTM_RET_OK)
+	{
+		FTM_SWITCH_AC_PTR pAC;
+
+		xRet = FTM_CATCHB_getSwitch(pCatchB, pCCTV->xConfig.pSwitchID, &pSwitch);
+		if (xRet == FTM_RET_OK)
+		{
+			xRet = FTM_SWITCH_addAC(pSwitch, pCCTV->xConfig.pID, pReq->xPolicy, &pAC);
+		}
+	}
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet = xRet;
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_SET_CCTV_POLICY_PARAMS);
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_SERVER_resetCCTV
+(
+	FTM_SERVER_PTR	pServer,
+	FTM_REQ_RESET_CCTV_PARAMS_PTR	pReq,
+	FTM_RESP_RESET_CCTV_PARAMS_PTR	pResp
+)
+{
+	FTM_RET	xRet;
+	FTM_CATCHB_PTR	pCatchB;
+	FTM_CCTV_PTR	pCCTV;
+	FTM_SWITCH_PTR	pSwitch;
+
+	pCatchB = pServer->pCatchB;
+
+	xRet = FTM_CATCHB_getCCTV(pCatchB, pReq->pID, &pCCTV);
+	if (xRet == FTM_RET_OK)
+	{	
+		if (strlen(pCCTV->xConfig.pHash) != 0)
+		{
+			if (strcmp(pCCTV->xConfig.pHash, pReq->pHash) != 0)
+			{
+				xRet = FTM_RET_INVALID_ARGUMENTS;
+			}
+		}
+
+		if (xRet == FTM_RET_OK)
+		{
+			if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
+			{
+				FTM_SWITCH_AC_PTR pAC;
+
+				xRet = FTM_CATCHB_getSwitch(pCatchB, pCCTV->xConfig.pSwitchID, &pSwitch);
+				if (xRet == FTM_RET_OK)
+				{
+					xRet = FTM_SWITCH_addAC(pSwitch, pCCTV->xConfig.pID, FTM_SWITCH_AC_POLICY_ALLOW, &pAC);
+				}
+				else
+				{
+					INFO("Failed to get switch[%s]", pCCTV->xConfig.pSwitchID);	
+					xRet = FTM_RET_OK;
+				}
+			}
+		
+			if (xRet == FTM_RET_OK)
+			{
+				xRet = FTM_CATCHB_resetCCTV(pCatchB, pReq->pID);
+				if (xRet != FTM_RET_OK)
+				{
+					ERROR(xRet, "Failed to reset CCTV[%s]", pReq->pID);
+				}
+			}
+		}
+	}
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet	= xRet;
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_RESET_CCTV_PARAMS);
+
+	return	FTM_RET_OK;	
 }
 
 FTM_RET	FTM_SERVER_addSwitch

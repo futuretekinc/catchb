@@ -396,15 +396,8 @@ FTM_TRACE_CONFIG	xTraceConfig =
 	}
 };
 
-static FTM_UINT32	ulModuleCount = 5;
-static FTM_CHAR	xModuleName[32][32] =
-{
-	"catchb",
-	"utils",
-	"cgi",
-	"server",
-	"client",
-};
+static FTM_UINT32	ulModuleCount = 0;
+static FTM_CHAR	xModuleName[32][32];
 
 FTM_RET		FTM_TRACE_CONFIG_setDefault
 (
