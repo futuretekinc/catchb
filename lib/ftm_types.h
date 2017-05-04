@@ -26,7 +26,7 @@ typedef	int32_t			FTM_INT32, 	_PTR_ FTM_INT32_PTR;
 typedef	uint32_t		FTM_UINT32, _PTR_ FTM_UINT32_PTR;
 typedef	int64_t			FTM_INT64, 	_PTR_ FTM_INT64_PTR;
 typedef	uint64_t		FTM_UINT64, _PTR_ FTM_UINT64_PTR;
-typedef	float			FTM_FLOAT,	_PTR_ FTM_FLOAT_PTR;
+typedef	double			FTM_FLOAT,	_PTR_ FTM_FLOAT_PTR;
 
 typedef	FTM_CHAR		FTM_ID[FTM_ID_LEN+1];
 typedef	FTM_ID 	_PTR_	FTM_ID_PTR;

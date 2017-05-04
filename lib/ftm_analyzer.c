@@ -761,7 +761,7 @@ FTM_RET	FTM_ANALYZER_process
 			FTM_ANALYZER_PCAP_stop(pAnalyzer);
 
 			FTM_ANALIZER_PCAP_calcScore(pAnalyzer, &xScore);
-			INFO("xScore.fValue = %f", xScore.fValue);
+			INFO("xScore.fValue = %.1f", xScore.fValue);
 
 			FTM_HASH_SHA1((FTM_UINT8_PTR)pHashData, ulHashDataLen, pHashValue, sizeof(pHashValue));
 

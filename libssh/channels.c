@@ -1570,7 +1570,6 @@ pending:
 
 
 
- printf("[%s][%d] request:%d\n",__func__,__LINE__,channel->request_state);
   if(session->session_state == SSH_SESSION_STATE_ERROR || rc == SSH_ERROR) {
       channel->request_state = SSH_CHANNEL_REQ_STATE_ERROR;
   }
@@ -1580,7 +1579,6 @@ pending:
       rc=SSH_ERROR;
       break;
     case SSH_CHANNEL_REQ_STATE_DENIED:
-      printf("[%s][%d]\n",__func__,__LINE__);
       ssh_set_error(session, SSH_REQUEST_DENIED,
           "Channel request %s failed", request);
       rc=SSH_ERROR;
@@ -1589,7 +1587,6 @@ pending:
       SSH_LOG(SSH_LOG_PROTOCOL,
           "Channel request %s success",request);
       rc=SSH_OK;
-      printf("[%s][%d]\n",__func__,__LINE__);
       break;
     case SSH_CHANNEL_REQ_STATE_PENDING:
       rc = SSH_AGAIN;

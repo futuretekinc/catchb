@@ -4,6 +4,7 @@ endif
 
 include $(TOPDIR)/IncludePre.mk
 
+EXEC_PREFIX=$(TARGET)/www/cgi-bin
 BIN_TARGET=catchb.cgi
 BIN_CFLAGS:=$(CFLAGS)\
 		-D_GNU_SOURCE\

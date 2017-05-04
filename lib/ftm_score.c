@@ -8,6 +8,9 @@
 #include "ftm_score.h"
 #include "ftm_trace.h"
 
+#undef	__MODULE__
+#define	__MODULE__ "analyzer"
+
 void FTM_SCORE_processIP
 (
 	FTM_SCORE_PTR	pScoreInfo,

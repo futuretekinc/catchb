@@ -1760,7 +1760,7 @@ FTM_RET	FTM_DB_createSwitchTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pSwitchTableName, "_ID TEXT PRIMARY KEY, _MODEL INT, _IP TEXT, _USERID TEXT, _PASSWD TEXT, _COMMENT TEXT");
+	return FTM_DB_createTable(pDB, pDB->pSwitchTableName, "_ID TEXT PRIMARY KEY, _MODEL INT, _IP TEXT, _USERID TEXT, _PASSWD TEXT, _SECURE INT, _COMMENT TEXT");
 }
 
 FTM_RET	FTM_DB_isSwitchTableExist

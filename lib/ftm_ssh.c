@@ -79,6 +79,7 @@ FTM_RET	FTM_SSH_create
 	}
 
 	*ppSSH = pSSH;
+	INFO("SSH created successfully.");
 
 finished:
 	
@@ -121,8 +122,10 @@ FTM_RET	FTM_SSH_connect
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_INT	nRet;
 
+	INFO("FTM_SSH_connect(%s, %s, %s)", ((pHost)?pHost:""), ((pUser)?pUser:""), ((pPasswd)?pPasswd:""));
 	if(pUser != NULL)
 	{
+		INFO("SST OPTION USER : %s", pUser);
 		nRet = ssh_options_set(pSSH->pSession, SSH_OPTIONS_USER, pUser);
 		if (nRet < 0)
 		{
@@ -135,6 +138,7 @@ FTM_RET	FTM_SSH_connect
 	nRet = ssh_options_set(pSSH->pSession, SSH_OPTIONS_HOST, pHost);
 	if (nRet < 0)
 	{
+		INFO("SST OPTION HOST : %s", pHost);
 		xRet = FTM_RET_SSH_FAILED_TO_SET_OPTION;
 		ERROR(xRet, "Failed to set option!");
 		return xRet;
@@ -159,6 +163,7 @@ FTM_RET	FTM_SSH_connect
 
 	if (pPasswd != NULL)
 	{
+		INFO("SST AuthenticateConsole : %s", pPasswd);
 		xRet = FTM_SSH_authenticateConsole(pSSH, pPasswd);
 		if (xRet != FTM_RET_OK)
 		{
@@ -300,6 +305,7 @@ FTM_RET	FTM_SSH_authenticateConsole
 	FTM_INT	nMethod;
 
 	// Try to authenticate
+
 	nRet = ssh_userauth_none(pSSH->pSession, NULL);
 	if (nRet == SSH_AUTH_ERROR) 
 	{
@@ -313,6 +319,7 @@ FTM_RET	FTM_SSH_authenticateConsole
 	{
 		if (nMethod & SSH_AUTH_METHOD_GSSAPI_MIC)
 		{
+			INFO("User auth GSSAPI MIC!");
 			nRet = ssh_userauth_gssapi(pSSH->pSession);
 			if(nRet == SSH_AUTH_ERROR) 
 			{
@@ -329,6 +336,7 @@ FTM_RET	FTM_SSH_authenticateConsole
 		// Try to authenticate with public key first
 		if (nMethod & SSH_AUTH_METHOD_PUBLICKEY) 
 		{
+			INFO("User auth publi key!");
 			nRet = ssh_userauth_publickey_auto(pSSH->pSession, NULL, NULL);
 			if (nRet == SSH_AUTH_ERROR) 
 			{
@@ -518,6 +526,8 @@ FTM_RET	FTM_SSH_CHANNEL_create
 	pChannel->pSSH = pSSH;
 
 	*ppChannel = pChannel;
+
+	INFO("SSH channel created successfully.");
 	
 finished:
 	if (xRet != FTM_RET_OK)
@@ -656,7 +666,8 @@ FTM_BOOL	FTM_SSH_CHANNEL_isEOF
  	return	 ssh_channel_is_eof(pChannel->pChannel);
 }
 
-FTM_RET	FTM_SSH_CHANNEL_read
+
+FTM_RET	FTM_SSH_CHANNEL_read2
 (
 	FTM_SSH_CHANNEL_PTR	pChannel,
 	FTM_UINT32			ulTimeout,
@@ -723,6 +734,7 @@ FTM_RET	FTM_SSH_CHANNEL_read
 	return	xRet;
 }
 
+
 FTM_RET	FTM_SSH_CHANNEL_write
 (
 	FTM_SSH_CHANNEL_PTR	pChannel,
@@ -735,6 +747,8 @@ FTM_RET	FTM_SSH_CHANNEL_write
 
 	FTM_RET		xRet = FTM_RET_OK;
 	FTM_INT32	nWrittenLen;
+
+	INFO("SSH channel write (%s, %d)", pBuffer, ulBufferLen);
 
   	if (FTM_SSH_CHANNEL_isOpen(pChannel) && !FTM_SSH_CHANNEL_isEOF(pChannel))
 	{
@@ -811,12 +825,20 @@ FTM_RET	FTM_SSH_CHANNEL_writeLine
 
 				INFO("ssh_channel_write done.");
 			}
+			else
+			{
+				ERROR(xRet, "Failed to write line");	
+			}
 		}
 		else
 		{ 
 			xRet = FTM_RET_ERROR;
 			ERROR(xRet, "Failed to get FD.");
 		}    
+	}
+	else
+	{
+		ERROR(xRet, "Failed to write line");	
 	}
 
 	return	xRet;
@@ -926,6 +948,76 @@ finished:
 	return	xRet;
 }
 
+FTM_RET	FTM_SSH_CHANNEL_read
+(
+	FTM_SSH_CHANNEL_PTR	pChannel,
+	FTM_CHAR_PTR		pBuffer,
+	FTM_UINT32			ulBufferSize,
+	FTM_UINT32_PTR		pReadLen
+)
+{
+	ASSERT(pChannel != NULL);
+	ASSERT(pBuffer != NULL);
+	ASSERT(pReadLen != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_UINT32	ulReadLen = 0;
+	FTM_UINT32	ulRcvdLen = 0;
+	FTM_UINT32	ulLen = 0;
+	FTM_UINT8	nData;
+	FTM_UINT32	i;
+
+	if (pChannel->pChannel == NULL)
+	{
+		xRet = FTM_RET_SOCKET_CLOSED;
+		goto finished;
+	}
+
+	FTM_BUFFER_getSize(pChannel->pBuffer, &ulRcvdLen);
+	if (ulRcvdLen == 0)
+	{
+		goto finished;
+	}
+
+	FTM_LOCK_set(pChannel->pLock);
+
+	for(i = 0 ; i < ulRcvdLen  && i < ulBufferSize ; i++)
+	{
+		xRet = FTM_BUFFER_getFirst(pChannel->pBuffer, &nData);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to get first data from buffer!");
+			goto finished;	
+		}
+
+		if(nData == '\n')
+		{
+			FTM_BUFFER_popFront(pChannel->pBuffer, (FTM_UINT8_PTR)&nData, 1, &ulLen);
+			break;	
+		}
+		else if (nData == '\r')
+		{
+			FTM_BUFFER_popFront(pChannel->pBuffer, (FTM_UINT8_PTR)&nData, 1, &ulLen);
+		}
+		else
+		{
+			FTM_BUFFER_popFront(pChannel->pBuffer, (FTM_UINT8_PTR)&pBuffer[ulReadLen++], 1, &ulLen);
+		}
+	}
+
+	FTM_LOCK_reset(pChannel->pLock);
+finished:
+
+	*pReadLen = ulReadLen;
+
+	if (ulReadLen != 0)
+	{
+		pBuffer[ulReadLen] = 0;
+		INFO("SSH READ : %s", pBuffer);	
+	}
+	return	xRet;
+}
+
 FTM_VOID_PTR	FTM_SSH_CHANNEL_threadMain
 (
 	FTM_VOID_PTR	pData
@@ -943,15 +1035,30 @@ FTM_VOID_PTR	FTM_SSH_CHANNEL_threadMain
 	while (!pChannel->bStop)
 	{
 		nReadLen = ssh_channel_read_nonblocking(pChannel->pChannel, pBuffer, sizeof(pBuffer), 0);
+#if 0
 		if (nReadLen < 0)
 		{
 			ERROR(FTM_RET_SSH_READ_FAILED, "Failed to read data!");
 			break;
 		}
-		else if (nReadLen > 0)
+		else 
+#endif
+		if (nReadLen > 0)
 		{
+			pBuffer[nReadLen] = 0;
+			INFO("SSH RECEIVED[%d] : %s", nReadLen, pBuffer);
 			FTM_LOCK_set(pChannel->pLock);
-			FTM_BUFFER_pushBack(pChannel->pBuffer, (FTM_UINT8_PTR)pBuffer, nReadLen);
+			for(FTM_INT i = 0 ; i < nReadLen ; i++)
+			{
+				if ((pBuffer[i] == 0x1B) && (i + 3 <= nReadLen))
+				{
+					i+= 2;
+				}
+				else
+				{
+					FTM_BUFFER_pushBack(pChannel->pBuffer, (FTM_UINT8_PTR)&pBuffer[i], 1);
+				}
+			}
 			FTM_LOCK_reset(pChannel->pLock);
 		}
 

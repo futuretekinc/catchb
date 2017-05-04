@@ -1,4 +1,7 @@
+#include <sys/types.h>
+#include <signal.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 #include "ftm_types.h"
 #include "ftm_trace.h"
@@ -21,7 +24,7 @@ FTM_SWITCH_INFO	pSwitchInfos[] =
 	{
 		.xModel	= FTM_SWITCH_MODEL_DASAN,
 		.pName  = "dasan",
-		.fSetAC	= FTM_SWITCH_DASAN_setAC
+		.fSetAC	= FTM_SWITCH_DASAN_setAC2
 	},
 	{
 		.xModel	= FTM_SWITCH_MODEL_JUNIPER,
@@ -616,7 +619,7 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 	xRet = FTM_SSH_connect(pSSH, pSwitch->xConfig.pIP, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to create channel!");	
+		ERROR(xRet, "Failed to connect ssh!");	
 		goto finished;
 	}
 
@@ -639,17 +642,31 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 			FTM_CHAR	pReadLine[512];
 			FTM_UINT32	ulReadLen = 0;
 
-			xRet = FTM_SSH_CHANNEL_readLine(pChannel, pReadLine, sizeof(pReadLine), &ulReadLen);
+			xRet = FTM_SSH_CHANNEL_read(pChannel, pReadLine, sizeof(pReadLine), &ulReadLen);
 			if ((ulReadLen != 0) && isprint(pReadLine[0]))
 			{
+				INFO("ReadLine : %s", pReadLine);
+				INFO("Waiting : %s", pScript->pCommands[ulCommandLine].pPrompt);
 				if (strncasecmp(pReadLine, pScript->pCommands[ulCommandLine].pPrompt, strlen(pScript->pCommands[ulCommandLine].pPrompt)) == 0)
 				{
 					FTM_SSH_CHANNEL_writeLine(pChannel, pScript->pCommands[ulCommandLine].pInput);
 					ulCommandLine++;
+					usleep(100000);
+				}
+				else if (strncasecmp(pReadLine, "% Authentication", 16) == 0)
+				{
+					FTM_SSH_CHANNEL_writeLine(pChannel, "\n");
+					ulCommandLine = 0;
 				}
 				else if (strncasecmp(pReadLine, "Press any key", 12) == 0)
 				{
-					FTM_SSH_CHANNEL_writeLine(pChannel, "\n");
+					FTM_SSH_CHANNEL_writeLine(pChannel, "");
+				}
+				else if (strncasecmp(pReadLine, "****", 4)== 0)
+				{
+					FTM_SSH_CHANNEL_writeLine(pChannel, "");
+					FTM_SSH_CHANNEL_close(pChannel);
+					FTM_SSH_CHANNEL_open(pChannel);
 				}
 			}
 

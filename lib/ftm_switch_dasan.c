@@ -2,7 +2,6 @@
 #include <common.h>
 #include <syslog.h>
 #include <signal.h>
-#include <errno.h>
 
 #include <sys/select.h>
 #include <sys/time.h>
@@ -28,13 +27,65 @@
 #include "ftm_switch.h"
 #include "ftm_timer.h"
 #include "ftm_ssh.h"
+#include "ftm_telnet.h"
 
-#define	NST_MAX_COMD	32
+#undef	__MODULE__ 
+#define	__MODULE__ "switch"
 
-#undef	__MODULE__
-#define	__MODULE__	"switch"
+#define	DASAN_MAX_COMD	32
 
-FTM_RET	FTM_SWITCH_DASAN_setAC
+static
+FTM_SWITCH_SCRIPT	xDenyScript =
+{
+	.pCommands = 
+	{
+		[0]	= {	.pPrompt= "SWITCH>",		.pInput = "enable"},
+		[1]	= {	.pPrompt= "SWITCH#",		.pInput = "config terminal"},
+		[2]	= {	.pPrompt= "SWITCH(config)#",.ulSubIndex = 1},
+		[3]	= {	.pPrompt= "SWITCH(config-flow",.ulSubIndex = 2},
+		[4]	= {	.pPrompt= "SWITCH(config-flow",.pInput = "apply"},
+		[5]	= {	.pPrompt= "SWITCH(config-flow",.pInput = "exit"},
+		[6]	= {	.pPrompt= "SWITCH(config)#",.ulSubIndex = 3},
+		[7]	= {	.pPrompt= "SWITCH(config-flow",.ulSubIndex = 4},
+		[8]	= {	.pPrompt= "SWITCH(config-flow",.pInput = "apply"},
+		[9]= {	.pPrompt= "SWITCH(config-flow",.pInput = "exit"},
+		[10]= {	.pPrompt= "SWITCH(config)#",.ulSubIndex = 5},
+		[11]= {	.pPrompt= "SWITCH(config-policy",.ulSubIndex = 6},
+		[12]= {	.pPrompt= "SWITCH(config-policy",.pInput = "priority highest"},
+		[13]= {	.pPrompt= "SWITCH(config-policy",.pInput = "interface-binding vlan any"},
+		[14]= {	.pPrompt= "SWITCH(config-policy",.pInput = "action match permit"},
+		[15]= {	.pPrompt= "SWITCH(config-policy",.pInput = "apply"},
+		[16]= {	.pPrompt= "SWITCH(config-policy",.pInput = "exit"},
+		[17]= {	.pPrompt= "SWITCH(config)#",	.ulSubIndex = 7},
+		[18]= {	.pPrompt= "SWITCH(config-policy",.ulSubIndex = 8},
+		[19]= {	.pPrompt= "SWITCH(config-policy",.pInput = "priority medium"},
+		[20]= {	.pPrompt= "SWITCH(config-policy",.pInput = "interface-binding vlan any"},
+		[21]= {	.pPrompt= "SWITCH(config-policy",.pInput = "action match deny"},
+		[22]= {	.pPrompt= "SWITCH(config-policy",.pInput = "apply"},
+		[23]= {	.pPrompt= "SWITCH(config-policy",.pInput = "end"},
+		[24]= {	.pPrompt= "SWITCH#",			.pInput = "exit"},
+		[25]= {	.pPrompt= NULL,				.pInput = ""}
+	}
+};
+
+static
+FTM_SWITCH_SCRIPT	xAllowScript =
+{
+	.pCommands = 
+	{
+		[0]	= {	.pPrompt= "SWITCH>",		.pInput = "enable"},
+		[1]	= {	.pPrompt= "SWITCH#",		.pInput = "config terminal"},
+		[2]	= {	.pPrompt= "SWITCH(config)#",.ulSubIndex = 9},
+		[3]	= {	.pPrompt= "SWITCH(config)#",.ulSubIndex = 10},
+		[4]	= {	.pPrompt= "SWITCH(config)#",.ulSubIndex = 11},
+		[5]	= {	.pPrompt= "SWITCH(config)#",.ulSubIndex = 12},
+		[6]= {	.pPrompt= "SWITCH(config)#",.pInput = "end"},
+		[7]= {	.pPrompt= "SWITCH#",		.pInput = "exit"},
+		[8]= {	.pPrompt= NULL,				.pInput = ""}
+	}
+};
+
+FTM_RET	FTM_SWITCH_DASAN_setAC2
 (
 	FTM_SWITCH_PTR	pSwitch,
 	FTM_CHAR_PTR	pTargetIP,
@@ -44,186 +95,51 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 	ASSERT(pSwitch != NULL);
 	ASSERT(pTargetIP != NULL);
 
-	FTM_RET		xRet;
-	FTM_INT		i;
 	FTM_CHAR	pLocalIP[FTM_IP_LEN+1];
-    FTM_CHAR	pCommandBuffers[NST_MAX_COMD][FTM_COMMAND_LEN];
-	FTM_UINT32	ulIndex;
-	FTM_UINT32	ulCommandLines = 0;
-	FTM_SSH_PTR	pSSH = NULL;
-	FTM_SSH_CHANNEL_PTR	pChannel = NULL;
-	FTM_UINT8	pBuffer[2048];
-	FTM_UINT8	pErrorBuffer[2048];
-	FTM_UINT32	nReadLen;
-	FTM_UINT32	nErrorReadLen;
-	FTM_TIMER	xTimer;
+	FTM_UINT32	ulIndex = 0;
+	FTM_SWITCH_SCRIPT_PTR pScript;
+
+	if (xPolicy == FTM_SWITCH_AC_POLICY_DENY)
+	{
+		pScript = &xDenyScript;
+	}
+	else
+	{
+		pScript = &xAllowScript;
+	}
 
 	FTM_getLocalIP(pLocalIP, sizeof(pLocalIP));
 	ulIndex = ntohl(inet_addr(pTargetIP)) & 0xFFFFFF;
-	
-	switch(xPolicy)
+
+	FTM_SWS_CMD_PTR	pCommand = pScript->pCommands;
+	while(pCommand->pPrompt != NULL)
 	{
-	case	FTM_SWITCH_AC_POLICY_DENY:
+		switch(pCommand->ulSubIndex)
 		{
-			sprintf(pCommandBuffers[ulCommandLines++],"enable\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"sh\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"configure terminal\n");
-
-			sprintf(pCommandBuffers[ulCommandLines++],"flow catchb_main_%d create\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"ip %s/32 %s/32\n", pTargetIP, pLocalIP);
-			sprintf(pCommandBuffers[ulCommandLines++],"apply\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
-
-			sprintf(pCommandBuffers[ulCommandLines++],"flow catchb_%d create\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"ip %s/32 any\n", pTargetIP);
-			sprintf(pCommandBuffers[ulCommandLines++],"apply\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
-
-			sprintf(pCommandBuffers[ulCommandLines++],"policy catchb_main_%d create\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"include-flow catchb_main_%d\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"priority highest\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"interface-binding vlan any\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"action match permit\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"apply\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
-
-			sprintf(pCommandBuffers[ulCommandLines++],"policy catchb_%d create\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"include-flow catchb_%d\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"priority medium\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"interface-binding vlan any\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"action match deny\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"apply\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"end\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
-
-		}
-		break;
-
-	case	FTM_SWITCH_AC_POLICY_ALLOW:	
-		{
-			sprintf(pCommandBuffers[ulCommandLines++],"enable\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"configure terminal\n");
-
-			sprintf(pCommandBuffers[ulCommandLines++],"no policy catchb_%d\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"no flow catchb_%d\n", ulIndex);
-
-			sprintf(pCommandBuffers[ulCommandLines++],"no policy catchb_main_%d\n", ulIndex);
-			sprintf(pCommandBuffers[ulCommandLines++],"no flow catchb_main_%d\n", ulIndex);
-
-			sprintf(pCommandBuffers[ulCommandLines++],"end\n");
-			sprintf(pCommandBuffers[ulCommandLines++],"exit\n");
-		}
-		break;
-	}
-
-	INFO("FTM_SSH_create");
-	xRet = FTM_SSH_create(&pSSH);
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to create SSH!");	
-		goto finished;
-	}
-
-	INFO("FTM_SSH_connect(%s, %s, %s)", pSwitch->xConfig.pIP, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd);
-	xRet = FTM_SSH_connect(pSSH, pSwitch->xConfig.pIP, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd);
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to create channel!");	
-		goto finished;
-	}
-
-	INFO("FTM_SSH_CHANNEL_create");
-	xRet = FTM_SSH_CHANNEL_create(pSSH, &pChannel);
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to create channel!");	
-		goto finished;
-	}
-
-	INFO("FTM_SSH_CHANNEL_open");
-	xRet = FTM_SSH_CHANNEL_open(pChannel);
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to create channel!");	
-		goto finished;
-	}
-
-	fd_set	fds;
-	FTM_INT	eof = 0;
-
-	for(i = 0; i < ulCommandLines ; i++)
-	{
-		
-		FTM_TIMER_initMS(&xTimer, 1000);
-		while(!FTM_TIMER_isExpired(&xTimer))
-		{
-			FTM_UINT32	ulRemainTime = 0;
-			FTM_TIMER_remainMS(&xTimer, &ulRemainTime);
-
-			xRet = FTM_SSH_CHANNEL_read(pChannel, ulRemainTime, pBuffer, sizeof(pBuffer), &nReadLen, pErrorBuffer, sizeof(pErrorBuffer), &nErrorReadLen);
-			if ((xRet != FTM_RET_TIMEOUT) && (xRet != FTM_RET_OK))
-			{
-				break;	
-			}
-			else if (nReadLen != 0)
-			{
-				INFO("STDOUT : %s", (FTM_CHAR_PTR)pBuffer);	
-			}
-			else if (nErrorReadLen != 0)
-			{
-				INFO("STDERR : %s", (FTM_CHAR_PTR)pErrorBuffer);	
-			}
+		case	1: 	sprintf(pCommand->pInput,	"flow catchb_main_%d create\n", ulIndex); break;
+		case	2: 	sprintf(pCommand->pInput,	"ip %s/32 %s/32\n", pTargetIP, pLocalIP); break;
+		case	3: 	sprintf(pCommand->pInput,	"flow catchb_%d create\n", ulIndex); break;
+		case	4: 	sprintf(pCommand->pInput,	"ip %s/32 any\n", pTargetIP); break;
+		case	5: 	sprintf(pCommand->pInput,	"policy catchb_main_%d create\n", ulIndex); break;
+		case	6: 	sprintf(pCommand->pInput,	"include-flow catchb_main_%d\n", ulIndex); break;
+		case	7: 	sprintf(pCommand->pInput,	"policy catchb_%d create\n", ulIndex); break;
+		case	8: 	sprintf(pCommand->pInput,	"include-flow catchb_%d\n", ulIndex); break;
+		case	9:	sprintf(pCommand->pInput,	"no policy catchb_%d\n", ulIndex); break;
+		case	10:	sprintf(pCommand->pInput,	"no flow catchb_%d\n", ulIndex); break;
+		case	11:	sprintf(pCommand->pInput,	"no policy catchb_main_%d\n", ulIndex); break;
+		case	12:	sprintf(pCommand->pInput, 	"no flow catchb_main_%d\n", ulIndex); break;
+		default: break;
 		}
 
-  		if (FTM_SSH_CHANNEL_isOpen(pChannel) && !FTM_SSH_CHANNEL_isEOF(pChannel))
-		{
-			FTM_INT	nFD = 0; 
-
-			FD_ZERO(&fds);
-			if(!eof)
-			{
-				FD_SET(0,&fds);
-			}
-
-			nFD = ssh_get_fd(pSSH->pSession);
-			if (nFD < 0) 
-			{ 
-				xRet = FTM_RET_ERROR;
-				ERROR(xRet, "Failed to get FD.");
-				break;
-			}    
-
-			FD_SET(nFD, &fds);
-
-			if(FD_ISSET(nFD,&fds))
-			{
-				INFO("FTM_SSH_CHANNEL_write(%s, %d)", (FTM_UINT8_PTR)pCommandBuffers[i], strlen(pCommandBuffers[i]));
-				FTM_SSH_CHANNEL_write(pChannel, (FTM_UINT8_PTR)pCommandBuffers[i], strlen(pCommandBuffers[i]));
-
-				sleep(1);
-			}    
-		}
+		pCommand++;
 	}
 
-	INFO("FTM_SSH_CHANNEL_close");
-	FTM_SSH_CHANNEL_close(pChannel);
-	INFO("FTM_SSH_disconnect");
-	FTM_SSH_disconnect(pSSH);
-
-finished:
-	
-	if (pChannel != NULL)
+	if (pSwitch->xConfig.bSecure)
 	{
-		INFO("FTM_SSH_CHANNEL_destroy");
-		FTM_SSH_CHANNEL_destroy(&pChannel);	
+		return	FTM_SWITCH_SSH_setAC(pSwitch, pTargetIP, pScript);
 	}
-
-	if (pSSH != NULL)
+	else
 	{
-		INFO("FTM_SSH_destroy");
-		FTM_SSH_destroy(&pSSH);	
+		return	FTM_SWITCH_TELNET_setAC(pSwitch, pTargetIP, pScript);
 	}
-
-	return	xRet;
 }
-
