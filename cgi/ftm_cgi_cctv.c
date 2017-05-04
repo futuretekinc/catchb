@@ -298,7 +298,7 @@ FTM_RET	FTM_CGI_setCCTVPolicy
 	ASSERT(pClient != NULL);
 	ASSERT(pReq != NULL);
 
-	FTM_RET		xRet;
+	FTM_RET		xRet = FTM_RET_OK;
 	FTM_SWITCH_AC_POLICY	xPolicy;
 	FTM_CHAR	pID[FTM_ID_LEN+1];
 	cJSON _PTR_	pRoot;
@@ -356,18 +356,21 @@ FTM_RET	FTM_CGI_resetCCTV
 	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
+		ERROR(xRet, "Failed to reset cctv because invalid arguments");
 		goto finish;
 	}
 
 	xRet = FTM_CGI_getHash(pReq, pHash, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
+		ERROR(xRet, "Failed to reset cctv because invalid arguments");
 		goto finish;
 	}
 
 	xRet = FTM_CLIENT_resetCCTV(pClient, pID, pHash);
 	if (xRet != FTM_RET_OK)
 	{
+		ERROR(xRet, "Failed to reset cctv[%s]", pID);
 		goto finish;
 	}
 

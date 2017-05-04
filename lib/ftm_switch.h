@@ -95,6 +95,7 @@ typedef	struct	FTM_SWITCH_STRUCT
 {
 	FTM_SWITCH_CONFIG	xConfig;
 
+	FTM_BOOL			bActivated;
 	FTM_LIST_PTR		pACList;
 	FTM_LOCK			xLock;
 }	FTM_SWITCH, _PTR_ FTM_SWITCH_PTR;

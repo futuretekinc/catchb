@@ -703,8 +703,6 @@ FTM_RET	FTM_ANALYZER_process
 		}
 		ulOptionLen += sprintf(&pOptions[ulOptionLen], ")");
 		FTM_PCAP_setFilter(pAnalyzer->pPCAP, pOptions);
-//		FTM_PCAP_setFilterIP(pAnalyzer->pPCAP, inet_addr(pCCTV->xConfig.pIP), inet_addr(pLocalIP));
-//		FTM_PCAP_setFilterPorts(pAnalyzer->pPCAP, pAnalyzer->xConfig.pPortList, pAnalyzer->xConfig.ulPortCount);
 
 		FTM_ANALYZER_PCAP_start(pAnalyzer);
 		FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);

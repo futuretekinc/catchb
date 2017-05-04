@@ -34,7 +34,7 @@
 #undef	__MODULE__
 #define	__MODULE__	"switch"
 
-FTM_RET	FTM_SWITCH_DASAN_setAC
+FTM_RET	FTM_SWITCH_DASAN_setAC2
 (
 	FTM_SWITCH_PTR	pSwitch,
 	FTM_CHAR_PTR	pTargetIP,

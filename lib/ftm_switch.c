@@ -24,7 +24,7 @@ FTM_SWITCH_INFO	pSwitchInfos[] =
 	{
 		.xModel	= FTM_SWITCH_MODEL_DASAN,
 		.pName  = "dasan",
-		.fSetAC	= FTM_SWITCH_DASAN_setAC2
+		.fSetAC	= FTM_SWITCH_DASAN_setAC
 	},
 	{
 		.xModel	= FTM_SWITCH_MODEL_JUNIPER,

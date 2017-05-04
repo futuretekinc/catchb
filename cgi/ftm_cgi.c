@@ -26,7 +26,7 @@ FTM_CGI_COMMAND	pCCTVCmds[] =
 	{	"get",		FTM_CGI_getCCTV			},
 	{	"set",		FTM_CGI_setCCTV			},
 	{	"list",		FTM_CGI_getCCTVIDList	},
-	{	"polic",	FTM_CGI_setCCTVPolicy	},
+	{	"policy",	FTM_CGI_setCCTVPolicy	},
 	{	"reset",	FTM_CGI_resetCCTV		},
 	{	NULL,		NULL					}
 };
@@ -86,13 +86,10 @@ FTM_RET	FTM_CGI_finish
 	FTM_RET xRet
 )
 {
-	INFO("Called");
 	cJSON_AddStringToObject(pRoot, "result", (xRet == FTM_RET_OK)?"success":"failed");	
 
-	INFO("Called");
 	qcgires_setcontenttype(pReq, "text/json");
 	printf("%s", cJSON_Print(pRoot));
-	INFO("Called");
 	INFO("%s",  cJSON_Print(pRoot));
 	if (pRoot != NULL)
 	{

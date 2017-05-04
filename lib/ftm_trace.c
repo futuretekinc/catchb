@@ -396,8 +396,11 @@ FTM_TRACE_CONFIG	xTraceConfig =
 	}
 };
 
-static FTM_UINT32	ulModuleCount = 0;
-static FTM_CHAR	xModuleName[32][32];
+static FTM_UINT32	ulModuleCount = 1;
+static FTM_CHAR	xModuleName[32][32] =
+{
+	"cgi"
+};
 
 FTM_RET		FTM_TRACE_CONFIG_setDefault
 (

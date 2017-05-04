@@ -779,7 +779,7 @@ FTM_RET	FTM_SERVER_setCCTVPolicy
 		xRet = FTM_CATCHB_getSwitch(pCatchB, pCCTV->xConfig.pSwitchID, &pSwitch);
 		if (xRet == FTM_RET_OK)
 		{
-			xRet = FTM_SWITCH_addAC(pSwitch, pCCTV->xConfig.pID, pReq->xPolicy, &pAC);
+			xRet = FTM_SWITCH_addAC(pSwitch, pCCTV->xConfig.pIP, pReq->xPolicy, &pAC);
 		}
 	}
 
@@ -809,9 +809,12 @@ FTM_RET	FTM_SERVER_resetCCTV
 	{	
 		if (strlen(pCCTV->xConfig.pHash) != 0)
 		{
-			if (strcmp(pCCTV->xConfig.pHash, pReq->pHash) != 0)
+			if (strcasecmp(pCCTV->xConfig.pHash, pReq->pHash) != 0)
 			{
 				xRet = FTM_RET_INVALID_ARGUMENTS;
+				ERROR(xRet, "Failed to reset cctv because invalid hash!");
+				ERROR(xRet, "CCTV Hash : %s", pCCTV->xConfig.pHash);
+				ERROR(xRet, " Req Hash : %s", pReq->pHash);
 			}
 		}
 
@@ -842,6 +845,10 @@ FTM_RET	FTM_SERVER_resetCCTV
 				}
 			}
 		}
+	}
+	else
+	{
+		ERROR(xRet, "Failed to reset cctv because cctv[%s] not found!", pReq->pID);
 	}
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
