@@ -118,7 +118,7 @@ FTM_RET	FTM_SWITCH_NST_setAC
 		pCommand++;
 	}
 
-#if 0
+#if 1
 	if (pSwitch->xConfig.bSecure)
 	{
 		return	FTM_SWITCH_SSH_setAC(pSwitch, pTargetIP, pScript);

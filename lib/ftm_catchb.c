@@ -1732,7 +1732,6 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 			break;
 
 		case	FTM_CCTV_STAT_UNREGISTERED:
-		case	FTM_CCTV_STAT_UNUSED:
 			{
 				if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
 				{
@@ -1752,6 +1751,28 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 				}
 				xLogType = FTM_LOG_TYPE_ERROR;
 				memset(pCCTV->xConfig.pHash, 0, sizeof(pCCTV->xConfig.pHash));
+			}
+			break;
+
+		case	FTM_CCTV_STAT_UNUSED:
+			{
+				if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
+				{
+					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
+				}
+				else if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
+				{
+					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_FALSE);
+					if (pCatchB->pNotifier != NULL)
+					{
+						xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, pMsg->pID);
+						if (xRet != FTM_RET_OK)
+						{
+							ERROR(xRet, "Failed to notify!");	
+						}
+					}
+				}
+				xLogType = FTM_LOG_TYPE_ERROR;
 			}
 			break;
 		}
