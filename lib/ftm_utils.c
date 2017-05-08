@@ -96,7 +96,15 @@ FTM_RET	FTM_getNetIFInfo
     FILE *pFP;
 	FTM_CHAR	pCommandLine[256];
 	FTM_CHAR	pBuffer[256];
-	
+
+	for(FTM_INT i = 0 ; i < strlen(pIFName) ; i++)
+	{
+		if (isspace(pIFName[i]))
+		{
+			pIFName[i] = '\0';	
+		}
+	}
+
 	sprintf(pCommandLine, "ifconfig %s | grep 'inet addr:'", pIFName);
 	pFP = popen(pCommandLine, "r");
 	if (pFP == NULL)

@@ -1700,7 +1700,7 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 		{
 		case	FTM_CCTV_STAT_NORMAL:
 			{
-				if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
+				if ((pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL) || (pCCTV->xConfig.xStat == FTM_CCTV_STAT_UNUSED))
 				{
 					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
 					if (pCatchB->pNotifier != NULL)
@@ -1719,7 +1719,7 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 
 		case	FTM_CCTV_STAT_ABNORMAL:
 			{
-				if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
+				if ((pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL) || (pCCTV->xConfig.xStat == FTM_CCTV_STAT_UNUSED))
 				{
 					if (pCatchB->pDetector != NULL)
 					{
@@ -1753,7 +1753,7 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 				memset(pCCTV->xConfig.pHash, 0, sizeof(pCCTV->xConfig.pHash));
 			}
 			break;
-
+#if 0
 		case	FTM_CCTV_STAT_UNUSED:
 			{
 				if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
@@ -1775,6 +1775,7 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 				xLogType = FTM_LOG_TYPE_ERROR;
 			}
 			break;
+#endif
 		}
 
 		pCCTV->xConfig.xStat = pMsg->xStat;

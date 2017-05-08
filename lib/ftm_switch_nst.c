@@ -38,15 +38,18 @@ FTM_SWITCH_SCRIPT	xDenyScript =
 		[3]	= {	.pPrompt= "Switch(config)#", 			.pInput = "interface range GigabitEthernet 1-28",	.ulSubIndex = 0,	.pNext = {4, }},
 		[4]	= {	.pPrompt= "Switch(config-if-range)#", 	.pInput = "no ip acl",	.ulSubIndex = 0,	.pNext = {5, 0}},
 		[5]	= {	.pPrompt= "Switch(config-if-range)#", 	.pInput = "exit",		.ulSubIndex = 0,	.pNext = {6, 0}},
-		[6]	= {	.pPrompt= "Switch(config)#", 			.pInput = "ip acl catchb_filter", 		.pNext = {7, 0}},
+		[6]	= {	.pPrompt= "Switch(config)#", 			.pInput = "ip acl catchb_filter", 			.pNext = {7, 0}},
 		[7]	= {	.pPrompt= "Switch(config-ip-acl)#",		.pInput = "",			.ulSubIndex	= 3,	.pNext = {8, 0}},
 		[8]	= {	.pPrompt= "Switch(config-ip-acl)#",		.pInput = "", 			.ulSubIndex = 4,	.pNext = {9, 0}},
 		[9]	= {	.pPrompt= "Switch(config-ip-acl)#",		.pInput = "", 			.ulSubIndex = 5,	.pNext = {10, 0}},
 		[10]= {	.pPrompt= "Switch(config-ip-acl)#",		.pInput = "", 			.ulSubIndex = 6,	.pNext = {11, 0}},
 		[11]= {	.pPrompt= "Switch(config-ip-acl)#",		.pInput = "exit", 		.ulSubIndex = 0,	.pNext = {12, 0}},
-		[12]= {	.pPrompt= "Switch(config)#", 			.pInput = "exit", 		.ulSubIndex = 0,	.pNext = {13, 0}},
-		[13]= {	.pPrompt= "Switch#", 					.pInput = "exit",		.ulSubIndex = 0,	.pNext = {14, 0}},
-		[14]= {	.pPrompt= NULL, 						.pInput = ""},
+		[12]= {	.pPrompt= "Switch(config)#", 			.pInput = "interface range GigabitEthernet 1-28",	.ulSubIndex = 0,	.pNext = {13, }},
+		[13]= {	.pPrompt= "Switch(config-if-range)#", 	.pInput = "ip acl catchb_filter",	.ulSubIndex = 0,	.pNext = {14, 0}},
+		[14]= {	.pPrompt= "Switch(config-if-range)#", 	.pInput = "exit",		.ulSubIndex = 0,	.pNext = {15, 0}},
+		[15]= {	.pPrompt= "Switch(config)#", 			.pInput = "exit", 		.ulSubIndex = 0,	.pNext = {16, 0}},
+		[16]= {	.pPrompt= "Switch#", 					.pInput = "exit",		.ulSubIndex = 0,	.pNext = {17, 0}},
+		[17]= {	.pPrompt= NULL, 						.pInput = ""},
 	}
 };
 
@@ -65,9 +68,12 @@ FTM_SWITCH_SCRIPT	xAllowScript =
 		[8]	= {	.pPrompt= "Switch(config-ip-acl)#",		.pInput = "", 			.ulSubIndex = 8,	.pNext = {9, 0}},
 		[9]	= {	.pPrompt= "Switch(config-ip-acl)#",		.pInput = "", 			.ulSubIndex = 9,	.pNext = {10, 0}},
 		[10]= {	.pPrompt= "Switch(config-ip-acl)#",		.pInput = "exit", 		.ulSubIndex = 0,	.pNext = {11, 0}},
-		[11]= {	.pPrompt= "Switch(config)#", 			.pInput = "exit", 		.ulSubIndex = 0,	.pNext = {12, 0}},
-		[12]= {	.pPrompt= "Switch#", 					.pInput = "exit",		.ulSubIndex = 0,	.pNext = {13, 0}},
-		[13]= {	.pPrompt= NULL, 						.pInput = ""},
+		[11]= {	.pPrompt= "Switch(config)#", 			.pInput = "interface range GigabitEthernet 1-28",	.ulSubIndex = 0, 	.pNext = {12, }},
+		[12]= {	.pPrompt= "Switch(config-if-range)#", 	.pInput = "ip acl catchb_filter",	.ulSubIndex = 0,	.pNext = {13, 0}},
+		[13]= {	.pPrompt= "Switch(config-if-range)#", 	.pInput = "exit",		.ulSubIndex = 0,	.pNext = {14, 0}},
+		[14]= {	.pPrompt= "Switch(config)#", 			.pInput = "exit", 		.ulSubIndex = 0,	.pNext = {15, 0}},
+		[15]= {	.pPrompt= "Switch#", 					.pInput = "exit",		.ulSubIndex = 0,	.pNext = {16, 0}},
+		[16]= {	.pPrompt= NULL, 						.pInput = ""},
 	}
 };
 
