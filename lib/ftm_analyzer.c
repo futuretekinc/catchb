@@ -760,6 +760,7 @@ FTM_RET	FTM_ANALYZER_process
 
 			FTM_ANALIZER_PCAP_calcScore(pAnalyzer, &xScore);
 			INFO("xScore.fValue = %.1f", xScore.fValue);
+			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, "[score : %.1f]", xScore.fValue);
 
 			FTM_HASH_SHA1((FTM_UINT8_PTR)pHashData, ulHashDataLen, pHashValue, sizeof(pHashValue));
 

@@ -2393,6 +2393,11 @@ FTM_RET	FTM_CATCHB_setSwitchProperties
 			strcpy(pSwitch->xConfig.pPasswd, pConfig->pPasswd);
 		}
 
+		if (ulFieldFlags & FTM_SWITCH_FIELD_SECURE)
+		{
+			strcpy(pSwitch->xConfig.bSecure, pConfig->bSecure);
+		}
+
 		if (ulFieldFlags & FTM_SWITCH_FIELD_COMMENT)
 		{
 			strcpy(pSwitch->xConfig.pComment, pConfig->pComment);

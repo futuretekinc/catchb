@@ -580,6 +580,7 @@ FTM_RET	FTM_SERVER_addCCTV
 	strncpy(xConfig.pID, pReq->pID, sizeof(xConfig.pID) - 1);
 	strncpy(xConfig.pIP, pReq->pIP, sizeof(xConfig.pIP) - 1);
 	strncpy(xConfig.pSwitchID, pReq->pSwitchID, sizeof(xConfig.pSwitchID) - 1);
+	strncpy(xConfig.pComment, pReq->pComment, sizeof(xConfig.pComment) - 1);
 		
 	xRet = FTM_CATCHB_addCCTV(pServer->pCatchB, &xConfig);
 	if (xRet != FTM_RET_OK)
