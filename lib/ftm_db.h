@@ -54,7 +54,8 @@ typedef	struct	FTM_DB_STRUCT
 	FTM_CHAR	pDenyTableName[FTM_NAME_LEN+1];
 	FTM_CHAR	pSwitchTableName[FTM_NAME_LEN+1];
 	FTM_CHAR	pStatisticsTableName[FTM_NAME_LEN+1];
-
+	
+	FTM_LOCK_PTR	pLock;
 	sqlite3 _PTR_	pSQLite3;
 }	FTM_DB, _PTR_ FTM_DB_PTR;
 

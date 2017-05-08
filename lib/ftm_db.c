@@ -270,6 +270,7 @@ FTM_RET	FTM_DB_createTable
 			ERROR(xRet, "Failed to execute query!");
 			sqlite3_free(pErrorMsg);
 		}
+		INFO("Query success!");
 	}
 		
 	INFO("The tables[%s] created.", pTableName);
@@ -301,12 +302,14 @@ FTM_RET	FTM_DB_destroyTable
 		memset(pQuery, 0, sizeof(pQuery));
 
 		snprintf(pQuery, sizeof(pQuery) - 1, "DROP TABLE %s", pTableName);
+		INFO("Query : %s", pQuery);
 		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
 		{
 			xRet = FTM_RET_DB_EXEC_ERROR;
 			ERROR(xRet, "Failed to execute query!");
 			sqlite3_free(pErrorMsg);
 		}
+		INFO("Query success!");
 	}
 		
 	return	xRet;
@@ -362,6 +365,7 @@ FTM_RET FTM_DB_isExistTable
 	FTM_CHAR_PTR    pQuery = "select name from sqlite_master where type='table' order by name";
 	FTM_CHAR_PTR    pErrMsg = NULL;
 
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_isExistTableCB, &xParams, &pErrMsg) != 0)
 	{    
 		xRet = FTM_RET_DB_EXEC_ERROR;
@@ -372,6 +376,7 @@ FTM_RET FTM_DB_isExistTable
 	{
 		*pExist = xParams.bExist;
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -418,6 +423,7 @@ FTM_RET	FTM_DB_getElementCount
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "SELECT COUNT(*) FROM %s", pTableName);
 
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getElementCountCB, &xParams, &pErrorMsg) != 0)
 	{
 		sqlite3_free(pErrorMsg);
@@ -427,7 +433,7 @@ FTM_RET	FTM_DB_getElementCount
 	{
 		*pCount = xParams.ulCount;
 	}
-
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -462,6 +468,7 @@ FTM_RET	FTM_DB_getElementList
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -496,6 +503,7 @@ FTM_RET	FTM_DB_getElementListOrderByTime
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -551,6 +559,7 @@ FTM_RET	FTM_DB_getElementListOfTimePeriod
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -605,6 +614,7 @@ FTM_RET	FTM_DB_addCCTV
 	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_ID, _IP, _SWITCH_ID, _COMMENT, _TIME, HASH, STAT) VALUES('%s', '%s', '%s', '%s', %d, '', 0);", 
 		pDB->pCCTVTableName, pID, pIP, pSwitchID, (pComment != NULL)?pComment:"", ulTime);
 	
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
@@ -663,11 +673,13 @@ FTM_RET	FTM_DB_updateCCTV
 	
 	ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE _ID = '%s';", pID);
 	
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -687,11 +699,13 @@ FTM_RET	FTM_DB_deleteCCTV
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _ID = '%s'", pDB->pCCTVTableName, pID);
 	
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -778,6 +792,7 @@ FTM_RET	FTM_DB_getCCTVUsingIP
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s WHERE _IP = %s", pDB->pCCTVTableName, pIP);
 
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getCCTVListCB, (FTM_VOID_PTR)&xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
@@ -788,6 +803,7 @@ FTM_RET	FTM_DB_getCCTVUsingIP
 		xRet = FTM_RET_OBJECT_NOT_FOUND;
 		ERROR(xRet, "Object not found!");
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -838,11 +854,13 @@ FTM_RET	FTM_DB_updateCCTVHash
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "UPDATE %s SET HASH='%s' WHERE _ID = '%s'", pDB->pCCTVTableName, pHash, pID);
 
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -864,11 +882,13 @@ FTM_RET	FTM_DB_setCCTVStat
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "UPDATE %s SET STAT=%d WHERE _ID = '%s'", pDB->pCCTVTableName, xStat, pID);
 
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -947,6 +967,7 @@ FTM_RET	FTM_DB_setCCTVProperties
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1006,11 +1027,13 @@ FTM_RET	FTM_DB_addAlarm
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_NAME, _EMAIL, _MESSAGE) VALUES('%s', '%s', '%s');", pDB->pAlarmTableName, pAlarm->pName, pAlarm->pEmail, pAlarm->pMessage);
 	
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1030,11 +1053,13 @@ FTM_RET	FTM_DB_deleteAlarm
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _NAME = '%s'", pDB->pAlarmTableName, pName);
 	
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1173,11 +1198,13 @@ FTM_RET	FTM_DB_addLog
 	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_TYPE, _TIME, _ID, _IP, _STAT, _HASH) VALUES(%d, %d, '%s', '%s', %d, '%s');", 
 		pDB->pLogTableName, xType, ulTime, pID, pIP, xStat, pHash);
 	
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1197,11 +1224,13 @@ FTM_RET	FTM_DB_deleteLogOfID
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _ID = '%s'", pDB->pLogTableName, pID);
 	
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1392,7 +1421,7 @@ FTM_RET	FTM_DB_getLogList
 		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " OFFSET %u", ulIndex);
 	}
 
-	INFO("SQL : %s", pQuery);
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
@@ -1402,6 +1431,7 @@ FTM_RET	FTM_DB_getLogList
 	{
 		*pCount = xParams.ulCount;	
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1438,11 +1468,12 @@ FTM_RET	FTM_DB_getLogInfo
 	memset(pQuery, 0, sizeof(pQuery));
 
 	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME ASC LIMIT 1", pDB->pLogTableName);
-	INFO("SQL : %s", pQuery);
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
+		INFO("Query success!");
 		goto finished;
 	}
 	else
@@ -1452,17 +1483,19 @@ FTM_RET	FTM_DB_getLogInfo
 			*pulStartTime = xParams.pElements[0].ulTime;	
 		}
 	}
+	INFO("Query success!");
 
 	xParams.ulMaxCount = 1;
 	xParams.ulCount = 0;
 	xParams.pElements 	= &xLog;
 
 	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME DESC LIMIT 1", pDB->pLogTableName);
-	INFO("SQL : %s", pQuery);
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
+		INFO("Query success!");
 		goto finished;
 	}
 	else
@@ -1472,6 +1505,7 @@ FTM_RET	FTM_DB_getLogInfo
 			*pulEndTime = xParams.pElements[0].ulTime;	
 		}
 	}
+	INFO("Query success!");
 
 finished:
 	return	xRet;
@@ -1694,12 +1728,13 @@ FTM_RET	FTM_DB_deleteLogFrom
 
 	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ");");
 
-	INFO("SQL : %s", pQuery);
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, NULL, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1742,11 +1777,13 @@ FTM_RET	FTM_DB_removeExpiredLog
 		memset(pQuery, 0, sizeof(pQuery));
 		snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE (%u > _TIME)", pDB->pLogTableName, ulExpirationDate);
 
+		INFO("Query : %s", pQuery);
 		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 		{
 			xRet = FTM_RET_ERROR;
 			sqlite3_free(pErrorMsg);
 		}
+		INFO("Query success!");
 	}
 
 	return	xRet;
@@ -1819,6 +1856,7 @@ FTM_RET	FTM_DB_addSwitch
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1838,11 +1876,13 @@ FTM_RET	FTM_DB_deleteSwitch
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _ID = '%s'", pDB->pSwitchTableName, pID);
 	
+		INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+		INFO("Query success!");
 
 	return	xRet;
 }
@@ -1937,6 +1977,7 @@ FTM_RET	FTM_DB_setSwitchProperties
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2123,11 +2164,13 @@ FTM_RET	FTM_DB_addAC
 
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_IP, _INDEX, _POLICY) VALUES('%s', %d, %d);", pTableName, pIP, nIndex, xPolicy);
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2150,11 +2193,13 @@ FTM_RET	FTM_DB_deleteAC
 
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _IP = '%s'", pTableName, pIP);
+	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2305,6 +2350,7 @@ FTM_RET	FTM_DB_addStatistics
 		xRet = FTM_RET_ERROR;
 		sqlite3_free(pErrorMsg);
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2440,6 +2486,7 @@ FTM_RET	FTM_DB_getStatisticsList
 	{
 		*pCount = xParams.ulCount;	
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2481,6 +2528,7 @@ FTM_RET	FTM_DB_getStatisticsInfo
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
+		INFO("Query success!");
 		goto finished;
 	}
 	else
@@ -2490,6 +2538,7 @@ FTM_RET	FTM_DB_getStatisticsInfo
 			FTM_TIME_toSecs(&xParams.pElements[0].xTime, pulStartTime);
 		}
 	}
+	INFO("Query success!");
 
 	xParams.ulMaxCount = 1;
 	xParams.ulCount = 0;
@@ -2501,6 +2550,7 @@ FTM_RET	FTM_DB_getStatisticsInfo
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
+		INFO("Query success!");
 		goto finished;
 	}
 	else
@@ -2510,6 +2560,7 @@ FTM_RET	FTM_DB_getStatisticsInfo
 			FTM_TIME_toSecs(&xParams.pElements[0].xTime, pulEndTime);
 		}
 	}
+	INFO("Query success!");
 
 finished:
 	return	xRet;
@@ -2640,6 +2691,7 @@ FTM_RET	FTM_DB_deleteStatistics
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2682,6 +2734,7 @@ FTM_RET	FTM_DB_deleteStatisticsFrom
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
 	}
+	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2724,11 +2777,13 @@ FTM_RET	FTM_DB_removeExpiredStatistics
 		memset(pQuery, 0, sizeof(pQuery));
 		snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE (%u > _TIME)", pDB->pStatisticsTableName, ulExpirationDate);
 
+		INFO("Query : %s", pQuery);
 		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
 		{
 			xRet = FTM_RET_ERROR;
 			sqlite3_free(pErrorMsg);
 		}
+		INFO("Query success!");
 	}
 
 	return	xRet;
