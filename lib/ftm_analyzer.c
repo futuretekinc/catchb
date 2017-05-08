@@ -714,7 +714,7 @@ FTM_RET	FTM_ANALYZER_process
 			INFO("CCTV[%s] : No response!", pCCTV->xConfig.pID);
 			if (pCCTV->xConfig.xStat != FTM_CCTV_STAT_UNREGISTERED)
 			{
-				FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_UNUSED, ulTime);
+				FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_UNUSED, ulTime, NULL);
 			}
 
 			FTM_ANALYZER_PCAP_stop(pAnalyzer);
@@ -787,7 +787,7 @@ FTM_RET	FTM_ANALYZER_process
 				if(!bTestFailed && !strncmp(pCCTV->xConfig.pHash, pHashValue, sizeof(pHashValue)))
 				{
 					INFO("CCTV[%s] : Hash is normal.", pCCTV->xConfig.pID);
-					FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_NORMAL, ulTime);
+					FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_NORMAL, ulTime, pHashValue);
 				}
 				else
 				{
@@ -795,7 +795,7 @@ FTM_RET	FTM_ANALYZER_process
 					INFO("Original Hash : %s", pCCTV->xConfig.pHash);
 					INFO(" Current Hash : %s", pHashValue);
 					
-					FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_ABNORMAL, ulTime);
+					FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_ABNORMAL, ulTime, pHashValue);
 				}
 
 			}

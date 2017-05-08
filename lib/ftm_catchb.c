@@ -1650,7 +1650,8 @@ FTM_RET		FTM_CATCHB_setCCTVStat
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_CHAR_PTR	pID,
 	FTM_CCTV_STAT	xStat,
-	FTM_UINT32		ulTime
+	FTM_UINT32		ulTime,
+	FTM_CHAR_PTR	pHash
 )
 {
 	ASSERT(pCatchB != NULL);
@@ -1663,6 +1664,10 @@ FTM_RET		FTM_CATCHB_setCCTVStat
 	strncpy(pMsg->pID, pID, sizeof(pMsg->pID) - 1);
 	pMsg->xStat = xStat;
 	pMsg->ulTime= ulTime;
+	if (pHash != NULL)
+	{
+		strncpy(pMsg->pHash, pHash, sizeof(pMsg->pHash));
+	}
 
 	xRet = FTM_MSGQ_push(pCatchB->pMsgQ, pMsg);
 	if (xRet != FTM_RET_OK)
@@ -1753,9 +1758,9 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 				memset(pCCTV->xConfig.pHash, 0, sizeof(pCCTV->xConfig.pHash));
 			}
 			break;
-#if 0
 		case	FTM_CCTV_STAT_UNUSED:
 			{
+#if 0
 				if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
 				{
 					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
@@ -1772,15 +1777,15 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 						}
 					}
 				}
+#endif
 				xLogType = FTM_LOG_TYPE_ERROR;
 			}
 			break;
-#endif
 		}
 
 		pCCTV->xConfig.xStat = pMsg->xStat;
 
-		xRet = FTM_CATCHB_addLog(pCatchB, xLogType, pMsg->ulTime, pCCTV->xConfig.pID, pCCTV->xConfig.pIP, pCCTV->xConfig.xStat, pCCTV->xConfig.pHash);
+		xRet = FTM_CATCHB_addLog(pCatchB, xLogType, pMsg->ulTime, pCCTV->xConfig.pID, pCCTV->xConfig.pIP, pCCTV->xConfig.xStat, ((pMsg->pHash[0] != 0)?pMsg->pHash:pCCTV->xConfig.pHash));
 		if (xRet != FTM_RET_OK)
 		{
 			ERROR(xRet, "Failed to set log");	
@@ -1995,7 +2000,7 @@ FTM_RET	FTM_CATCHB_resetCCTV
 	
 	FTM_TIME_getCurrentSecs(&ulTime);
 
-	return	FTM_CATCHB_setCCTVStat(pCatchB, pID, FTM_CCTV_STAT_UNREGISTERED, ulTime);
+	return	FTM_CATCHB_setCCTVStat(pCatchB, pID, FTM_CCTV_STAT_UNREGISTERED, ulTime, NULL);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -2395,7 +2400,7 @@ FTM_RET	FTM_CATCHB_setSwitchProperties
 
 		if (ulFieldFlags & FTM_SWITCH_FIELD_SECURE)
 		{
-			strcpy(pSwitch->xConfig.bSecure, pConfig->bSecure);
+			pSwitch->xConfig.bSecure = pConfig->bSecure;
 		}
 
 		if (ulFieldFlags & FTM_SWITCH_FIELD_COMMENT)
