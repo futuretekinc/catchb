@@ -1379,6 +1379,11 @@ FTM_RET		FTM_CATCHB_onFoundCCTVInDB
 	}
 	else
 	{
+		if (strlen(pCCTV->xConfig.pHash) != 0)
+		{
+			pCCTV->xConfig.xStat = 	FTM_CCTV_STAT_UNUSED;
+		}
+
 		xRet = FTM_LIST_append(pCatchB->pCCTVList, pCCTV);
 		if (xRet != FTM_RET_OK)
 		{
@@ -2834,6 +2839,7 @@ FTM_RET	FTM_CATCHB_addLog
 	FTM_CHAR_PTR	pHash
 )
 {
+	INFO("Add Log : %s, %s, %s, %d, %s\n", FTM_TIME_printf2(ulTime, NULL), pCCTVID, pIP, xStat, pHash);
 	return	FTM_DB_addLog(pCatchB->pDB, xType, ulTime, pCCTVID, pIP, xStat, pHash);
 }
 

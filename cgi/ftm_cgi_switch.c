@@ -28,7 +28,7 @@ FTM_RET	FTM_CGI_addSwitch
 	xRet |= FTM_CGI_getSwitchModel(pReq, &xConfig.xModel, FTM_FALSE);
 	xRet |= FTM_CGI_getIPString(pReq, xConfig.pIP, FTM_IP_LEN, FTM_TRUE);
 	xRet |= FTM_CGI_getUserID(pReq, xConfig.pUserID, FTM_TRUE);
-	xRet |= FTM_CGI_getPasswd(pReq, xConfig.pPasswd, FTM_TRUE);
+	xRet |= FTM_CGI_getPasswd(pReq, xConfig.pPasswd, sizeof(xConfig.pPasswd), FTM_TRUE);
 	xRet |= FTM_CGI_getSecure(pReq, &xConfig.bSecure, FTM_TRUE);
 	xRet |= FTM_CGI_getComment(pReq, xConfig.pComment, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
@@ -187,7 +187,7 @@ FTM_RET	FTM_CGI_setSwitch
 		ulFieldFlags |= FTM_SWITCH_FIELD_USER_ID;
 	}
 
-	xRet = FTM_CGI_getPasswd(pReq, xConfig.pPasswd, FTM_FALSE);
+	xRet = FTM_CGI_getPasswd(pReq, xConfig.pPasswd, sizeof(xConfig.pPasswd), FTM_FALSE);
 	if (xRet == FTM_RET_OK)
 	{
 		ulFieldFlags |= FTM_SWITCH_FIELD_PASSWD;

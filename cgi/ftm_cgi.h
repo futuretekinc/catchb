@@ -96,13 +96,14 @@ FTM_RET	FTM_CGI_getUserID
 	FTM_BOOL	bAllowEmpty
 );
 
+#if 0
 FTM_RET	FTM_CGI_getPasswd
 (
 	qentry_t *pReq, 
 	FTM_CHAR_PTR pPasswd,
 	FTM_BOOL	bAllowEmpty
 );
-
+#endif
 FTM_RET	FTM_CGI_getSecure
 (
 	qentry_t *pReq, 
@@ -202,4 +203,19 @@ FTM_RET	FTM_CGI_getPolicy
 	FTM_BOOL	bAllowEmpty
 );
 
+FTM_RET	FTM_CGI_getPasswd
+(
+	qentry_t *pReq, 
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen,
+	FTM_BOOL	bAllowEmpty
+);
+
+FTM_RET	FTM_CGI_getNewPasswd
+(
+	qentry_t *pReq, 
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen,
+	FTM_BOOL	bAllowEmpty
+);
 #endif

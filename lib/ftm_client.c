@@ -13,7 +13,7 @@
 #undef	__MODULE__
 #define	__MODULE__	"client"
 
-#define	MAX_FRAME_SIZE	1500
+#define	MAX_FRAME_SIZE					(FTM_PARAM_MAX_LEN)	
 
 typedef struct FTM_CLIENT_STRUCT
 {
@@ -1662,6 +1662,7 @@ FTM_RET	FTM_CLIENT_getStatList
 				break;	
 			}
 
+			ulIndex += ulRespCount;
 			ulTotalCount += ulRespCount;
 			ulMaxCount -= ulRespCount;
 		}

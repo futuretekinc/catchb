@@ -438,6 +438,41 @@ FTM_RET	FTM_DB_getElementCount
 	return	xRet;
 }
 
+FTM_RET	FTM_DB_getElementCount2
+(
+	FTM_DB_PTR		pDB,
+	FTM_CHAR_PTR		pTableName,
+	FTM_CHAR_PTR	pCondition,
+	FTM_UINT32_PTR	pCount
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pTableName != NULL);
+	ASSERT(pCount != NULL);
+
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
+	FTM_DB_COUNT_PARAMS	xParams;
+	FTM_CHAR_PTR	pErrorMsg = NULL;
+
+	memset(pQuery, 0, sizeof(pQuery));
+	snprintf(pQuery, sizeof(pQuery) - 1, "SELECT COUNT(*) FROM %s %s", pTableName, pCondition);
+
+	INFO("Query : %s", pQuery);
+	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getElementCountCB, &xParams, &pErrorMsg) != 0)
+	{
+		sqlite3_free(pErrorMsg);
+		*pCount = 0;
+	}
+	else
+	{
+		*pCount = xParams.ulCount;
+	}
+	INFO("Query success!");
+
+	return	xRet;
+}
+
 FTM_RET	FTM_DB_getElementList
 (
 	FTM_DB_PTR pDB, 
@@ -491,11 +526,29 @@ FTM_RET	FTM_DB_getElementListOrderByTime
 	FTM_CHAR		pQuery[FTM_DB_QUERY_LEN+1];
 	FTM_UINT32		ulQueryLen = 0;
 	FTM_CHAR_PTR	pErrorMsg;
+	FTM_UINT32		ulTotalCount = 0;
+	FTM_UINT32		ulOffset = 0;
+
+	FTM_DB_getElementCount(pDB, pTableName, &ulTotalCount);
 
 	memset(pQuery, 0, sizeof(pQuery));
 
-	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s", pTableName);
-	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " ORDER BY _TIME DESC LIMIT %u OFFSET %u", ulCount, ulIndex);
+	if (ulTotalCount > ulIndex + ulCount)
+	{
+		ulOffset = ulTotalCount - (ulIndex+ulCount);
+	}
+	else if (ulTotalCount > ulIndex)
+	{
+		ulOffset = 0;
+		ulCount = ulTotalCount - ulIndex;
+	}
+	else 
+	{
+		ulOffset = 0;
+		ulCount = 0;
+	}
+
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s WHERE _TIME IN (SELECT _TIME FROM %s LIMIT %u OFFSET %u) ORDER BY _TIME DESC", pTableName, pTableName, ulCount, ulOffset);
 
 	INFO("SQL : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, fCallback, pData, &pErrorMsg) < 0)
@@ -915,7 +968,7 @@ FTM_RET	FTM_DB_setCCTVProperties
 
 	if (ulFieldFlags & FTM_CCTV_FIELD_IP)
 	{
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, "_IP = %s", pConfig->pIP);
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, "_IP = '%s'", pConfig->pIP);
 		bFirst = FTM_FALSE;
 	}
 
@@ -926,7 +979,7 @@ FTM_RET	FTM_DB_setCCTVProperties
 			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, ", ");
 			bFirst = FTM_FALSE;
 		}
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, "_SWITCH_ID = %s", pConfig->pSwitchID);
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, "_SWITCH_ID = '%s'", pConfig->pSwitchID);
 	}
 
 	if (ulFieldFlags & FTM_CCTV_FIELD_COMMENT)
@@ -946,7 +999,7 @@ FTM_RET	FTM_DB_setCCTVProperties
 			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, ", ");
 			bFirst = FTM_FALSE;
 		}
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, "_HASH = %s", pConfig->pHash);
+		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, "_HASH = '%s'", pConfig->pHash);
 	}
 
 	if (ulFieldFlags & FTM_CCTV_FIELD_STAT)
@@ -1312,114 +1365,131 @@ FTM_RET	FTM_DB_getLogList
 
 	FTM_RET	xRet = FTM_RET_OK;
     FTM_GET_LOG_LIST_PARAMS	xParams;
+	FTM_CHAR		pCondition[FTM_DB_QUERY_LEN+1];
+	FTM_UINT32		ulConditionLen = 0;
 	FTM_CHAR		pQuery[FTM_DB_QUERY_LEN+1];
 	FTM_UINT32		ulQueryLen = 0;
 	FTM_CHAR_PTR	pErrorMsg;
 	FTM_BOOL		bFirstCondition = FTM_TRUE;
+	FTM_UINT32		ulTotalCount = 0;
+	FTM_UINT32		ulOffset = 0;
 
 	xParams.ulMaxCount = ulMaxCount;
 	xParams.ulCount = 0;
 	xParams.pElements 	= pLogs;
 
-	memset(pQuery, 0, sizeof(pQuery));
 
-	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s", pDB->pLogTableName);
 	if (xType != FTM_LOG_TYPE_UNKNOWN)
 	{
 		if (bFirstCondition)
 		{
-			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}
 
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (_TYPE = %d)", xType);	
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (_TYPE = %d)", xType);	
 	}
 
 	if (pID != NULL)
 	{
 		if (!bFirstCondition)
 		{
-			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " AND");	
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " AND");	
 		}
 		else
 		{
-			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}
 
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (_ID = \'%s\')", pID);	
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (_ID = \'%s\')", pID);	
 	}
 
 	if (pIP != NULL)
 	{
 		if (!bFirstCondition)
 		{
-			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " AND");	
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " AND");	
 		}
 		else
 		{
-			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}
 
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (_IP = \'%s\')", pIP);	
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (_IP = \'%s\')", pIP);	
 	}
 	
 	if (xStat != FTM_CCTV_STAT_UNREGISTERED)
 	{
 		if (!bFirstCondition)
 		{
-			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " AND");	
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " AND");	
 		}
 		else
 		{
-			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}	
 
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (_STAT = %d)", xStat);	
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (_STAT = %d)", xStat);	
 	}
 
 	if (ulStartTime != 0)
 	{
 		if (!bFirstCondition)
 		{
-			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " AND");	
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " AND");	
 		}
 		else
 		{
-			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}	
 
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (%u <= _TIME)", ulStartTime);	
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (%u <= _TIME)", ulStartTime);	
 	}
 
 	if (ulEndTime != 0)
 	{
 		if (!bFirstCondition)
 		{
-			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " AND");	
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " AND");	
 		}
 		else
 		{
-			ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE");	
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}	
 
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " (_TIME <= %u)", ulEndTime);	
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (_TIME <= %u)", ulEndTime);	
 	}
 
-//	if ((ulStartTime != 0) || (ulEndTime != 0))
-	{
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " ORDER BY _TIME DESC");
-	}
-	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " LIMIT %u", ulMaxCount);
 
-	if (ulIndex != 0)
+
+
+
+	FTM_DB_getElementCount2(pDB, pDB->pLogTableName, pCondition, &ulTotalCount);
+
+	if (ulTotalCount > ulIndex + ulMaxCount)
 	{
-		ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " OFFSET %u", ulIndex);
+		ulOffset = ulTotalCount - (ulIndex + ulMaxCount);	
 	}
+	else if (ulTotalCount > ulIndex)
+	{
+		ulOffset = 0;
+		ulMaxCount = ulTotalCount - ulIndex;
+	}
+	else 
+	{
+		ulOffset = 0;
+		ulMaxCount = 0;
+	}
+
+	memset(pQuery, 0, sizeof(pQuery));
+
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s WHERE _TIME IN ( SELECT _TIME FROM %s %s", pDB->pLogTableName, pDB->pLogTableName, pCondition);
+	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " LIMIT %u OFFSET %u) ORDER BY _TIME DESC", ulMaxCount, ulOffset);
 
 	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
@@ -1453,8 +1523,9 @@ FTM_RET	FTM_DB_getLogInfo
 	FTM_CHAR		pQuery[FTM_DB_QUERY_LEN+1];
 	FTM_UINT32		ulQueryLen = 0;
 	FTM_CHAR_PTR	pErrorMsg;
+	FTM_UINT32		ulTotalCount = 0;
 
-	xRet =FTM_DB_getElementCount(pDB, pDB->pLogTableName, pCount);
+	xRet =FTM_DB_getElementCount(pDB, pDB->pLogTableName, &ulTotalCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get element count of table tv_log_info!");
@@ -1467,7 +1538,8 @@ FTM_RET	FTM_DB_getLogInfo
 
 	memset(pQuery, 0, sizeof(pQuery));
 
-	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME ASC LIMIT 1", pDB->pLogTableName);
+	//ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME ASC LIMIT 1", pDB->pLogTableName);
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s LIMIT 1", pDB->pLogTableName);
 	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
 	{
@@ -1489,7 +1561,8 @@ FTM_RET	FTM_DB_getLogInfo
 	xParams.ulCount = 0;
 	xParams.pElements 	= &xLog;
 
-	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME DESC LIMIT 1", pDB->pLogTableName);
+	//ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME DESC LIMIT 1", pDB->pLogTableName);
+	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s LIMIT 1 OFFSET %u", pDB->pLogTableName, ulTotalCount);
 	INFO("Query : %s", pQuery);
 	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
 	{
@@ -1505,6 +1578,8 @@ FTM_RET	FTM_DB_getLogInfo
 			*pulEndTime = xParams.pElements[0].ulTime;	
 		}
 	}
+	
+	*pCount = ulTotalCount;
 	INFO("Query success!");
 
 finished:

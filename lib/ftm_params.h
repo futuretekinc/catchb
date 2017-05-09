@@ -8,7 +8,8 @@
 #include "ftm_utils.h"
 #include "ftm_log.h"
 
-#define	FTM_PARAM_MAX_LEN	1500
+//#define	FTM_PARAM_MAX_LEN	1500
+#define	FTM_PARAM_MAX_LEN	4096
 
 typedef	enum
 {

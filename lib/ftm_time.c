@@ -80,6 +80,16 @@ FTM_RET	FTM_TIME_setString
 		memset(&xTM, 0, sizeof(xTM));
 		strptime(pString, "%Y/%m/%d", &xTM);
 	}
+	if (strlen(pString) == 16)
+	{
+		if ((pString[4] != '/') || (pString[7] != '/') || (pString[10] != '/') || (pString[13] != '/'))
+		{
+			return	FTM_RET_INVALID_FORMAT;
+		}
+
+		memset(&xTM, 0, sizeof(xTM));
+		strptime(pString, "%Y/%m/%d/%H/%M", &xTM);
+	}
 	else if (strlen(pString) == 14)
 	{
 		for(i = 0 ; i < 14 ; i++)

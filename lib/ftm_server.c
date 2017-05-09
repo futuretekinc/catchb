@@ -1081,6 +1081,8 @@ FTM_RET	FTM_SERVER_getLogList
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
 	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_LOG_LIST_PARAMS) + sizeof(FTM_LOG) * ulCount;	
+
+	INFO("GetLogList Response : %d", pResp->xCommon.ulLen);
 	pResp->ulCount = ulCount;
 
 	return	FTM_RET_OK;

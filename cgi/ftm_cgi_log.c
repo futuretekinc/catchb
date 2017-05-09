@@ -114,12 +114,38 @@ FTM_RET	FTM_CGI_getLogList
 	pRoot = cJSON_CreateObject();
 
 	xRet = FTM_CGI_getLogType(pReq, &xLogType, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get Log type");
+	}
 	xRet |= FTM_CGI_getID(pReq, pID, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get ID");
+	}
 	xRet |= FTM_CGI_getIPString(pReq, pIP, FTM_IP_LEN, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get IP");
+	}
 	xRet |= FTM_CGI_getBeginTime(pReq, &ulBeginTime, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get Begin Time");
+	}
 	xRet |= FTM_CGI_getEndTime(pReq, &ulEndTime, FTM_TRUE);
+	INFO("xRet = %d", xRet);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get End Time");
+	}
 	xRet |= FTM_CGI_getIndex(pReq, &ulIndex, FTM_TRUE);
-	xRet |= FTM_CGI_getCount(pReq, &ulCount, FTM_FALSE);
+	INFO("xRet = %d", xRet);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get Index");
+	}
+	xRet |= FTM_CGI_getCount(pReq, &ulCount, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get log because invalid arguments!");

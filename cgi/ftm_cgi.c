@@ -67,6 +67,7 @@ static
 FTM_CGI_COMMAND	pSysCmds[] =
 {
 	{	"info", FTM_CGI_getSysInfo			},
+	{	"set_passwd", FTM_CGI_setPasswd		},
 	{	NULL,		NULL					}
 };
 
@@ -284,7 +285,7 @@ FTM_RET	FTM_CGI_getID
 	FTM_CHAR_PTR	pValue;
 
 	pValue = pReq->getstr(pReq, "id", false);
-	if(pValue == NULL)
+	if((pValue == NULL) || (strlen(pValue) == 0))
 	{
 		if(!bAllowEmpty)
 		{
@@ -330,38 +331,6 @@ FTM_RET	FTM_CGI_getUserID
 	else
 	{
 		strcpy(pUserID, pValue);
-	}
-	
-	return	FTM_RET_OK;
-}
-
-FTM_RET	FTM_CGI_getPasswd
-(
-	qentry_t *pReq, 
-	FTM_CHAR_PTR pPasswd,
-	FTM_BOOL	bAllowEmpty
-)
-{
-	ASSERT(pReq != NULL);
-	ASSERT(pPasswd != NULL);
-
-	FTM_CHAR_PTR	pValue;
-
-	pValue = pReq->getstr(pReq, "passwd", false);
-	if(pValue == NULL)
-	{
-		if(!bAllowEmpty)
-		{
-			return	FTM_RET_OBJECT_NOT_FOUND;	
-		}
-	}
-	else if((strlen(pValue) > FTM_ID_LEN))
-	{
-		return	FTM_RET_INVALID_ARGUMENTS;	
-	}
-	else
-	{
-		strcpy(pPasswd, pValue);
 	}
 	
 	return	FTM_RET_OK;
@@ -624,7 +593,7 @@ FTM_RET	FTM_CGI_getIndex
 	FTM_CHAR_PTR	pValue;
 
 	pValue = pReq->getstr(pReq, "index", false);
-	if(pValue == NULL)
+	if((pValue == NULL) || (strlen(pValue) == 0))
 	{
 		if(!bAllowEmpty)
 		{
@@ -652,7 +621,7 @@ FTM_RET	FTM_CGI_getCount
 	FTM_CHAR_PTR	pValue;
 
 	pValue = pReq->getstr(pReq, "count", false);
-	if(pValue == NULL)
+	if((pValue == NULL) || (strlen(pValue) == 0))
 	{
 		if(!bAllowEmpty)
 		{
@@ -681,7 +650,7 @@ FTM_RET	FTM_CGI_getIPString
 	FTM_CHAR_PTR	pValue;
 
 	pValue = pReq->getstr(pReq, "ip", false);
-	if (pValue == NULL)
+	if((pValue == NULL) || (strlen(pValue) == 0))
 	{
 		if (!bAllowEmpty)
 		{
@@ -721,7 +690,7 @@ FTM_RET FTM_CGI_getBeginTime
 	FTM_CHAR_PTR	pValue;
 
 	pValue = pReq->getstr(pReq, "begin", false);
-	if(pValue == NULL)
+	if((pValue == NULL) || (strlen(pValue) == 0))
 	{
 		if(!bAllowEmpty)
 		{
@@ -762,7 +731,7 @@ FTM_RET FTM_CGI_getEndTime
 	FTM_CHAR_PTR	pValue;
 
 	pValue = pReq->getstr(pReq, "end", false);
-	if(pValue == NULL)
+	if((pValue == NULL) || (strlen(pValue) == 0))
 	{
 		if(!bAllowEmpty)
 		{
@@ -886,14 +855,14 @@ FTM_RET	FTM_CGI_getLogType
 	FTM_CHAR_PTR	pValue;
 
 	pValue = pReq->getstr(pReq, "type", false);
-	if(pValue == NULL)
+	if((pValue == NULL) || (strlen(pValue) == 0))
 	{
 		if(!bAllowEmpty)
 		{
 			return	FTM_RET_OBJECT_NOT_FOUND;	
 		}
 	}
-	else if(strcasecmp(pValue, "normal") == 0)
+	else if((strcasecmp(pValue, "normal") == 0) || (strcasecmp(pValue, "nomal") == 0))
 	{
 		*pType = FTM_LOG_TYPE_NORMAL;	
 	}
@@ -936,6 +905,72 @@ FTM_RET	FTM_CGI_getPolicy
 	else if(strcasecmp(pValue, "deny") == 0)
 	{
 		*pPolicy = FTM_SWITCH_AC_POLICY_DENY;	
+	}
+	else
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_CGI_getPasswd
+(
+	qentry_t *pReq, 
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen,
+	FTM_BOOL	bAllowEmpty
+)
+{
+	ASSERT(pReq != NULL);
+	ASSERT(pBuffer != NULL);
+	
+	FTM_CHAR_PTR	pValue;
+
+	pValue = pReq->getstr(pReq, "passwd", false);
+	if(pValue == NULL)
+	{
+		if(!bAllowEmpty)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;	
+		}
+	}
+	else if (strlen(pValue) < ulBufferLen)
+	{
+		strncpy(pBuffer, pValue, ulBufferLen);
+	}
+	else
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_CGI_getNewPasswd
+(
+	qentry_t *pReq, 
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen,
+	FTM_BOOL	bAllowEmpty
+)
+{
+	ASSERT(pReq != NULL);
+	ASSERT(pBuffer != NULL);
+	
+	FTM_CHAR_PTR	pValue;
+
+	pValue = pReq->getstr(pReq, "new_passwd", false);
+	if(pValue == NULL)
+	{
+		if(!bAllowEmpty)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;	
+		}
+	}
+	else if (strlen(pValue) < ulBufferLen)
+	{
+		strncpy(pBuffer, pValue, ulBufferLen);
 	}
 	else
 	{

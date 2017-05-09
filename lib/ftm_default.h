@@ -8,7 +8,7 @@
 #define	FTM_COMMENT_LEN			64
 #define	FTM_NAME_LEN			32
 #define	FTM_TIME_LEN			32
-#define	FTM_HASH_LEN			256
+#define	FTM_HASH_LEN			48
 #define	FTM_HOST_NAME_LEN		256
 #define	FTM_LOG_LEN				256
 #define	FTM_PATH_LEN			1024

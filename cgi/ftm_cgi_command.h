@@ -162,4 +162,10 @@ FTM_RET	FTM_CGI_getStatusList
 	qentry_t _PTR_ pReq
 );
 
+FTM_RET	FTM_CGI_setPasswd
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
 #endif
