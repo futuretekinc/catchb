@@ -7,6 +7,57 @@
 #undef	__MODULE__
 #define	__MODULE__	"cgi"
 
+FTM_RET	FTM_CGI_setStatusInfo
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReq != NULL);
+
+	FTM_RET		xRet;
+	FTM_SYSTEM_INFO	xInfo;
+	FTM_UINT32	ulField = 0;
+	cJSON _PTR_	pRoot;
+
+	memset(&xInfo, 0, sizeof(xInfo));
+
+	pRoot = cJSON_CreateObject();
+
+	xRet = FTM_CGI_getInterval(pReq, &xInfo.xStatistics.ulInterval, FTM_FALSE);
+	if (xRet == FTM_RET_OK)
+	{
+		ulField |= FTM_SYSTEM_FIELD_STATISTICS_INTERVAL;
+	}
+
+	xRet = FTM_CGI_getCount(pReq, &xInfo.xStatistics.ulMaxCount, FTM_FALSE);
+	if (xRet == FTM_RET_OK)
+	{
+		ulField |= FTM_SYSTEM_FIELD_STATISTICS_COUNT;
+	}
+
+	xRet = FTM_CLIENT_setStatInfo(pClient, &xInfo, &xInfo);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set stat info!");
+		goto finished;
+	}
+
+	cJSON _PTR_ pStat = cJSON_CreateObject();
+	cJSON_AddNumberToObject(pStat, "interval", xInfo.xStatistics.ulInterval);
+	cJSON_AddNumberToObject(pStat, "max count", xInfo.xStatistics.ulMaxCount);
+	cJSON_AddNumberToObject(pStat, "count", xInfo.xStatistics.ulCount);
+	cJSON_AddStringToObject(pStat, "first", FTM_TIME_printf2(xInfo.xStatistics.ulFirstTime, NULL));
+	cJSON_AddStringToObject(pStat, "last", FTM_TIME_printf2(xInfo.xStatistics.ulLastTime, NULL));
+
+	cJSON_AddItemToObject(pRoot, "status_info", pStat);
+
+finished:
+
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}
+
 FTM_RET	FTM_CGI_getStatusInfo
 (
 	FTM_CLIENT_PTR pClient, 
@@ -17,23 +68,25 @@ FTM_RET	FTM_CGI_getStatusInfo
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
-	FTM_UINT32	ulCount = 0;
-	FTM_UINT32	ulFirstTime = 0;
-	FTM_UINT32	ulLastTime = 0;
+	FTM_SYSTEM_INFO	xInfo;
 	cJSON _PTR_	pRoot;
+
+	memset(&xInfo, 0, sizeof(FTM_SYSTEM_INFO));
 
 	pRoot = cJSON_CreateObject();
 
-	xRet = FTM_CLIENT_getStatInfo(pClient, &ulCount, &ulFirstTime, &ulLastTime);
+	xRet = FTM_CLIENT_getStatInfo(pClient, &xInfo);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;
 	}
 
 	cJSON _PTR_ pStat = cJSON_CreateObject();
-	cJSON_AddNumberToObject(pStat, "count", ulCount);
-	cJSON_AddStringToObject(pStat, "first", FTM_TIME_printf2(ulFirstTime, NULL));
-	cJSON_AddStringToObject(pStat, "last", FTM_TIME_printf2(ulLastTime, NULL));
+	cJSON_AddNumberToObject(pStat, "interval", xInfo.xStatistics.ulInterval);
+	cJSON_AddNumberToObject(pStat, "max count", xInfo.xStatistics.ulMaxCount);
+	cJSON_AddNumberToObject(pStat, "count", xInfo.xStatistics.ulCount);
+	cJSON_AddStringToObject(pStat, "first", FTM_TIME_printf2(xInfo.xStatistics.ulFirstTime, NULL));
+	cJSON_AddStringToObject(pStat, "last", FTM_TIME_printf2(xInfo.xStatistics.ulLastTime, NULL));
 
 	cJSON_AddItemToObject(pRoot, "status_info", pStat);
 

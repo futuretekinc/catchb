@@ -1,4 +1,5 @@
 #include <string.h>
+#include <syslog.h>
 #include "ftm_mem.h"
 #include "ftm_detector.h"
 #include "ftm_analyzer.h"
@@ -145,18 +146,6 @@ FTM_BOOL	FTM_CATCHB_ALARM_seeker
 	const FTM_VOID_PTR pIndicator
 );
 
-FTM_RET	FTM_CATCHB_CONFIG_setDefault
-(
-	FTM_CATCHB_CONFIG_PTR	pConfig
-)
-{
-	ASSERT(pConfig != NULL);
-
-	pConfig->xCCTV.ulUpdateInterval = 10000;
-
-	return	FTM_RET_OK;
-}
-
 FTM_RET	FTM_CATCHB_create
 (
 	FTM_CATCHB_PTR _PTR_ ppCatchB
@@ -176,7 +165,7 @@ FTM_RET	FTM_CATCHB_create
 
 	strcpy(pCatchB->pName, __MODULE__);
 
-	xRet = FTM_CATCHB_CONFIG_setDefault(&pCatchB->xConfig);
+	xRet = FTM_SYSTEM_CONFIG_setDefault(&pCatchB->xConfig);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to init config!");
@@ -206,12 +195,20 @@ FTM_RET	FTM_CATCHB_create
 		ERROR(xRet, "Failed to create alarm list!");
 		goto error;
 	}
+
 	FTM_LIST_setSeeker(pCatchB->pAlarmList, FTM_CATCHB_ALARM_seeker);
 
 	xRet = FTM_DB_create(&pCatchB->pDB);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to create DB interface!");
+		goto error;
+	}
+
+	xRet = FTM_LIST_create(&pCatchB->pStatisticsList);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create alarm list!");
 		goto error;
 	}
 
@@ -315,6 +312,11 @@ error:
 			FTM_DB_destroy(&pCatchB->pDB);
 		}
 
+		if (pCatchB->pStatisticsList != NULL)
+		{
+			FTM_LIST_destroy(&pCatchB->pStatisticsList);	
+		}
+
 		if (pCatchB->pSwitchList != NULL)
 		{
 			FTM_LIST_destroy(&pCatchB->pSwitchList);	
@@ -402,6 +404,23 @@ FTM_RET	FTM_CATCHB_destroy
 		}
 	}
 
+	if ((*ppCatchB)->pStatisticsList != NULL)
+	{
+		FTM_STATISTICS_PTR	pStatistics = NULL;
+
+		FTM_LIST_iteratorStart((*ppCatchB)->pStatisticsList);
+		while(FTM_LIST_iteratorNext((*ppCatchB)->pStatisticsList, (FTM_VOID_PTR _PTR_)&pStatistics) == FTM_RET_OK)
+		{
+			FTM_MEM_free(pStatistics);
+		}
+
+		xRet = FTM_LIST_destroy(&(*ppCatchB)->pSwitchList);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to destroy cctv list!");
+		}
+	}
+
 	if ((*ppCatchB)->pMsgQ != NULL)
 	{
 		xRet = FTM_MSGQ_destroy(&(*ppCatchB)->pMsgQ);
@@ -464,7 +483,9 @@ FTM_RET	FTM_CATCHB_setConfig
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_RET	xRet1;
 
-	INFO_ENTRY();
+
+	memcpy(&pCatchB->xConfig, &pConfig->xSystem, sizeof(pCatchB->xConfig));
+
 	if (pCatchB->pDB != NULL)
 	{
 		xRet1 = FTM_DB_setConfig(pCatchB->pDB, &pConfig->xDB);
@@ -521,6 +542,8 @@ FTM_RET	FTM_CATCHB_getConfig
 
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_RET	xRet1;
+
+	memcpy(&pConfig->xSystem, &pCatchB->xConfig, sizeof(pConfig->xSystem));
 
 	if (pCatchB->pDB != NULL)
 	{
@@ -931,14 +954,14 @@ FTM_VOID_PTR	FTM_CATCHB_process
 	{
 		ERROR(xRet, "Failed to start server!");
 	}
-
+#if 0
 	xRet = FTM_EVENT_TIMER_MANAGER_add(pCatchB->pEventManager, FTM_EVENT_TIMER_TYPE_REPEAT, pCatchB->xConfig.xCCTV.ulUpdateInterval, FTM_CATCHB_EVENT_checkNewCCTV, pCatchB, NULL);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to add event!");
 	}
-
-	FTM_TIMER_initS(&xTimer, 60);
+#endif
+	FTM_TIMER_initMS(&xTimer, pCatchB->xConfig.xStatistics.ulInterval);
 
 	pCatchB->bStop = FTM_FALSE;
 	while(!pCatchB->bStop)
@@ -1043,7 +1066,8 @@ FTM_VOID_PTR	FTM_CATCHB_process
 				xStatistics.fCPU, xStatistics.xMemory.ulTotal, xStatistics.xMemory.ulFree,
 				xStatistics.xNet.ulRxBytes, xStatistics.xNet.ulTxBytes);
 			FTM_CATCHB_addStatistics(pCatchB, &xStatistics);
-			FTM_TIMER_addS(&xTimer, 60);
+
+			FTM_TIMER_addMS(&xTimer, pCatchB->xConfig.xStatistics.ulInterval);
 		}	
 	}
 
@@ -1712,15 +1736,7 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 			{
 				if ((pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL) || (pCCTV->xConfig.xStat == FTM_CCTV_STAT_UNUSED))
 				{
-					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
-					if (pCatchB->pNotifier != NULL)
-					{
-						xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, pMsg->pID);
-						if (xRet != FTM_RET_OK)
-						{
-							ERROR(xRet, "Failed to notify!");	
-						}
-					}
+					FTM_DETECTOR_setControl(pCatchB->pDetector, pCCTV->xConfig.pSwitchID, pCCTV->xConfig.pIP, FTM_TRUE);
 				}
 
 				xLogType = FTM_LOG_TYPE_NORMAL;
@@ -1733,7 +1749,7 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 				{
 					if (pCatchB->pDetector != NULL)
 					{
-						FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_FALSE);
+						FTM_DETECTOR_setControl(pCatchB->pDetector, pCCTV->xConfig.pSwitchID, pCCTV->xConfig.pIP, FTM_FALSE);
 					}
 				}
 
@@ -1745,20 +1761,13 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 			{
 				if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
 				{
-					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
+					FTM_DETECTOR_setControl(pCatchB->pDetector, pCCTV->xConfig.pSwitchID, pCCTV->xConfig.pIP, FTM_TRUE);
 				}
 				else if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
 				{
-					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_FALSE);
-					if (pCatchB->pNotifier != NULL)
-					{
-						xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, pMsg->pID);
-						if (xRet != FTM_RET_OK)
-						{
-							ERROR(xRet, "Failed to notify!");	
-						}
-					}
+					FTM_DETECTOR_setControl(pCatchB->pDetector, pCCTV->xConfig.pSwitchID, pCCTV->xConfig.pIP, FTM_FALSE);
 				}
+
 				xLogType = FTM_LOG_TYPE_ERROR;
 				memset(pCCTV->xConfig.pHash, 0, sizeof(pCCTV->xConfig.pHash));
 			}
@@ -1768,11 +1777,11 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 #if 0
 				if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_NORMAL)
 				{
-					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_TRUE);
+					FTM_DETECTOR_setControl(pCatchB->pDetector, pCCTV->xConfig.pSwitchID, pCCTV->xConfig.pIP, FTM_TRUE);
 				}
 				else if (pCCTV->xConfig.xStat == FTM_CCTV_STAT_ABNORMAL)
 				{
-					FTM_DETECTOR_setControl(pCatchB->pDetector, "", pCCTV->xConfig.pIP, FTM_FALSE);
+					FTM_DETECTOR_setControl(pCatchB->pDetector, pCCTV->xConfig.pSwitchID, pCCTV->xConfig.pIP, FTM_FALSE);
 					if (pCatchB->pNotifier != NULL)
 					{
 						xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, pMsg->pID);
@@ -1788,6 +1797,15 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 			break;
 		}
 
+		if (pCatchB->pNotifier != NULL)
+		{
+			xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, xLogType, pMsg->pID, pMsg->ulTime, pMsg->xStat, ((pMsg->pHash[0] != 0)?pMsg->pHash:pCCTV->xConfig.pHash), pCCTV->xConfig.xStat);
+			if (xRet != FTM_RET_OK)
+			{
+				ERROR(xRet, "Failed to notify!");	
+			}
+		}
+
 		pCCTV->xConfig.xStat = pMsg->xStat;
 
 		xRet = FTM_CATCHB_addLog(pCatchB, xLogType, pMsg->ulTime, pCCTV->xConfig.pID, pCCTV->xConfig.pIP, pCCTV->xConfig.xStat, ((pMsg->pHash[0] != 0)?pMsg->pHash:pCCTV->xConfig.pHash));
@@ -1795,6 +1813,7 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 		{
 			ERROR(xRet, "Failed to set log");	
 		}
+
 	}
 
 	return	xRet;
@@ -2839,7 +2858,8 @@ FTM_RET	FTM_CATCHB_addLog
 	FTM_CHAR_PTR	pHash
 )
 {
-	INFO("Add Log : %s, %s, %s, %d, %s\n", FTM_TIME_printf2(ulTime, NULL), pCCTVID, pIP, xStat, pHash);
+	INFO("Add Log : %s, %s, %s, %d, %s", FTM_TIME_printf2(ulTime, NULL), pCCTVID, pIP, xStat, pHash);
+
 	return	FTM_DB_addLog(pCatchB->pDB, xType, ulTime, pCCTVID, pIP, xStat, pHash);
 }
 
@@ -2927,7 +2947,54 @@ FTM_RET	FTM_CATCHB_addStatistics
 	FTM_STATISTICS_PTR	pStatistics
 )
 {
+#if	1
+	FTM_RET	xRet = FTM_RET_OK;
+
+	if (pCatchB->pStatisticsList != NULL)
+	{
+		FTM_UINT32	ulCount = 0;
+		FTM_STATISTICS_PTR	pNewStatistics;
+
+		FTM_LIST_count(pCatchB->pStatisticsList, &ulCount);
+
+		if (ulCount < pCatchB->xConfig.xStatistics.ulCount)
+		{
+			pNewStatistics = (FTM_STATISTICS_PTR)FTM_MEM_malloc(sizeof(FTM_STATISTICS));
+		}
+		else
+		{
+			xRet = FTM_LIST_getFirst(pCatchB->pStatisticsList, (FTM_VOID_PTR _PTR_)&pNewStatistics);
+			if (xRet != FTM_RET_OK)
+			{
+				ERROR(xRet, "Failed to get first statistics!");
+				return	xRet;
+			}
+
+			FTM_LIST_removeAt(pCatchB->pStatisticsList, 0);
+		}
+
+		if (pNewStatistics == NULL)
+		{
+			xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+			ERROR(xRet, "Failed to add statistics!");
+		}
+		else
+		{
+			memcpy(pNewStatistics, pStatistics, sizeof(FTM_STATISTICS));
+
+			xRet = FTM_LIST_append(pCatchB->pStatisticsList, pNewStatistics);
+			if (xRet != FTM_RET_OK)
+			{
+				FTM_MEM_free(pNewStatistics);
+				ERROR(xRet, "Failed to add statistics!");
+			}
+		}
+	}	
+
+	return	xRet;
+#else
 	return	FTM_DB_addStatistics(pCatchB->pDB, pStatistics);
+#endif
 }
 
 FTM_RET	FTM_CATCHB_delStatistics
@@ -2937,7 +3004,28 @@ FTM_RET	FTM_CATCHB_delStatistics
 	FTM_UINT32		ulCount
 )
 {
+#if	1
+	FTM_RET	xRet;
+
+	for(FTM_UINT32	i = 0 ; i < ulCount ; i++)
+	{
+		FTM_STATISTICS_PTR	pStatistics;
+
+		xRet = FTM_LIST_getAt(pCatchB->pStatisticsList, ulIndex, (FTM_VOID_PTR _PTR_)&pStatistics);
+		if (xRet != FTM_RET_OK)
+		{
+			break;	
+		}
+
+		
+		FTM_LIST_removeAt(pCatchB->pStatisticsList, ulIndex);
+		FTM_MEM_free(pStatistics);
+	}
+
+	return	FTM_RET_OK;
+#else
 	return	FTM_DB_deleteStatisticsFrom(pCatchB->pDB, ulIndex, ulCount);
+#endif
 }
 
 FTM_RET	FTM_CATCHB_delStatistics2
@@ -2947,7 +3035,41 @@ FTM_RET	FTM_CATCHB_delStatistics2
 	FTM_UINT32		ulLastTime
 )
 {
+#if	1
+	FTM_UINT32	ulCount = 0;
+	FTM_UINT32	ulIndex = 0;
+
+	FTM_LIST_count(pCatchB->pStatisticsList, &ulCount);
+	for(FTM_UINT32	i = 0 ; i < ulCount ; i++)
+	{
+		FTM_RET	xRet;
+		FTM_STATISTICS_PTR	pStatistics;
+
+		xRet = FTM_LIST_getAt(pCatchB->pStatisticsList, ulIndex, (FTM_VOID_PTR _PTR_)&pStatistics);
+		if (xRet != FTM_RET_OK)
+		{
+			break;
+		}
+
+		if (pStatistics->xTime.xTimeval.tv_sec < ulFirstTime)
+		{
+			ulIndex++;	
+		}
+		else if (pStatistics->xTime.xTimeval.tv_sec >= ulLastTime)
+		{
+			break;
+		}
+		else
+		{
+			FTM_LIST_removeAt(pCatchB->pStatisticsList, ulIndex);
+			FTM_MEM_free(pStatistics);
+		}	
+	}
+
+	return	FTM_RET_OK;
+#else
 	return	FTM_DB_deleteStatistics(pCatchB->pDB, ulFirstTime, ulLastTime, 0);
+#endif
 }
 
 FTM_RET	FTM_CATCHB_getStatisticsCount
@@ -2956,7 +3078,11 @@ FTM_RET	FTM_CATCHB_getStatisticsCount
 	FTM_UINT32_PTR	pulCount
 )
 {
+#if	1
+	return	FTM_LIST_count(pCatchB->pStatisticsList, pulCount);	
+#else
 	return	FTM_DB_getStatisticsCount(pCatchB->pDB, pulCount);
+#endif
 }
 
 FTM_RET	FTM_CATCHB_getStatisticsInfo
@@ -2967,7 +3093,39 @@ FTM_RET	FTM_CATCHB_getStatisticsInfo
 	FTM_UINT32_PTR	pulLastTime
 )
 {
+#if	1
+	if (pCatchB->pStatisticsList)
+	{
+		FTM_RET	xRet;
+		FTM_STATISTICS_PTR	pFirstStatistics = NULL;
+		FTM_STATISTICS_PTR	pLastStatistics = NULL;
+
+		xRet = FTM_LIST_count(pCatchB->pStatisticsList, pulCount);	
+		if (xRet != FTM_RET_OK)
+		{
+			return	xRet;
+		}
+	
+		xRet = FTM_LIST_getFirst(pCatchB->pStatisticsList, (FTM_VOID_PTR _PTR_)&pFirstStatistics);
+		if (xRet != FTM_RET_OK)
+		{
+			return	xRet;
+		}
+	
+		xRet = FTM_LIST_getLast(pCatchB->pStatisticsList, (FTM_VOID_PTR _PTR_)&pLastStatistics);
+		if (xRet != FTM_RET_OK)
+		{
+			return	xRet;
+		}
+	
+		*pulFirstTime = pFirstStatistics->xTime.xTimeval.tv_sec;
+		*pulLastTime = pLastStatistics->xTime.xTimeval.tv_sec;
+	}
+
+	return	FTM_RET_OK;
+#else
 	return	FTM_DB_getStatisticsInfo(pCatchB->pDB, pulCount, pulFirstTime, pulLastTime);
+#endif
 }
 
 FTM_RET	FTM_CATCHB_getStatisticsList
@@ -2979,7 +3137,31 @@ FTM_RET	FTM_CATCHB_getStatisticsList
 	FTM_UINT32_PTR	pulCount
 )
 {
+#if	1
+	FTM_UINT32	ulCount = 0;
+
+	for(FTM_UINT32	i = 0 ; i < ulMaxCount; i++)
+	{
+		FTM_RET	xRet;
+		FTM_STATISTICS_PTR	pStatistics;
+
+		xRet = FTM_LIST_getAt(pCatchB->pStatisticsList, ulIndex, (FTM_VOID_PTR _PTR_)&pStatistics);
+		if (xRet != FTM_RET_OK)
+		{
+			break;
+		}
+
+		memcpy(&pStatisticsList[i], pStatistics, sizeof(FTM_STATISTICS));
+		ulIndex++;
+		ulCount++;
+	}
+
+	*pulCount = ulCount;
+
+	return	FTM_RET_OK;
+#else
 	return	FTM_DB_getStatisticsListFrom(pCatchB->pDB, ulIndex, ulMaxCount, pStatisticsList, pulCount);
+#endif
 }
 
 FTM_RET	FTM_CATCHB_removeExpiredStatistics
@@ -2988,6 +3170,9 @@ FTM_RET	FTM_CATCHB_removeExpiredStatistics
 	FTM_UINT32		ulRetentionPeriod
 )
 {
+#if	1
+	return	FTM_RET_OK;
+#else
 	ASSERT(pCatchB != NULL);
 
 	if (pCatchB->pDB == NULL)
@@ -2997,4 +3182,56 @@ FTM_RET	FTM_CATCHB_removeExpiredStatistics
 
 
 	return	FTM_DB_removeExpiredStatistics(pCatchB->pDB, ulRetentionPeriod);
+#endif
+}
+
+FTM_RET	FTM_CATCHB_setStatisticsMaxCount
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulMaxCount
+)
+{
+	ASSERT(pCatchB != NULL);
+
+		FTM_RET	xRet;
+	FTM_UINT32	ulCount = 0;
+
+	xRet = FTM_LIST_count(pCatchB->pStatisticsList, &ulCount);	
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get statistics count!");
+		return	xRet;
+	}
+
+	if (ulCount > ulMaxCount)
+	{
+		for(FTM_UINT32	i = 0 ; i <  (ulCount - ulMaxCount) ; i++)
+		{
+			FTM_STATISTICS_PTR	pStatistics;
+
+			xRet = FTM_LIST_getFirst(pCatchB->pStatisticsList, (FTM_VOID_PTR _PTR_)&pStatistics);
+			if (xRet == FTM_RET_OK)
+			{
+				FTM_MEM_free(pStatistics);	
+			}
+		}
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CATCHB_setStatisticsUpdateInterval
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulInterval
+)
+{
+	ASSERT(pCatchB != NULL);
+
+	if ((ulInterval >= FTM_CATCHB_STATISTICS_UPDATE_INTERVAL_MIN	) && (ulInterval <= FTM_CATCHB_STATISTICS_UPDATE_INTERVAL_MAX))
+	{
+		pCatchB->xConfig.xStatistics.ulInterval = ulInterval;	
+	}
+
+	return	FTM_RET_OK;
 }

@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <syslog.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -34,7 +35,10 @@ FTM_RET	FTM_NOTIFIER_CONFIG_setDefault
 	FTM_NOTIFIER_CONFIG_PTR	pConfig
 )
 {
-	return	FTM_NOTIFIER_SMTP_CONFIG_setDefault(&pConfig->xSMTP);
+	FTM_NOTIFIER_SYSLOG_CONFIG_setDefault(&pConfig->xSyslog);
+	FTM_NOTIFIER_SMTP_CONFIG_setDefault(&pConfig->xSMTP);
+
+	return	FTM_RET_OK;
 }
 
 FTM_RET	FTM_NOTIFIER_CONFIG_load
@@ -48,6 +52,12 @@ FTM_RET	FTM_NOTIFIER_CONFIG_load
 
 	FTM_RET	xRet = FTM_RET_OK;
 	cJSON _PTR_	pSection;
+
+	pSection = cJSON_GetObjectItem(pRoot, "syslog");
+	if (pSection != NULL)
+	{
+		xRet = FTM_NOTIFIER_SYSLOG_CONFIG_load(&pConfig->xSyslog, pSection);
+	}
 
 	pSection = cJSON_GetObjectItem(pRoot, "smtp");
 	if (pSection != NULL)
@@ -73,10 +83,15 @@ FTM_RET	FTM_NOTIFIER_CONFIG_save
 	pSection = cJSON_CreateObject();
 	if (pSection != NULL)
 	{
-		cJSON_AddStringToObject(pSection, "server", pConfig->xSMTP.pServer);
-		cJSON_AddNumberToObject(pSection, "port", pConfig->xSMTP.usPort);
-		cJSON_AddStringToObject(pSection, "userid", pConfig->xSMTP.pUserID);
-		cJSON_AddStringToObject(pSection, "passwd", pConfig->xSMTP.pPasswd);
+		FTM_NOTIFIER_SYSLOG_CONFIG_save(&pConfig->xSyslog, pSection);
+
+		cJSON_AddItemToObject(pRoot, "syslog", pSection);
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		FTM_NOTIFIER_SMTP_CONFIG_save(&pConfig->xSMTP, pSection);
 
 		cJSON_AddItemToObject(pRoot, "smtp", pSection);
 	}
@@ -92,11 +107,138 @@ FTM_RET	FTM_NOTIFIER_CONFIG_show
 {
 	ASSERT(pConfig != NULL);
 
-	OUTPUT(xLevel, "[ Notifier Configuration ]");
-	return	FTM_NOTIFIER_SMTP_CONFIG_show(&pConfig->xSMTP, xLevel);
+	printf("\n[ Notifier Configuration ]\n");
+	FTM_NOTIFIER_SYSLOG_CONFIG_show(&pConfig->xSyslog, xLevel);
+	FTM_NOTIFIER_SMTP_CONFIG_show(&pConfig->xSMTP, xLevel);
+
+	return	FTM_RET_OK;
 
 }
 
+///////////////////////////////////////////////////////////////////
+FTM_RET	FTM_NOTIFIER_SYSLOG_CONFIG_setDefault
+(
+	FTM_NOTIFIER_SYSLOG_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	pConfig->bEnable	= FTM_CATCHB_NOTIFIER_SYSLOG_ENABLE;
+	pConfig->xMode		= FTM_CATCHB_NOTIFIER_SYSLOG_MODE;
+	pConfig->xLogLevel	= FTM_CATCHB_NOTIFIER_SYSLOG_LEVEL;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_NOTIFIER_SYSLOG_CONFIG_save
+(
+	FTM_NOTIFIER_SYSLOG_CONFIG_PTR	pConfig,
+	cJSON _PTR_		pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	cJSON_AddStringToObject(pRoot, "enable", (pConfig->bEnable?"yes":"no"));
+	switch(pConfig->xMode)
+	{
+	case	FTM_NOTIFIER_SYSLOG_MODE_CHANGED: 	cJSON_AddStringToObject(pRoot, "mode", "changed"); break;
+	case	FTM_NOTIFIER_SYSLOG_MODE_LEVEL: 	cJSON_AddStringToObject(pRoot, "mode", "level"); break;
+	default:	cJSON_AddStringToObject(pRoot, "mode", "none"); break;
+	}
+
+	switch(pConfig->xLogLevel)
+	{
+	case	FTM_LOG_TYPE_NORMAL: cJSON_AddStringToObject(pRoot, "level", "info");	break;
+	default:
+	cJSON_AddStringToObject(pRoot, "level", "error");	break;
+	}
+
+	return	FTM_RET_OK;
+
+}
+
+FTM_RET	FTM_NOTIFIER_SYSLOG_CONFIG_load
+(
+	FTM_NOTIFIER_SYSLOG_CONFIG_PTR	pConfig,
+	cJSON _PTR_		pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	cJSON _PTR_ pItem;
+
+	pItem = cJSON_GetObjectItem(pRoot, "enable");
+	if (pItem != NULL)
+	{
+		if ((strcasecmp(pItem->valuestring, "on") == 0) || (strcasecmp(pItem->valuestring, "yes") == 0))
+		{
+			pConfig->bEnable = FTM_TRUE;
+		}
+		else if ((strcasecmp(pItem->valuestring, "off") == 0) || (strcasecmp(pItem->valuestring, "no") == 0))
+		{
+			pConfig->bEnable = FTM_FALSE;
+		}
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "mode");
+	if (pItem != NULL)
+	{
+		if (strcasecmp(pItem->valuestring, "changed") == 0)
+		{
+			pConfig->xMode = FTM_NOTIFIER_SYSLOG_MODE_CHANGED;
+		}
+		else if (strcasecmp(pItem->valuestring, "level") == 0)
+		{
+			pConfig->xMode = FTM_NOTIFIER_SYSLOG_MODE_LEVEL;
+		}
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "level");
+	if (pItem != NULL)
+	{
+		if (strcasecmp(pItem->valuestring, "error") == 0)
+		{
+			pConfig->xLogLevel = FTM_LOG_TYPE_ERROR;
+		}
+		else if (strcasecmp(pItem->valuestring, "info") == 0)
+		{
+			pConfig->xLogLevel = FTM_LOG_TYPE_NORMAL;
+		}
+	}
+
+	return	FTM_RET_OK;
+
+}
+
+FTM_RET	FTM_NOTIFIER_SYSLOG_CONFIG_show
+(
+	FTM_NOTIFIER_SYSLOG_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL					xLevel
+)
+{
+	ASSERT(pConfig != NULL);
+
+	printf("\n[ Syslog Configuration ]\n");
+	printf("%16s : %s\n", "Enable", (pConfig->bEnable?"yes":"no"));
+	switch(pConfig->xMode)
+	{
+	case	FTM_NOTIFIER_SYSLOG_MODE_CHANGED: 	printf("%16s : %s\n", "Mode", "changed"); break;
+	case	FTM_NOTIFIER_SYSLOG_MODE_LEVEL:  	printf("%16s : %s\n", "Mode", "level"); break;
+	default:  	printf("%16s : %s\n", "Mode", "none"); break;
+	}
+
+	switch(pConfig->xLogLevel)
+	{
+	case	FTM_LOG_TYPE_NORMAL: printf("%16s : %s\n", "Level", "info"); break;
+	default: printf("%16s : %s\n", "Level", "error"); break;
+	}
+
+
+	return	FTM_RET_OK;
+}
+///////////////////////////////////////////////////////////////////
 FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_setDefault
 (
 	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig
@@ -104,6 +246,7 @@ FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_setDefault
 {
 	ASSERT(pConfig != NULL);
 
+	pConfig->bEnable = FTM_CATCHB_DEFAULT_SMTP_ENABLE;
 	strncpy(pConfig->pServer, FTM_CATCHB_DEFAULT_SMTP_SERVER, sizeof(pConfig->pServer) - 1);
 	pConfig->usPort = FTM_CATCHB_DEFAULT_SMTP_PORT;
 	strncpy(pConfig->pUserID, FTM_CATCHB_DEFAULT_SMTP_USER_ID, sizeof(pConfig->pUserID) - 1);
@@ -123,6 +266,19 @@ FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_load
 	ASSERT(pRoot != NULL);
 
 	cJSON _PTR_ pItem;
+
+	pItem = cJSON_GetObjectItem(pRoot, "enable");
+	if (pItem != NULL)
+	{
+		if ((strcasecmp(pItem->valuestring, "on") == 0) || (strcasecmp(pItem->valuestring, "yes") == 0))
+		{
+			pConfig->bEnable = FTM_TRUE;
+		}
+		else if ((strcasecmp(pItem->valuestring, "off") == 0) || (strcasecmp(pItem->valuestring, "no") == 0))
+		{
+			pConfig->bEnable = FTM_FALSE;
+		}
+	}
 
 	pItem = cJSON_GetObjectItem(pRoot, "server");
 	if (pItem != NULL)
@@ -152,6 +308,25 @@ FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_load
 
 }
 
+FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_save
+(
+	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig,
+	cJSON _PTR_		pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+
+	cJSON_AddStringToObject(pRoot, "enable", (pConfig->bEnable?"yes":"no"));
+	cJSON_AddStringToObject(pRoot, "server", pConfig->pServer);
+	cJSON_AddNumberToObject(pRoot, "port", pConfig->usPort);
+	cJSON_AddStringToObject(pRoot, "userid", pConfig->pUserID);
+	cJSON_AddStringToObject(pRoot, "passwd", pConfig->pPasswd);
+
+	return	FTM_RET_OK;
+
+}
+
 FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_show
 (
 	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig,
@@ -160,11 +335,12 @@ FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_show
 {
 	ASSERT(pConfig != NULL);
 
-	OUTPUT(xLevel, "");
-	OUTPUT(xLevel, "%16s : %s", "Server", pConfig->pServer);
-	OUTPUT(xLevel, "%16s : %d", "Port", 	pConfig->usPort);
-	OUTPUT(xLevel, "%16s : %s", "user ID", pConfig->pUserID);
-	OUTPUT(xLevel, "%16s : %s", "Password", pConfig->pPasswd);
+	printf("\n[ SMTP Configuration ]\n");
+	printf("%16s : %s\n", "Enable", (pConfig->bEnable?"yes":"no"));
+	printf("%16s : %s\n", "Server", pConfig->pServer);
+	printf("%16s : %d\n", "Port", 	pConfig->usPort);
+	printf("%16s : %s\n", "user ID", pConfig->pUserID);
+	printf("%16s : %s\n", "Password", pConfig->pPasswd);
 
 	return	FTM_RET_OK;
 }
@@ -363,38 +539,98 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 			case	FTM_MSG_TYPE_SEND_ALARM:
 				{
 					FTM_MSG_SEND_ALARM_PTR	pMsg = (FTM_MSG_SEND_ALARM_PTR)pRcvdMsg;
-					FTM_UINT32		ulAlarmCount = 0;
-					FTM_ALARM_PTR	pAlarms = NULL;
 
-					xRet = FTM_CATCHB_getAlarmCount(pNotifier->pCatchB, &ulAlarmCount);
-					if (xRet != FTM_RET_OK)
+					if (pNotifier->xConfig.xSyslog.bEnable)
 					{
-						ERROR(xRet, "Failed to get alarm count!");	
-						break;
-					}
+						FTM_CHAR	pMessage[1024];
 
-					if (ulAlarmCount != 0)
-					{
-						pAlarms = (FTM_ALARM_PTR)FTM_MEM_calloc(sizeof(FTM_ALARM), ulAlarmCount);
-						if (pAlarms == NULL)
+						switch(pNotifier->xConfig.xSyslog.xMode)
 						{
-							xRet = FTM_RET_NOT_ENOUGH_MEMORY;
-							ERROR(xRet, "Failed to alloc memory!\n");
+						case	FTM_NOTIFIER_SYSLOG_MODE_CHANGED:
+							{
+								if (pMsg->xNewStat != pMsg->xOriginalStat)
+								{
+									FTM_INT	nLevel = LOG_INFO;
+
+									if (pMsg->xLogType == FTM_LOG_TYPE_ERROR)
+									{
+										nLevel = LOG_ERR ;
+									}
+
+									sprintf(pMessage, "[%s] CCTV : %s, STAT : %s -> %s, HASH : %s", 
+											FTM_TIME_printf2(pMsg->ulTime, NULL), 
+											pMsg->pID, 
+											FTM_CCTV_STAT_print(pMsg->xOriginalStat), 
+											FTM_CCTV_STAT_print(pMsg->xNewStat), 
+											pMsg->pHash);
+									syslog(nLevel | LOG_LOCAL0, pMessage);
+									INFO("SYSLOG : %s", pMessage);
+
+								}
+							}
+							break;
+
+						case	FTM_NOTIFIER_SYSLOG_MODE_LEVEL:
+							{
+								if (pNotifier->xConfig.xSyslog.xLogLevel >= pMsg->xLogType)
+								{
+									FTM_INT	nLevel = LOG_INFO;
+
+									if (pMsg->xLogType == FTM_LOG_TYPE_ERROR)
+									{
+										nLevel = LOG_ERR ;
+									}
+
+									sprintf(pMessage, "[%s] CCTV : %s, STAT : %s -> %s, HASH : %s", 
+											FTM_TIME_printf2(pMsg->ulTime, NULL), 
+											pMsg->pID, 
+											FTM_CCTV_STAT_print(pMsg->xOriginalStat), 
+											FTM_CCTV_STAT_print(pMsg->xNewStat), 
+											pMsg->pHash);
+									syslog(nLevel | LOG_LOCAL0, pMessage);
+									INFO("SYSLOG : %s", pMessage);
+
+								}
+							}
+							}
 							break;
 						}
-					
-						xRet = FTM_CATCHB_getAlarmList(pNotifier->pCatchB, 0, ulAlarmCount, pAlarms, &ulAlarmCount);
-						if (xRet == FTM_RET_OK)
-						{
-							FTM_UINT32	i;
 
-							for(i = 0 ; i < ulAlarmCount ; i++)
-							{
-								FTM_NOTIFIER_onSendAlarm(pNotifier, pMsg->pID, &pAlarms[i]);
-							}
+					if (pNotifier->xConfig.xSMTP.bEnable)
+					{
+						FTM_UINT32		ulAlarmCount = 0;
+						FTM_ALARM_PTR	pAlarms = NULL;
+
+						xRet = FTM_CATCHB_getAlarmCount(pNotifier->pCatchB, &ulAlarmCount);
+						if (xRet != FTM_RET_OK)
+						{
+							ERROR(xRet, "Failed to get alarm count!");	
+							break;
 						}
 
-						FTM_MEM_free(pAlarms);
+						if (ulAlarmCount != 0)
+						{
+							pAlarms = (FTM_ALARM_PTR)FTM_MEM_calloc(sizeof(FTM_ALARM), ulAlarmCount);
+							if (pAlarms == NULL)
+							{
+								xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+								ERROR(xRet, "Failed to alloc memory!\n");
+								break;
+							}
+
+							xRet = FTM_CATCHB_getAlarmList(pNotifier->pCatchB, 0, ulAlarmCount, pAlarms, &ulAlarmCount);
+							if (xRet == FTM_RET_OK)
+							{
+								FTM_UINT32	i;
+
+								for(i = 0 ; i < ulAlarmCount ; i++)
+								{
+									FTM_NOTIFIER_onSendAlarm(pNotifier, pMsg->pID, &pAlarms[i]);
+								}
+							}
+
+							FTM_MEM_free(pAlarms);
+						}
 					}
 				}
 				break;
@@ -438,8 +674,13 @@ FTM_RET	FTM_NOTIFIER_sendMessage
 
 FTM_RET	FTM_NOTIFIER_sendAlarm
 (
-	FTM_NOTIFIER_PTR pNotifier,
-	FTM_CHAR_PTR	 pID
+	FTM_NOTIFIER_PTR 	pNotifier,
+	FTM_LOG_TYPE		xLogType,
+	FTM_CHAR_PTR	 	pID,
+	FTM_UINT32			ulTime,
+	FTM_CCTV_STAT	 	xNewStat,
+	FTM_CHAR_PTR		pHash,
+	FTM_CCTV_STAT	 	xOriginalStat
 )
 {
 	ASSERT(pNotifier != NULL);
@@ -456,8 +697,13 @@ FTM_RET	FTM_NOTIFIER_sendAlarm
 	{
 		pMsg->xHead.xType = FTM_MSG_TYPE_SEND_ALARM;
 		pMsg->xHead.ulLen = sizeof(FTM_MSG_SEND_ALARM);
+		pMsg->xLogType = xLogType;
 		strncpy(pMsg->pID, pID, sizeof(pMsg->pID) - 1);
-	
+		pMsg->ulTime = ulTime;
+		pMsg->xNewStat = xNewStat;
+		strncpy(pMsg->pHash, pHash, sizeof(pMsg->pHash) - 1);
+		pMsg->xOriginalStat = xOriginalStat;
+
 		xRet = FTM_NOTIFIER_sendMessage(pNotifier, (FTM_VOID_PTR)pMsg);
 		if(xRet != FTM_RET_OK)
 		{
@@ -477,69 +723,73 @@ FTM_RET	FTM_NOTIFIER_onSendAlarm
 {
 	ASSERT(pAlarm != NULL);
 
-	FTM_RET	xRet;
-	FTM_SMTPC_PTR	pSMTPC;
-	FTM_CHAR		pBody[2048];
-	FTM_UINT32		ulBodyLen = 0;
-
-	return	FTM_RET_OK;
-
-	INFO("##################################################");
-	INFO("Send mail to %s", pAlarm->pEmail);
-	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "Date:%s\r\n", FTM_TIME_printfCurrent(NULL));
-	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "From:<%s>\r\n", pNotifier->xConfig.xSMTP.pSender);
-	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "To:<%s>\r\n", pAlarm->pEmail);
-	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "Subject:%s\r\n\r\n", "ALARM!");
-	ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "%s\r\n\r\n", pAlarm->pMessage);
+	FTM_RET			xRet = FTM_RET_OK;
+	FTM_SMTPC_PTR	pSMTPC = NULL;
 
 
-	xRet = FTM_SMTPC_create(pNotifier->xConfig.xSMTP.pServer, pNotifier->xConfig.xSMTP.usPort, &pSMTPC);
-	if (xRet != FTM_RET_OK)
+	if (pNotifier->xConfig.xSMTP.bEnable)
 	{
-		return	xRet;	
-	}
+		FTM_CHAR		pBody[2048];
+		FTM_UINT32		ulBodyLen = 0;
 
-	xRet = FTM_SMTPC_connect(pSMTPC);
-	if (xRet != FTM_RET_OK)
-	{
-		goto finished;
-	}
+		INFO("##################################################");
+		INFO("Send mail to %s", pAlarm->pEmail);
+		ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "Date:%s\r\n", FTM_TIME_printfCurrent(NULL));
+		ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "From:<%s>\r\n", pNotifier->xConfig.xSMTP.pSender);
+		ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "To:<%s>\r\n", pAlarm->pEmail);
+		ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "Subject:%s\r\n\r\n", "ALARM!");
+		ulBodyLen += snprintf(&pBody[ulBodyLen], 2048 - ulBodyLen, "%s\r\n\r\n", pAlarm->pMessage);
 
-	xRet = FTM_SMTPC_sendGreeting(pSMTPC);
-	if (xRet != FTM_RET_OK)
-	{
-		goto finished;
-	}
 
-	INFO("AUTH %s %s", pNotifier->xConfig.xSMTP.pUserID, pNotifier->xConfig.xSMTP.pPasswd);
-	xRet = FTM_SMTPC_sendAuth(pSMTPC, pNotifier->xConfig.xSMTP.pUserID, pNotifier->xConfig.xSMTP.pPasswd);
-	if (xRet != FTM_RET_OK)
-	{
-		goto finished;
-	}
+		xRet = FTM_SMTPC_create(pNotifier->xConfig.xSMTP.pServer, pNotifier->xConfig.xSMTP.usPort, &pSMTPC);
+		if (xRet != FTM_RET_OK)
+		{
+			return	xRet;	
+		}
 
-	xRet = FTM_SMTPC_sendFrom(pSMTPC, pNotifier->xConfig.xSMTP.pSender);
-	if (xRet != FTM_RET_OK)
-	{
-		goto finished;
-	}
+		xRet = FTM_SMTPC_connect(pSMTPC);
+		if (xRet != FTM_RET_OK)
+		{
+			goto finished;
+		}
 
-	xRet = FTM_SMTPC_sendTo(pSMTPC, pAlarm->pEmail);
-	if (xRet != FTM_RET_OK)
-	{
-		goto finished;
-	}
+		xRet = FTM_SMTPC_sendGreeting(pSMTPC);
+		if (xRet != FTM_RET_OK)
+		{
+			goto finished;
+		}
 
-	xRet = FTM_SMTPC_sendMessage(pSMTPC, pBody);
-	if (xRet != FTM_RET_OK)
-	{
-		goto finished;
-	}
-	
-	xRet = FTM_SMTPC_disconnect(pSMTPC);
-	if (xRet != FTM_RET_OK)
-	{
-		goto finished;
+		INFO("AUTH %s %s", pNotifier->xConfig.xSMTP.pUserID, pNotifier->xConfig.xSMTP.pPasswd);
+		xRet = FTM_SMTPC_sendAuth(pSMTPC, pNotifier->xConfig.xSMTP.pUserID, pNotifier->xConfig.xSMTP.pPasswd);
+		if (xRet != FTM_RET_OK)
+		{
+			goto finished;
+		}
+
+		xRet = FTM_SMTPC_sendFrom(pSMTPC, pNotifier->xConfig.xSMTP.pSender);
+		if (xRet != FTM_RET_OK)
+		{
+			goto finished;
+		}
+
+		xRet = FTM_SMTPC_sendTo(pSMTPC, pAlarm->pEmail);
+		if (xRet != FTM_RET_OK)
+		{
+			goto finished;
+		}
+
+		xRet = FTM_SMTPC_sendMessage(pSMTPC, pBody);
+		if (xRet != FTM_RET_OK)
+		{
+			goto finished;
+		}
+
+		xRet = FTM_SMTPC_disconnect(pSMTPC);
+		if (xRet != FTM_RET_OK)
+		{
+			goto finished;
+		}
+
 	}
 
 finished:
@@ -549,7 +799,5 @@ finished:
 	}
 
 	return	xRet;
-
-	return	FTM_RET_OK;
 }
 

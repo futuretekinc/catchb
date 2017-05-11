@@ -146,6 +146,20 @@ FTM_RET FTM_CGI_getIndex
 	FTM_BOOL	bAllowEmpty
 );
 
+FTM_RET	FTM_CGI_getInterval
+(
+	qentry_t *pReq, 
+	FTM_UINT32_PTR	pInterval,
+	FTM_BOOL	bAllowEmpty
+);
+
+FTM_RET FTM_CGI_getMaxCount
+(
+	qentry_t *pReq, 
+	FTM_UINT32_PTR pulCount,
+	FTM_BOOL	bAllowEmpty
+);
+
 FTM_RET FTM_CGI_getCount
 (
 	qentry_t *pReq, 

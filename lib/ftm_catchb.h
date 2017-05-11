@@ -13,18 +13,10 @@
 #include "ftm_timer.h"
 #include "ftm_server.h"
 
-typedef	struct 	FTM_CATCHB_CONFIG_STRUCT
-{
-	struct
-	{
-		FTM_UINT32	ulUpdateInterval;
-	}	xCCTV;
-
-}	FTM_CATCHB_CONFIG, _PTR_ FTM_CATCHB_CONFIG_PTR;
 
 typedef	struct	FTM_CATCHB_STRUCT
 {
-	FTM_CATCHB_CONFIG	xConfig;
+	FTM_SYSTEM_CONFIG	xConfig;
 
 	FTM_CHAR			pName[FTM_NAME_LEN+1];
 
@@ -34,6 +26,7 @@ typedef	struct	FTM_CATCHB_STRUCT
 	FTM_LIST_PTR		pCCTVList;
 	FTM_LIST_PTR		pSwitchList;
 	FTM_LIST_PTR		pAlarmList;
+	FTM_LIST_PTR		pStatisticsList;
 
 	FTM_ANALYZER_PTR	pAnalyzer;
 	FTM_DETECTOR_PTR	pDetector;
@@ -360,6 +353,18 @@ FTM_RET	FTM_CATCHB_delStatistics2
 	FTM_CATCHB_PTR	pCatchB,
 	FTM_UINT32		ulFirstTime,
 	FTM_UINT32		ulLastTime
+);
+
+FTM_RET	FTM_CATCHB_setStatisticsMaxCount
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulCount
+);
+
+FTM_RET	FTM_CATCHB_setStatisticsUpdateInterval
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_UINT32		ulInterval
 );
 
 FTM_RET	FTM_CATCHB_getStatisticsInfo

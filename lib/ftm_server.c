@@ -67,6 +67,7 @@ static FTM_SERVER_CMD_SET	pCmdSet[] =
 	MK_CMD_SET(FTM_CMD_GET_ALARM_NAME_LIST,		FTM_SERVER_getAlarmNameList),
 
 	MK_CMD_SET(FTM_CMD_GET_STAT_COUNT,			FTM_SERVER_getStatCount),
+	MK_CMD_SET(FTM_CMD_SET_STAT_INFO,			FTM_SERVER_setStatInfo),
 	MK_CMD_SET(FTM_CMD_GET_STAT_INFO,			FTM_SERVER_getStatInfo),
 	MK_CMD_SET(FTM_CMD_GET_STAT_LIST,			FTM_SERVER_getStatList),
 	MK_CMD_SET(FTM_CMD_DEL_STAT,				FTM_SERVER_delStat),
@@ -289,7 +290,7 @@ FTM_VOID_PTR FTM_SERVER_process(FTM_VOID_PTR pData)
 				}
 			}
 		}
-		usleep(10000);
+		usleep(1000);
 	}
 
 	FTM_SESSION_PTR pSession;
@@ -371,6 +372,8 @@ FTM_VOID_PTR FTM_SERVER_service(FTM_VOID_PTR pData)
 	FTM_SERVER_destroySession(pServer, &pSession);
 
 	sem_post(&pServer->xSemaphore);
+
+	pthread_exit(0);
 
 	return	0;
 }
@@ -1514,9 +1517,60 @@ FTM_RET	FTM_SERVER_getStatInfo
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
 	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_STAT_INFO_PARAMS);
-	pResp->ulCount = ulCount;
-	pResp->ulFirstTime= ulFirstTime;
-	pResp->ulLastTime= ulLastTime;
+	pResp->xInfo.ulFields =	FTM_SYSTEM_FIELD_STATISTICS_INTERVAL
+						| 	FTM_SYSTEM_FIELD_STATISTICS_MAX_COUNT
+						|	FTM_SYSTEM_FIELD_STATISTICS_COUNT	
+						|	FTM_SYSTEM_FIELD_STATISTICS_FIRST_TIME
+						|	FTM_SYSTEM_FIELD_STATISTICS_LAST_TIME;
+	pResp->xInfo.xStatistics.ulMaxCount	= pCatchB->xConfig.xStatistics.ulCount;
+	pResp->xInfo.xStatistics.ulInterval = pCatchB->xConfig.xStatistics.ulInterval;
+	pResp->xInfo.xStatistics.ulCount 	= ulCount;
+	pResp->xInfo.xStatistics.ulFirstTime= ulFirstTime;
+	pResp->xInfo.xStatistics.ulLastTime	= ulLastTime;
+
+	return	xRet;
+}
+
+FTM_RET	FTM_SERVER_setStatInfo
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_SET_STAT_INFO_PARAMS_PTR	pReq,
+	FTM_RESP_SET_STAT_INFO_PARAMS_PTR	pResp
+)
+{
+	FTM_RET			xRet;
+	FTM_CATCHB_PTR	pCatchB;
+	FTM_UINT32		ulCount = 0;
+	FTM_UINT32		ulFirstTime= 0;
+	FTM_UINT32		ulLastTime = 0;
+
+	pCatchB = pServer->pCatchB;
+
+	if (pReq->xInfo.ulFields & FTM_SYSTEM_FIELD_STATISTICS_INTERVAL)
+	{
+		FTM_CATCHB_setStatisticsUpdateInterval(pCatchB, pReq->xInfo.xStatistics.ulInterval);
+	}
+
+	if (pReq->xInfo.ulFields & FTM_SYSTEM_FIELD_STATISTICS_MAX_COUNT)
+	{
+		FTM_CATCHB_setStatisticsMaxCount(pCatchB, pReq->xInfo.xStatistics.ulMaxCount);
+	}
+
+
+	xRet = FTM_CATCHB_getStatisticsInfo(pCatchB, &ulCount, &ulFirstTime, &ulLastTime);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log info!");
+	}
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet = xRet;
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_SET_STAT_INFO_PARAMS);
+	pResp->xInfo.xStatistics.ulMaxCount	= pCatchB->xConfig.xStatistics.ulCount;
+	pResp->xInfo.xStatistics.ulInterval 	= pCatchB->xConfig.xStatistics.ulInterval;
+	pResp->xInfo.xStatistics.ulCount = ulCount;
+	pResp->xInfo.xStatistics.ulFirstTime= ulFirstTime;
+	pResp->xInfo.xStatistics.ulLastTime= ulLastTime;
 
 	return	xRet;
 }

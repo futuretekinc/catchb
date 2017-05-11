@@ -1455,12 +1455,41 @@ FTM_RET FTM_CLIENT_getAlarmNameList
 	return	xRet;
 }
 
+FTM_RET	FTM_CLIENT_setStatInfo
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_SYSTEM_INFO_PTR	pRequestInfo,
+	FTM_SYSTEM_INFO_PTR	pResultInfo
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_SET_STAT_INFO_PARAMS	xReq;
+	FTM_RESP_SET_STAT_INFO_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_SET_STAT_INFO;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+	memcpy(&xReq.xInfo, pRequestInfo, sizeof(FTM_SYSTEM_INFO));
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+	if ((xRet == FTM_RET_OK) && (pResultInfo != NULL))
+	{
+		memcpy(pResultInfo, &xResp.xInfo, sizeof(FTM_SYSTEM_INFO));
+	}
+
+	return	xRet;
+}
+
 FTM_RET	FTM_CLIENT_getStatInfo
 (
 	FTM_CLIENT_PTR	pClient,
-	FTM_UINT32_PTR	pulCount,
-	FTM_UINT32_PTR	pulFirstTime,
-	FTM_UINT32_PTR	pulLastTime
+	FTM_SYSTEM_INFO_PTR	pInfo
 )
 {
 	FTM_RET	xRet;
@@ -1480,9 +1509,7 @@ FTM_RET	FTM_CLIENT_getStatInfo
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
 	if (xRet == FTM_RET_OK)
 	{
-		*pulCount = xResp.ulCount;	
-		*pulFirstTime = xResp.ulFirstTime;	
-		*pulLastTime = xResp.ulLastTime;	
+		memcpy(pInfo, &xResp.xInfo, sizeof(FTM_SYSTEM_INFO));
 	}
 
 	return	xRet;

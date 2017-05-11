@@ -608,6 +608,34 @@ FTM_RET	FTM_CGI_getIndex
 	return	FTM_RET_OK;
 }
 
+FTM_RET	FTM_CGI_getMaxCount
+(
+	qentry_t *pReq, 
+	FTM_UINT32_PTR pulCount,
+	FTM_BOOL	bAllowEmpty
+)
+{
+	ASSERT(pReq != NULL);
+	ASSERT(pulCount != NULL);
+
+	FTM_CHAR_PTR	pValue;
+
+	pValue = pReq->getstr(pReq, "max count", false);
+	if((pValue == NULL) || (strlen(pValue) == 0))
+	{
+		if(!bAllowEmpty)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;	
+		}
+	}
+	else
+	{
+		*pulCount = strtoul(pValue, 0, 10);
+	}
+	
+	return	FTM_RET_OK;
+}
+
 FTM_RET	FTM_CGI_getCount
 (
 	qentry_t *pReq, 

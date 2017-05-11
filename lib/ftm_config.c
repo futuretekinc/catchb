@@ -2,11 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ftm_config.h"
+#include "ftm_catchb.h"
 #include "ftm_trace.h"
 #include "cjson/cJSON.h"
 #include "ftm_mem.h"
 #include "ftm_switch.h"
 #include "ftm_logger.h"
+
+#undef	__MODULE__
+#define	__MODULE__ "config"
 
 //////////////////////////////////////////////////////////////
 //	FTM_CONFIG functions
@@ -102,6 +106,7 @@ FTM_RET	FTM_CONFIG_setDefault
 {
 	ASSERT(pConfig != NULL);
 
+	FTM_SYSTEM_CONFIG_setDefault(&pConfig->xSystem);
 	FTM_DB_CONFIG_setDefault(&pConfig->xDB);
 	FTM_ANALYZER_CONFIG_setDefault(&pConfig->xAnalyzer);
 	FTM_NOTIFIER_CONFIG_setDefault(&pConfig->xNotifier);
@@ -172,6 +177,12 @@ FTM_RET	FTM_CONFIG_load
 		ERROR(xRet, "Invalid json format!\n");
 		goto finished;
 	}    
+
+	pSection = cJSON_GetObjectItem(pRoot, "system");
+	if (pSection != NULL)
+	{
+		FTM_SYSTEM_CONFIG_load(&pConfig->xSystem, pSection);
+	}
 
 	pSection = cJSON_GetObjectItem(pRoot, "database");
 	if (pSection != NULL)
@@ -246,6 +257,20 @@ FTM_RET	FTM_CONFIG_save
 		ERROR(xRet, "Failed to save configuration due to not allocated memory!\n");
 		goto finished;
 	}    
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		xRet = FTM_SYSTEM_CONFIG_save(&pConfig->xSystem, pSection);
+		if (xRet == FTM_RET_OK)
+		{
+			cJSON_AddItemToObject(pRoot, "system", pSection);	
+		}
+		else
+		{
+			cJSON_Delete(pSection);
+		}
+	}
 
 	pSection = cJSON_CreateObject();
 	if (pSection != NULL)
@@ -345,6 +370,8 @@ FTM_RET	FTM_CONFIG_show
 {
 	ASSERT(pConfig != NULL);
 
+	FTM_SYSTEM_CONFIG_show(&pConfig->xSystem, xLevel);
+
 	FTM_DB_CONFIG_show(&pConfig->xDB, xLevel);
 
 	FTM_ANALYZER_CONFIG_show(&pConfig->xAnalyzer, xLevel);
@@ -353,7 +380,6 @@ FTM_RET	FTM_CONFIG_show
 
 	FTM_LOGGER_CONFIG_show(&pConfig->xLogger, xLevel);
 
-	FTM_SWITCH_CONFIG_showList(pConfig->pSwitchList, xLevel);
 
 	return	FTM_RET_OK;
 }

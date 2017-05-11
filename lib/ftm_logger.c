@@ -78,9 +78,8 @@ FTM_RET	FTM_LOGGER_CONFIG_show
 {
 	ASSERT(pConfig != NULL);
 
-	OUTPUT(xLevel, "");
-	OUTPUT(xLevel, "[ Logger Configuration ]");
-	OUTPUT(xLevel, "%16s : %u", "Retention Period", pConfig->ulRetentionPeriod);
+	printf("\n[ Logger Configuration ]\n");
+	printf("%16s : %u\n", "Retention Period", pConfig->ulRetentionPeriod);
 
 	return	FTM_RET_OK;
 }

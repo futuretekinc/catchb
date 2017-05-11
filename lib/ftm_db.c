@@ -10,9 +10,18 @@
 
 typedef	FTM_INT	(*FTM_DB_GET_ELEMENT_LIST_CALLBACK)(FTM_VOID_PTR pData, FTM_INT nArgc, FTM_CHAR_PTR _PTR_ ppArgv, FTM_CHAR_PTR _PTR_ ppColumnName);
 
+FTM_RET FTM_DB_isExistTable
+(
+	FTM_DB_PTR		pDB,
+	FTM_BOOL		bSecondary,
+	FTM_CHAR_PTR    pTableName, 
+	FTM_BOOL_PTR    pExist
+);
+
 FTM_RET	FTM_DB_getElementCount
 (
 	FTM_DB_PTR		pDB,
+	FTM_BOOL		bSecondary,
 	FTM_CHAR_PTR	pTableName,
 	FTM_UINT32_PTR	pCount
 );
@@ -20,6 +29,7 @@ FTM_RET	FTM_DB_getElementCount
 FTM_RET	FTM_DB_getElementList
 (
 	FTM_DB_PTR 		pDB, 
+	FTM_BOOL		bSecondary,
 	FTM_CHAR_PTR	pTableName,
 	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulCount,
@@ -30,6 +40,7 @@ FTM_RET	FTM_DB_getElementList
 FTM_RET	FTM_DB_getElementListOrderByTime
 (
 	FTM_DB_PTR 		pDB, 
+	FTM_BOOL		bSecondary,
 	FTM_CHAR_PTR	pTableName,
 	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulCount,
@@ -40,6 +51,7 @@ FTM_RET	FTM_DB_getElementListOrderByTime
 FTM_RET	FTM_DB_getElementListOfTimePeriod
 (
 	FTM_DB_PTR 		pDB, 
+	FTM_BOOL		bSecondary,
 	FTM_CHAR_PTR	pTableName,
 	FTM_UINT32		ulStartTime,
 	FTM_UINT32		ulEndTime,
@@ -55,7 +67,8 @@ FTM_RET	FTM_DB_CONFIG_setDefault
 {
 	ASSERT(pConfig != NULL);
 
-	strncpy(pConfig->pFileName, FTM_CATCHB_DB_DEFAULT_FILE_NAME, sizeof(pConfig->pFileName) - 1);
+	strncpy(pConfig->pFileName, FTM_CATCHB_DB_DEFAULT_DATA_FILE_NAME, sizeof(pConfig->pFileName) - 1);
+	strncpy(pConfig->pLogFileName, FTM_CATCHB_DB_DEFAULT_LOG_FILE_NAME, sizeof(pConfig->pLogFileName) - 1);
 
 	return	FTM_RET_OK;
 }
@@ -71,12 +84,21 @@ FTM_RET	FTM_DB_CONFIG_load
 
 	cJSON _PTR_ pItem;
 
-	pItem = cJSON_GetObjectItem(pRoot, "file");
+	pItem = cJSON_GetObjectItem(pRoot, "data file");
 	if (pItem != NULL)
 	{
 		if (pItem->type == cJSON_String)
 		{
 			strncpy(pConfig->pFileName, pItem->valuestring, sizeof(pConfig->pFileName) - 1);	
+		}
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "log file");
+	if (pItem != NULL)
+	{
+		if (pItem->type == cJSON_String)
+		{
+			strncpy(pConfig->pLogFileName, pItem->valuestring, sizeof(pConfig->pLogFileName) - 1);	
 		}
 	}
 
@@ -92,7 +114,8 @@ FTM_RET	FTM_DB_CONFIG_save
 	ASSERT(pConfig != NULL);
 	ASSERT(pRoot != NULL);
 
-	cJSON_AddStringToObject(pRoot, "file", pConfig->pFileName);
+	cJSON_AddStringToObject(pRoot, "data file", pConfig->pFileName);
+	cJSON_AddStringToObject(pRoot, "log file", pConfig->pFileName);
 
 	return	FTM_RET_OK;
 }
@@ -105,8 +128,9 @@ FTM_RET	FTM_DB_CONFIG_show
 {
 	ASSERT(pConfig != NULL);
 
-	OUTPUT(xLevel, "[ Database Configuration ]");
-	OUTPUT(xLevel, "%16s : %s", "File Name", pConfig->pFileName);
+	printf( "\n[ Database Configuration ]\n");
+	printf( "%16s : %s\n", "Data File Name", pConfig->pFileName);
+	printf( "%16s : %s\n", "Log File Name", pConfig->pLogFileName);
 
 	return	FTM_RET_OK;
 }
@@ -171,21 +195,30 @@ FTM_RET	FTM_DB_open
 	ASSERT(pDB != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 
-	if (pDB->pSQLite3 != NULL)
+	if (pDB->pPrimaryDB != NULL)
 	{
 		xRet = FTM_RET_DB_ALREADY_OPENED;	
 		ERROR(xRet, "DB already opened!");	
 	}
 	else
 	{
-		if (sqlite3_open(pDB->xConfig.pFileName, &pDB->pSQLite3) != 0)
+		if (sqlite3_open_v2(pDB->xConfig.pFileName, &pDB->pPrimaryDB, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL) != 0)
 		{
 			xRet = FTM_RET_DB_OPEN_FAILED;	
-			ERROR(xRet, "DB open failed!");
+			ERROR(xRet, "The SQLite3[%s] database[%s] open failed!", sqlite3_libversion(), pDB->xConfig.pFileName);
 		}
 		else
 		{
-			INFO("The database[%s] opened successfully.", pDB->xConfig.pFileName);
+			INFO("The SQLite3[%s] database[%s] opened successfully.", sqlite3_libversion(), pDB->xConfig.pFileName);
+		}
+		if (sqlite3_open_v2(pDB->xConfig.pLogFileName, &pDB->pSecondaryDB, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL) != 0)
+		{
+			xRet = FTM_RET_DB_OPEN_FAILED;	
+			ERROR(xRet, "The SQLite3[%s] database[%s] open failed!", sqlite3_libversion(), pDB->xConfig.pLogFileName);
+		}
+		else
+		{
+			INFO("The SQLite3[%s] database[%s] opened successfully.", sqlite3_libversion(), pDB->xConfig.pLogFileName);
 		}
 	}
 
@@ -200,10 +233,16 @@ FTM_RET	FTM_DB_close
 	ASSERT(pDB != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 
-	if (pDB->pSQLite3 != NULL)
+	if (pDB->pPrimaryDB != NULL)
 	{
-		sqlite3_close(pDB->pSQLite3);	
-		pDB->pSQLite3 = NULL;	
+		sqlite3_close(pDB->pPrimaryDB);	
+		pDB->pPrimaryDB = NULL;	
+	}
+
+	if (pDB->pSecondaryDB != NULL)
+	{
+		sqlite3_close(pDB->pSecondaryDB);	
+		pDB->pSecondaryDB = NULL;	
 	}
 
 	return	xRet;
@@ -240,6 +279,7 @@ FTM_RET	FTM_DB_getConfig
 FTM_RET	FTM_DB_createTable
 (
 	FTM_DB_PTR		pDB,
+	FTM_BOOL		bSecondary,
 	FTM_CHAR_PTR	pTableName,
 	FTM_CHAR_PTR	pFields
 )
@@ -249,7 +289,7 @@ FTM_RET	FTM_DB_createTable
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_BOOL	bExist = FTM_FALSE;
 
-	FTM_DB_isExistTable(pDB, pTableName, &bExist);
+	FTM_DB_isExistTable(pDB, bSecondary, pTableName, &bExist);
 	if (bExist)
 	{
 		xRet = FTM_RET_DB_ALREADY_EXIST;	
@@ -264,13 +304,24 @@ FTM_RET	FTM_DB_createTable
 
 		snprintf(pQuery, sizeof(pQuery) - 1, "CREATE TABLE %s (%s)", pTableName, pFields);
 		INFO("Query : %s", pQuery);
-		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
+		if (!bSecondary)
 		{
-			xRet = FTM_RET_DB_EXEC_ERROR;
-			ERROR(xRet, "Failed to execute query!");
-			sqlite3_free(pErrorMsg);
+			if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) < 0)
+			{
+				xRet = FTM_RET_DB_EXEC_ERROR;
+				ERROR(xRet, "Failed to execute query!");
+				sqlite3_free(pErrorMsg);
+			}
 		}
-		INFO("Query success!");
+		else
+		{
+			if (sqlite3_exec(pDB->pSecondaryDB, pQuery, NULL, 0, &pErrorMsg) < 0)
+			{
+				xRet = FTM_RET_DB_EXEC_ERROR;
+				ERROR(xRet, "Failed to execute query!");
+				sqlite3_free(pErrorMsg);
+			}
+		}
 	}
 		
 	INFO("The tables[%s] created.", pTableName);
@@ -280,6 +331,7 @@ FTM_RET	FTM_DB_createTable
 FTM_RET	FTM_DB_destroyTable
 (
 	FTM_DB_PTR		pDB,
+	FTM_BOOL		bSecondary,
 	FTM_CHAR_PTR	pTableName
 )
 {
@@ -288,7 +340,7 @@ FTM_RET	FTM_DB_destroyTable
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_BOOL	bExist = FTM_FALSE;
 
-	FTM_DB_isExistTable(pDB, pTableName, &bExist);
+	FTM_DB_isExistTable(pDB, bSecondary, pTableName, &bExist);
 	if (!bExist)
 	{
 		xRet = FTM_RET_DB_TABLE_NOT_EXIST;	
@@ -303,13 +355,24 @@ FTM_RET	FTM_DB_destroyTable
 
 		snprintf(pQuery, sizeof(pQuery) - 1, "DROP TABLE %s", pTableName);
 		INFO("Query : %s", pQuery);
-		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
+		if (!bSecondary)
 		{
-			xRet = FTM_RET_DB_EXEC_ERROR;
-			ERROR(xRet, "Failed to execute query!");
-			sqlite3_free(pErrorMsg);
+			if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) < 0)
+			{
+				xRet = FTM_RET_DB_EXEC_ERROR;
+				ERROR(xRet, "Failed to execute query!");
+				sqlite3_free(pErrorMsg);
+			}
 		}
-		INFO("Query success!");
+		else
+		{
+			if (sqlite3_exec(pDB->pSecondaryDB, pQuery, NULL, 0, &pErrorMsg) < 0)
+			{
+				xRet = FTM_RET_DB_EXEC_ERROR;
+				ERROR(xRet, "Failed to execute query!");
+				sqlite3_free(pErrorMsg);
+			}
+		}
 	}
 		
 	return	xRet;
@@ -351,6 +414,7 @@ FTM_INT FTM_DB_isExistTableCB
 FTM_RET FTM_DB_isExistTable
 (
 	FTM_DB_PTR		pDB,
+	FTM_BOOL		bSecondary,
 	FTM_CHAR_PTR    pTableName, 
 	FTM_BOOL_PTR    pExist
 )
@@ -366,17 +430,29 @@ FTM_RET FTM_DB_isExistTable
 	FTM_CHAR_PTR    pErrMsg = NULL;
 
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_isExistTableCB, &xParams, &pErrMsg) != 0)
-	{    
-		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute DB query !");
-		sqlite3_free(pErrMsg);
-	}    
+	if (!bSecondary)
+	{
+		if (sqlite3_exec(pDB->pPrimaryDB, pQuery, FTM_DB_isExistTableCB, &xParams, &pErrMsg) != 0)
+		{    
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			ERROR(xRet, "Failed to execute DB query !");
+			sqlite3_free(pErrMsg);
+		}    
+	}
 	else
+	{
+		if (sqlite3_exec(pDB->pSecondaryDB, pQuery, FTM_DB_isExistTableCB, &xParams, &pErrMsg) != 0)
+		{    
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			ERROR(xRet, "Failed to execute DB query !");
+			sqlite3_free(pErrMsg);
+		}    
+	}
+
+	if (xRet == FTM_RET_OK)
 	{
 		*pExist = xParams.bExist;
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -407,6 +483,7 @@ FTM_INT	FTM_DB_getElementCountCB
 FTM_RET	FTM_DB_getElementCount
 (
 	FTM_DB_PTR		pDB,
+	FTM_BOOL		bSecondary,
 	FTM_CHAR_PTR		pTableName,
 	FTM_UINT32_PTR	pCount
 )
@@ -424,16 +501,29 @@ FTM_RET	FTM_DB_getElementCount
 	snprintf(pQuery, sizeof(pQuery) - 1, "SELECT COUNT(*) FROM %s", pTableName);
 
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getElementCountCB, &xParams, &pErrorMsg) != 0)
+	if (!bSecondary)
 	{
-		sqlite3_free(pErrorMsg);
-		*pCount = 0;
+		if (sqlite3_exec(pDB->pPrimaryDB, pQuery, FTM_DB_getElementCountCB, &xParams, &pErrorMsg) != 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			sqlite3_free(pErrorMsg);
+			*pCount = 0;
+		}
 	}
 	else
 	{
+		if (sqlite3_exec(pDB->pSecondaryDB, pQuery, FTM_DB_getElementCountCB, &xParams, &pErrorMsg) != 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			sqlite3_free(pErrorMsg);
+			*pCount = 0;
+		}
+	}
+
+	if (xRet == FTM_RET_OK)
+	{
 		*pCount = xParams.ulCount;
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -441,6 +531,7 @@ FTM_RET	FTM_DB_getElementCount
 FTM_RET	FTM_DB_getElementCount2
 (
 	FTM_DB_PTR		pDB,
+	FTM_BOOL		bSecondary,
 	FTM_CHAR_PTR		pTableName,
 	FTM_CHAR_PTR	pCondition,
 	FTM_UINT32_PTR	pCount
@@ -456,19 +547,39 @@ FTM_RET	FTM_DB_getElementCount2
 	FTM_CHAR_PTR	pErrorMsg = NULL;
 
 	memset(pQuery, 0, sizeof(pQuery));
-	snprintf(pQuery, sizeof(pQuery) - 1, "SELECT COUNT(*) FROM %s %s", pTableName, pCondition);
-
-	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getElementCountCB, &xParams, &pErrorMsg) != 0)
+	if ((pCondition != 0) && (strlen(pCondition) != 0))
 	{
-		sqlite3_free(pErrorMsg);
-		*pCount = 0;
+		snprintf(pQuery, sizeof(pQuery) - 1, "SELECT COUNT(*) FROM %s WHERE %s", pTableName, pCondition);
 	}
 	else
 	{
+		snprintf(pQuery, sizeof(pQuery) - 1, "SELECT COUNT(*) FROM %s", pTableName);
+	}
+
+	INFO("Query : %s", pQuery);
+	if(!bSecondary)
+	{
+		if (sqlite3_exec(pDB->pPrimaryDB, pQuery, FTM_DB_getElementCountCB, &xParams, &pErrorMsg) != 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			sqlite3_free(pErrorMsg);
+			*pCount = 0;
+		}
+	}
+	else
+	{
+		if (sqlite3_exec(pDB->pSecondaryDB, pQuery, FTM_DB_getElementCountCB, &xParams, &pErrorMsg) != 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			sqlite3_free(pErrorMsg);
+			*pCount = 0;
+		}
+	}
+
+	if (xRet == FTM_RET_OK)
+	{
 		*pCount = xParams.ulCount;
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -476,6 +587,7 @@ FTM_RET	FTM_DB_getElementCount2
 FTM_RET	FTM_DB_getElementList
 (
 	FTM_DB_PTR pDB, 
+	FTM_BOOL	bSecondary,
 	FTM_CHAR_PTR	pTableName,
 	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulCount,
@@ -498,12 +610,24 @@ FTM_RET	FTM_DB_getElementList
 	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " LIMIT %u OFFSET %u", ulCount, ulIndex);
 
 	INFO("SQL : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, fCallback, pData, &pErrorMsg) < 0)
+	if (!bSecondary)
 	{
-		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		if (sqlite3_exec(pDB->pPrimaryDB, pQuery, fCallback, pData, &pErrorMsg) < 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			ERROR(xRet, "Failed to execute query!");
+			sqlite3_free(pErrorMsg);
+		}
 	}
-	INFO("Query success!");
+	else
+	{
+		if (sqlite3_exec(pDB->pSecondaryDB, pQuery, fCallback, pData, &pErrorMsg) < 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			ERROR(xRet, "Failed to execute query!");
+			sqlite3_free(pErrorMsg);
+		}
+	}
 
 	return	xRet;
 }
@@ -511,6 +635,7 @@ FTM_RET	FTM_DB_getElementList
 FTM_RET	FTM_DB_getElementListOrderByTime
 (
 	FTM_DB_PTR pDB, 
+	FTM_BOOL	bSecondary,
 	FTM_CHAR_PTR	pTableName,
 	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulCount,
@@ -529,7 +654,7 @@ FTM_RET	FTM_DB_getElementListOrderByTime
 	FTM_UINT32		ulTotalCount = 0;
 	FTM_UINT32		ulOffset = 0;
 
-	FTM_DB_getElementCount(pDB, pTableName, &ulTotalCount);
+	FTM_DB_getElementCount(pDB, bSecondary, pTableName, &ulTotalCount);
 
 	memset(pQuery, 0, sizeof(pQuery));
 
@@ -551,12 +676,24 @@ FTM_RET	FTM_DB_getElementListOrderByTime
 	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s WHERE _TIME IN (SELECT _TIME FROM %s LIMIT %u OFFSET %u) ORDER BY _TIME DESC", pTableName, pTableName, ulCount, ulOffset);
 
 	INFO("SQL : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, fCallback, pData, &pErrorMsg) < 0)
+	if (!bSecondary)
 	{
-		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		if (sqlite3_exec(pDB->pPrimaryDB, pQuery, fCallback, pData, &pErrorMsg) < 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			ERROR(xRet, "Failed to execute query!");
+			sqlite3_free(pErrorMsg);
+		}
 	}
-	INFO("Query success!");
+	else
+	{
+		if (sqlite3_exec(pDB->pSecondaryDB, pQuery, fCallback, pData, &pErrorMsg) < 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			ERROR(xRet, "Failed to execute query!");
+			sqlite3_free(pErrorMsg);
+		}
+	}
 
 	return	xRet;
 }
@@ -564,6 +701,7 @@ FTM_RET	FTM_DB_getElementListOrderByTime
 FTM_RET	FTM_DB_getElementListOfTimePeriod
 (
 	FTM_DB_PTR pDB, 
+	FTM_BOOL	bSecondary,
 	FTM_CHAR_PTR	pTableName,
 	FTM_UINT32		ulStartTime,
 	FTM_UINT32		ulEndTime,
@@ -607,12 +745,24 @@ FTM_RET	FTM_DB_getElementListOfTimePeriod
 	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " ORDER BY _TIME DESC LIMIT %u", ulCount);
 
 	INFO("SQL : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, fCallback, pData, &pErrorMsg) < 0)
+	if (!bSecondary)
 	{
-		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		if (sqlite3_exec(pDB->pPrimaryDB, pQuery, fCallback, pData, &pErrorMsg) < 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			ERROR(xRet, "Failed to execute query!");
+			sqlite3_free(pErrorMsg);
+		}
 	}
-	INFO("Query success!");
+	else
+	{
+		if (sqlite3_exec(pDB->pSecondaryDB, pQuery, fCallback, pData, &pErrorMsg) < 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			ERROR(xRet, "Failed to execute query!");
+			sqlite3_free(pErrorMsg);
+		}
+	}
 
 	return	xRet;
 }
@@ -626,7 +776,7 @@ FTM_RET	FTM_DB_createCCTVTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pCCTVTableName, "_ID TEXT PRIMARY KEY, _IP TEXT, _SWITCH_ID TEXT, _COMMENT TEXT, _TIME INT, HASH TEXT, STAT INT");
+	return FTM_DB_createTable(pDB, FTM_FALSE, pDB->pCCTVTableName, "_ID TEXT PRIMARY KEY, _IP TEXT, _SWITCH_ID TEXT, _COMMENT TEXT, _TIME INT, HASH TEXT, STAT INT");
 }
 
 FTM_RET	FTM_DB_isCCTVTableExist
@@ -635,7 +785,7 @@ FTM_RET	FTM_DB_isCCTVTableExist
 	FTM_BOOL_PTR	pExist
 )
 {
-	return	FTM_DB_isExistTable(pDB, pDB->pCCTVTableName, pExist);
+	return	FTM_DB_isExistTable(pDB, FTM_FALSE, pDB->pCCTVTableName, pExist);
 }
 
 FTM_RET	FTM_DB_getCCTVCount
@@ -644,7 +794,7 @@ FTM_RET	FTM_DB_getCCTVCount
 	FTM_UINT32_PTR pCount
 )
 {
-	return	FTM_DB_getElementCount(pDB, pDB->pCCTVTableName, pCount);
+	return	FTM_DB_getElementCount(pDB, FTM_FALSE, pDB->pCCTVTableName, pCount);
 }
 
 FTM_RET	FTM_DB_addCCTV
@@ -668,7 +818,7 @@ FTM_RET	FTM_DB_addCCTV
 		pDB->pCCTVTableName, pID, pIP, pSwitchID, (pComment != NULL)?pComment:"", ulTime);
 	
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to insert item to DB!");
@@ -727,12 +877,12 @@ FTM_RET	FTM_DB_updateCCTV
 	ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE _ID = '%s';", pID);
 	
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -753,12 +903,12 @@ FTM_RET	FTM_DB_deleteCCTV
 	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _ID = '%s'", pDB->pCCTVTableName, pID);
 	
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
 		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -846,17 +996,17 @@ FTM_RET	FTM_DB_getCCTVUsingIP
 	snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s WHERE _IP = %s", pDB->pCCTVTableName, pIP);
 
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getCCTVListCB, (FTM_VOID_PTR)&xParams, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, FTM_DB_getCCTVListCB, (FTM_VOID_PTR)&xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+		sqlite3_free(pErrorMsg);
 	}
 	else if (xParams.ulCount == 0)
 	{
 		xRet = FTM_RET_OBJECT_NOT_FOUND;
 		ERROR(xRet, "Object not found!");
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -880,7 +1030,7 @@ FTM_RET	FTM_DB_getCCTVList
 	xParams.ulCount 	= 0;
 	xParams.pElements 	= pElements;
 
-	xRet = FTM_DB_getElementList(pDB, pDB->pCCTVTableName, 0, ulMaxCount, FTM_DB_getCCTVListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementList(pDB, FTM_FALSE, pDB->pCCTVTableName, 0, ulMaxCount, FTM_DB_getCCTVListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -908,12 +1058,12 @@ FTM_RET	FTM_DB_updateCCTVHash
 	snprintf(pQuery, sizeof(pQuery) - 1, "UPDATE %s SET HASH='%s' WHERE _ID = '%s'", pDB->pCCTVTableName, pHash, pID);
 
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -936,12 +1086,12 @@ FTM_RET	FTM_DB_setCCTVStat
 	snprintf(pQuery, sizeof(pQuery) - 1, "UPDATE %s SET STAT=%d WHERE _ID = '%s'", pDB->pCCTVTableName, xStat, pID);
 
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1015,12 +1165,12 @@ FTM_RET	FTM_DB_setCCTVProperties
 	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen - 1, " WHERE _ID = '%s'", pID);
 
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1033,7 +1183,7 @@ FTM_RET	FTM_DB_createAlarmTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pAlarmTableName, "_NAME TEXT PRIMARY KEY, _EMAIL TEXT, _MESSAGE TEXT");
+	return FTM_DB_createTable(pDB, FTM_FALSE, pDB->pAlarmTableName, "_NAME TEXT PRIMARY KEY, _EMAIL TEXT, _MESSAGE TEXT");
 }
 
 FTM_RET	FTM_DB_isAlarmTableExist
@@ -1042,7 +1192,7 @@ FTM_RET	FTM_DB_isAlarmTableExist
 	FTM_BOOL_PTR	pExist
 )
 {
-	return	FTM_DB_isExistTable(pDB, pDB->pAlarmTableName, pExist);
+	return	FTM_DB_isExistTable(pDB, FTM_FALSE, pDB->pAlarmTableName, pExist);
 }
 
 FTM_RET	FTM_DB_getAlarmCount
@@ -1055,7 +1205,7 @@ FTM_RET	FTM_DB_getAlarmCount
 	ASSERT(pCount != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 	
-	xRet =FTM_DB_getElementCount(pDB, pDB->pAlarmTableName, pCount);
+	xRet =FTM_DB_getElementCount(pDB, FTM_FALSE, pDB->pAlarmTableName, pCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get element count of table tv_alarm_info!");
@@ -1081,12 +1231,12 @@ FTM_RET	FTM_DB_addAlarm
 	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_NAME, _EMAIL, _MESSAGE) VALUES('%s', '%s', '%s');", pDB->pAlarmTableName, pAlarm->pName, pAlarm->pEmail, pAlarm->pMessage);
 	
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
-		xRet = FTM_RET_ERROR;
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1107,12 +1257,12 @@ FTM_RET	FTM_DB_deleteAlarm
 	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _NAME = '%s'", pDB->pAlarmTableName, pName);
 	
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
-		xRet = FTM_RET_ERROR;
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1181,7 +1331,7 @@ FTM_RET	FTM_DB_getAlarmList
 	xParams.ulCount =	 0;
 	xParams.pElements 	= pElements;
 
-	xRet = FTM_DB_getElementList(pDB, pDB->pAlarmTableName, 0, ulMaxCount, FTM_DB_getAlarmListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementList(pDB, FTM_FALSE, pDB->pAlarmTableName, 0, ulMaxCount, FTM_DB_getAlarmListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -1199,7 +1349,7 @@ FTM_RET	FTM_DB_createLogTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pLogTableName, "_TYPE INT, _TIME TEXT, _ID TEXT, _IP TEXT, _STAT INT, _HASH TEXT");
+	return FTM_DB_createTable(pDB, FTM_TRUE, pDB->pLogTableName, "_TYPE INT, _TIME TEXT, _ID TEXT, _IP TEXT, _STAT INT, _HASH TEXT");
 }
 
 FTM_RET	FTM_DB_isLogTableExist
@@ -1208,7 +1358,7 @@ FTM_RET	FTM_DB_isLogTableExist
 	FTM_BOOL_PTR	pExist
 )
 {
-	return	FTM_DB_isExistTable(pDB, pDB->pLogTableName, pExist);
+	return	FTM_DB_isExistTable(pDB, FTM_TRUE, pDB->pLogTableName, pExist);
 }
 
 FTM_RET	FTM_DB_getLogCount
@@ -1221,7 +1371,7 @@ FTM_RET	FTM_DB_getLogCount
 	ASSERT(pCount != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 	
-	xRet =FTM_DB_getElementCount(pDB, pDB->pLogTableName, pCount);
+	xRet =FTM_DB_getElementCount(pDB, FTM_TRUE, pDB->pLogTableName, pCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get element count of table tv_log_info!");
@@ -1252,12 +1402,12 @@ FTM_RET	FTM_DB_addLog
 		pDB->pLogTableName, xType, ulTime, pID, pIP, xStat, pHash);
 	
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pSecondaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
-		xRet = FTM_RET_ERROR;
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1278,12 +1428,12 @@ FTM_RET	FTM_DB_deleteLogOfID
 	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _ID = '%s'", pDB->pLogTableName, pID);
 	
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pSecondaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
-		xRet = FTM_RET_ERROR;
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1383,7 +1533,7 @@ FTM_RET	FTM_DB_getLogList
 	{
 		if (bFirstCondition)
 		{
-			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+	//		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}
 
@@ -1398,7 +1548,7 @@ FTM_RET	FTM_DB_getLogList
 		}
 		else
 		{
-			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+	//		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}
 
@@ -1413,7 +1563,7 @@ FTM_RET	FTM_DB_getLogList
 		}
 		else
 		{
-			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+//			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}
 
@@ -1428,7 +1578,7 @@ FTM_RET	FTM_DB_getLogList
 		}
 		else
 		{
-			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+//			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}	
 
@@ -1443,7 +1593,7 @@ FTM_RET	FTM_DB_getLogList
 		}
 		else
 		{
-			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+//			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}	
 
@@ -1458,7 +1608,7 @@ FTM_RET	FTM_DB_getLogList
 		}
 		else
 		{
-			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+//			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
 			bFirstCondition = FTM_FALSE;
 		}	
 
@@ -1469,7 +1619,7 @@ FTM_RET	FTM_DB_getLogList
 
 
 
-	FTM_DB_getElementCount2(pDB, pDB->pLogTableName, pCondition, &ulTotalCount);
+	FTM_DB_getElementCount2(pDB, FTM_TRUE, pDB->pLogTableName, pCondition, &ulTotalCount);
 
 	if (ulTotalCount > ulIndex + ulMaxCount)
 	{
@@ -1488,20 +1638,27 @@ FTM_RET	FTM_DB_getLogList
 
 	memset(pQuery, 0, sizeof(pQuery));
 
-	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s WHERE _TIME IN ( SELECT _TIME FROM %s %s", pDB->pLogTableName, pDB->pLogTableName, pCondition);
-	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " LIMIT %u OFFSET %u) ORDER BY _TIME DESC", ulMaxCount, ulOffset);
+	if (strlen(pCondition) != 0)
+	{
+		ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s WHERE %s AND (_TIME IN ( SELECT _TIME FROM %s WHERE %s", pDB->pLogTableName, pCondition, pDB->pLogTableName, pCondition);
+	}
+	else
+	{
+		ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s WHERE (_TIME IN ( SELECT _TIME FROM %s ", pDB->pLogTableName, pDB->pLogTableName);
+	}
+	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " LIMIT %u OFFSET %u)) ORDER BY _TIME DESC", ulMaxCount, ulOffset);
 
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pSecondaryDB, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+		sqlite3_free(pErrorMsg);
 	}
 	else
 	{
 		*pCount = xParams.ulCount;	
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1525,62 +1682,63 @@ FTM_RET	FTM_DB_getLogInfo
 	FTM_CHAR_PTR	pErrorMsg;
 	FTM_UINT32		ulTotalCount = 0;
 
-	xRet =FTM_DB_getElementCount(pDB, pDB->pLogTableName, &ulTotalCount);
+	xRet =FTM_DB_getElementCount(pDB, FTM_TRUE, pDB->pLogTableName, &ulTotalCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get element count of table tv_log_info!");
 		return	xRet;
 	}
 
-	xParams.ulMaxCount = 1;
-	xParams.ulCount = 0;
-	xParams.pElements 	= &xLog;
-
-	memset(pQuery, 0, sizeof(pQuery));
-
-	//ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME ASC LIMIT 1", pDB->pLogTableName);
-	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s LIMIT 1", pDB->pLogTableName);
-	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
+	if (ulTotalCount > 0)
 	{
-		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
-		INFO("Query success!");
-		goto finished;
-	}
-	else
-	{
-		if (xParams.ulCount)
+		xParams.ulMaxCount = 1;
+		xParams.ulCount = 0;
+		xParams.pElements 	= &xLog;
+
+		memset(pQuery, 0, sizeof(pQuery));
+
+		//ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME ASC LIMIT 1", pDB->pLogTableName);
+		ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s LIMIT 1", pDB->pLogTableName);
+		INFO("Query : %s", pQuery);
+		if (sqlite3_exec(pDB->pSecondaryDB, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
 		{
-			*pulStartTime = xParams.pElements[0].ulTime;	
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+			sqlite3_free(pErrorMsg);
+			goto finished;
+		}
+		else
+		{
+			if (xParams.ulCount)
+			{
+				*pulStartTime = xParams.pElements[0].ulTime;	
+			}
+		}
+
+		xParams.ulMaxCount = 1;
+		xParams.ulCount = 0;
+		xParams.pElements 	= &xLog;
+
+		//ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME DESC LIMIT 1", pDB->pLogTableName);
+		ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s LIMIT 1 OFFSET %u", pDB->pLogTableName, ulTotalCount - 1);
+		INFO("Query : %s", pQuery);
+		if (sqlite3_exec(pDB->pSecondaryDB, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
+		{
+			xRet = FTM_RET_DB_EXEC_ERROR;
+			ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+			sqlite3_free(pErrorMsg);
+			goto finished;
+		}
+		else
+		{
+			if (xParams.ulCount)
+			{
+				*pulEndTime = xParams.pElements[0].ulTime;	
+			}
 		}
 	}
-	INFO("Query success!");
 
-	xParams.ulMaxCount = 1;
-	xParams.ulCount = 0;
-	xParams.pElements 	= &xLog;
-
-	//ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME DESC LIMIT 1", pDB->pLogTableName);
-	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s LIMIT 1 OFFSET %u", pDB->pLogTableName, ulTotalCount);
-	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getLogListCB, &xParams, &pErrorMsg) < 0)
-	{
-		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
-		INFO("Query success!");
-		goto finished;
-	}
-	else
-	{
-		if (xParams.ulCount)
-		{
-			*pulEndTime = xParams.pElements[0].ulTime;	
-		}
-	}
-	
 	*pCount = ulTotalCount;
-	INFO("Query success!");
 
 finished:
 	return	xRet;
@@ -1606,7 +1764,7 @@ FTM_RET	FTM_DB_getLogListFrom
 	xParams.ulCount = 0;
 	xParams.pElements 	= pElements;
 
-	xRet = FTM_DB_getElementListOrderByTime(pDB, pDB->pLogTableName, ulIndex, ulMaxCount, FTM_DB_getLogListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementListOrderByTime(pDB, FTM_TRUE, pDB->pLogTableName, ulIndex, ulMaxCount, FTM_DB_getLogListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -1636,7 +1794,7 @@ FTM_RET	FTM_DB_getLogListOfTimePeriod
 	xParams.ulCount = 0;
 	xParams.pElements 	= pElements;
 
-	xRet = FTM_DB_getElementListOfTimePeriod(pDB, pDB->pLogTableName, ulStartTime, ulEndTime, ulMaxCount, FTM_DB_getLogListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementListOfTimePeriod(pDB, FTM_TRUE, pDB->pLogTableName, ulStartTime, ulEndTime, ulMaxCount, FTM_DB_getLogListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -1748,7 +1906,7 @@ FTM_RET	FTM_DB_deleteLog
 	}
 
 	INFO("SQL : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, NULL, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pSecondaryDB, pQuery, NULL, NULL, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query!");
@@ -1804,12 +1962,12 @@ FTM_RET	FTM_DB_deleteLogFrom
 	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ");");
 
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, NULL, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pSecondaryDB, pQuery, NULL, NULL, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1853,12 +2011,12 @@ FTM_RET	FTM_DB_removeExpiredLog
 		snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE (%u > _TIME)", pDB->pLogTableName, ulExpirationDate);
 
 		INFO("Query : %s", pQuery);
-		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+		if (sqlite3_exec(pDB->pSecondaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 		{
 			xRet = FTM_RET_ERROR;
+			ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 			sqlite3_free(pErrorMsg);
 		}
-		INFO("Query success!");
 	}
 
 	return	xRet;
@@ -1872,7 +2030,7 @@ FTM_RET	FTM_DB_createSwitchTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pSwitchTableName, "_ID TEXT PRIMARY KEY, _MODEL INT, _IP TEXT, _USERID TEXT, _PASSWD TEXT, _SECURE INT, _COMMENT TEXT");
+	return FTM_DB_createTable(pDB, FTM_FALSE, pDB->pSwitchTableName, "_ID TEXT PRIMARY KEY, _MODEL INT, _IP TEXT, _USERID TEXT, _PASSWD TEXT, _SECURE INT, _COMMENT TEXT");
 }
 
 FTM_RET	FTM_DB_isSwitchTableExist
@@ -1881,7 +2039,7 @@ FTM_RET	FTM_DB_isSwitchTableExist
 	FTM_BOOL_PTR	pExist
 )
 {
-	return	FTM_DB_isExistTable(pDB, pDB->pSwitchTableName, pExist);
+	return	FTM_DB_isExistTable(pDB, FTM_FALSE, pDB->pSwitchTableName, pExist);
 }
 
 FTM_RET	FTM_DB_getSwitchCount
@@ -1894,7 +2052,7 @@ FTM_RET	FTM_DB_getSwitchCount
 	ASSERT(pCount != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 	
-	xRet =FTM_DB_getElementCount(pDB, pDB->pSwitchTableName, pCount);
+	xRet =FTM_DB_getElementCount(pDB, FTM_FALSE, pDB->pSwitchTableName, pCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get element count of table tv_switch_info!");
@@ -1926,12 +2084,12 @@ FTM_RET	FTM_DB_addSwitch
 		pDB->pSwitchTableName, pID, xModel, (pIP)?pIP:"", (pUser)?pUser:"", (pPasswd)?pPasswd:"", bSecure, (pComment)?pComment:"");
 
 	INFO("QUERY : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
-		xRet = FTM_RET_ERROR;
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -1952,12 +2110,12 @@ FTM_RET	FTM_DB_deleteSwitch
 	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _ID = '%s'", pDB->pSwitchTableName, pID);
 	
 		INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
-		xRet = FTM_RET_ERROR;
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-		INFO("Query success!");
 
 	return	xRet;
 }
@@ -2047,12 +2205,12 @@ FTM_RET	FTM_DB_setSwitchProperties
 	ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " WHERE _ID = '%s';", pID);
 
 	INFO("SQL : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
-		xRet = FTM_RET_ERROR;
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2131,7 +2289,7 @@ FTM_RET	FTM_DB_getSwitchList
 	xParams.ulCount 	= 0;
 	xParams.pElements	= pElements;
 
-	xRet = FTM_DB_getElementList(pDB, pDB->pSwitchTableName, 0, ulMaxCount, FTM_DB_getSwitchListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementList(pDB, FTM_FALSE, pDB->pSwitchTableName, 0, ulMaxCount, FTM_DB_getSwitchListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -2156,7 +2314,7 @@ FTM_RET	FTM_DB_createACTable
 
 	sprintf(pTableName, "tb_sw_%s_ac", pSwitchID);
 
-	return FTM_DB_createTable(pDB, pTableName, "_IP TEXT PRIMARY KEY, _INDEX INT, _POLICY INT");
+	return FTM_DB_createTable(pDB, FTM_FALSE, pTableName, "_IP TEXT PRIMARY KEY, _INDEX INT, _POLICY INT");
 }
 
 FTM_RET	FTM_DB_destroyACTable
@@ -2172,7 +2330,7 @@ FTM_RET	FTM_DB_destroyACTable
 
 	sprintf(pTableName, "tb_sw_%s_ac", pSwitchID);
 
-	return FTM_DB_destroyTable(pDB, pTableName);
+	return FTM_DB_destroyTable(pDB, FTM_FALSE, pTableName);
 }
 
 FTM_RET	FTM_DB_isACTableExist
@@ -2190,7 +2348,7 @@ FTM_RET	FTM_DB_isACTableExist
 
 	sprintf(pTableName, "tb_sw_%s_ac", pSwitchID);
 
-	return	FTM_DB_isExistTable(pDB, pTableName, pExist);
+	return	FTM_DB_isExistTable(pDB, FTM_FALSE, pTableName, pExist);
 }
 
 FTM_RET	FTM_DB_getACCount
@@ -2208,7 +2366,7 @@ FTM_RET	FTM_DB_getACCount
 
 	sprintf(pTableName, "tb_sw_%s_ac", pSwitchID);
 	
-	xRet =FTM_DB_getElementCount(pDB, pTableName, pCount);
+	xRet =FTM_DB_getElementCount(pDB, FTM_FALSE, pTableName, pCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get element count of table tv_deny_info!");
@@ -2240,12 +2398,12 @@ FTM_RET	FTM_DB_addAC
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_IP, _INDEX, _POLICY) VALUES('%s', %d, %d);", pTableName, pIP, nIndex, xPolicy);
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
-		xRet = FTM_RET_ERROR;
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2269,12 +2427,12 @@ FTM_RET	FTM_DB_deleteAC
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE _IP = '%s'", pTableName, pIP);
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
-		xRet = FTM_RET_ERROR;
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2349,7 +2507,7 @@ FTM_RET	FTM_DB_getACList
 	xParams.ulCount 	= 0;
 	xParams.pElements	= pElements;
 
-	xRet = FTM_DB_getElementList(pDB, pTableName, 0, ulMaxCount, FTM_DB_getACListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementList(pDB, FTM_FALSE, pTableName, 0, ulMaxCount, FTM_DB_getACListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -2366,7 +2524,7 @@ FTM_RET	FTM_DB_createStatisticsTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, pDB->pStatisticsTableName, "_TIME INT, _CPU INT, _TOTAL_MEM INT, _FREE_MEM INT, _NET_RX INT, _NET_TX INT");
+	return FTM_DB_createTable(pDB, FTM_FALSE, pDB->pStatisticsTableName, "_TIME INT, _CPU INT, _TOTAL_MEM INT, _FREE_MEM INT, _NET_RX INT, _NET_TX INT");
 }
 
 FTM_RET	FTM_DB_isStatisticsTableExist
@@ -2375,7 +2533,7 @@ FTM_RET	FTM_DB_isStatisticsTableExist
 	FTM_BOOL_PTR	pExist
 )
 {
-	return	FTM_DB_isExistTable(pDB, pDB->pStatisticsTableName, pExist);
+	return	FTM_DB_isExistTable(pDB, FTM_FALSE, pDB->pStatisticsTableName, pExist);
 }
 
 FTM_RET	FTM_DB_getStatisticsCount
@@ -2388,7 +2546,7 @@ FTM_RET	FTM_DB_getStatisticsCount
 	ASSERT(pCount != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 	
-	xRet =FTM_DB_getElementCount(pDB, pDB->pStatisticsTableName, pCount);
+	xRet =FTM_DB_getElementCount(pDB, FTM_FALSE, pDB->pStatisticsTableName, pCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get element count of table tv_log_info!");
@@ -2420,12 +2578,12 @@ FTM_RET	FTM_DB_addStatistics
 		pStatistics->xNet.ulTxBytes);
 
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 	{
-		xRet = FTM_RET_ERROR;
+		xRet = FTM_RET_DB_EXEC_ERROR;
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2552,16 +2710,16 @@ FTM_RET	FTM_DB_getStatisticsList
 	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " LIMIT %u", ulMaxCount);
 
 	INFO("SQL : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getStatisticsListCB, &xParams, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, FTM_DB_getStatisticsListCB, &xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+		sqlite3_free(pErrorMsg);
 	}
 	else
 	{
 		*pCount = xParams.ulCount;	
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2584,7 +2742,7 @@ FTM_RET	FTM_DB_getStatisticsInfo
 	FTM_UINT32		ulQueryLen = 0;
 	FTM_CHAR_PTR	pErrorMsg;
 
-	xRet =FTM_DB_getElementCount(pDB, pDB->pStatisticsTableName, pCount);
+	xRet =FTM_DB_getElementCount(pDB, FTM_FALSE, pDB->pStatisticsTableName, pCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get element count of table %s!", pDB->pStatisticsTableName);
@@ -2599,11 +2757,11 @@ FTM_RET	FTM_DB_getStatisticsInfo
 
 	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME ASC LIMIT 1;", pDB->pStatisticsTableName);
 	INFO("SQL : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getStatisticsListCB, &xParams, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, FTM_DB_getStatisticsListCB, &xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
-		INFO("Query success!");
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+		sqlite3_free(pErrorMsg);
 		goto finished;
 	}
 	else
@@ -2613,7 +2771,6 @@ FTM_RET	FTM_DB_getStatisticsInfo
 			FTM_TIME_toSecs(&xParams.pElements[0].xTime, pulStartTime);
 		}
 	}
-	INFO("Query success!");
 
 	xParams.ulMaxCount = 1;
 	xParams.ulCount = 0;
@@ -2621,11 +2778,11 @@ FTM_RET	FTM_DB_getStatisticsInfo
 
 	ulQueryLen += snprintf(pQuery, sizeof(pQuery) - 1, "SELECT * FROM %s ORDER BY _TIME DESC LIMIT 1;", pDB->pStatisticsTableName);
 	INFO("SQL : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, FTM_DB_getStatisticsListCB, &xParams, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, FTM_DB_getStatisticsListCB, &xParams, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
-		INFO("Query success!");
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+		sqlite3_free(pErrorMsg);
 		goto finished;
 	}
 	else
@@ -2635,7 +2792,6 @@ FTM_RET	FTM_DB_getStatisticsInfo
 			FTM_TIME_toSecs(&xParams.pElements[0].xTime, pulEndTime);
 		}
 	}
-	INFO("Query success!");
 
 finished:
 	return	xRet;
@@ -2661,7 +2817,7 @@ FTM_RET	FTM_DB_getStatisticsListFrom
 	xParams.ulCount 	= 0;
 	xParams.pElements 	= pElements;
 
-	xRet = FTM_DB_getElementListOrderByTime(pDB, pDB->pStatisticsTableName, ulIndex, ulMaxCount, FTM_DB_getStatisticsListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementListOrderByTime(pDB, FTM_FALSE, pDB->pStatisticsTableName, ulIndex, ulMaxCount, FTM_DB_getStatisticsListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -2691,7 +2847,7 @@ FTM_RET	FTM_DB_getStatisticsListOfTimePeriod
 	xParams.ulCount = 0;
 	xParams.pElements 	= pElements;
 
-	xRet = FTM_DB_getElementListOfTimePeriod(pDB, pDB->pStatisticsTableName, ulStartTime, ulEndTime, ulMaxCount, FTM_DB_getStatisticsListCB, (FTM_VOID_PTR)&xParams);
+	xRet = FTM_DB_getElementListOfTimePeriod(pDB, FTM_FALSE, pDB->pStatisticsTableName, ulStartTime, ulEndTime, ulMaxCount, FTM_DB_getStatisticsListCB, (FTM_VOID_PTR)&xParams);
 	if (xRet == FTM_RET_OK)
 	{
 		*pCount = xParams.ulCount;
@@ -2761,12 +2917,12 @@ FTM_RET	FTM_DB_deleteStatistics
 	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ");");
 
 	INFO("SQL : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, NULL, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, NULL, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2804,12 +2960,12 @@ FTM_RET	FTM_DB_deleteStatisticsFrom
 	ulQueryLen += snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ");");
 
 	INFO("SQL : %s", pQuery);
-	if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, NULL, &pErrorMsg) < 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, NULL, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
-		ERROR(xRet, "Failed to execute query!");
+		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
+		sqlite3_free(pErrorMsg);
 	}
-	INFO("Query success!");
 
 	return	xRet;
 }
@@ -2853,12 +3009,12 @@ FTM_RET	FTM_DB_removeExpiredStatistics
 		snprintf(pQuery, sizeof(pQuery) - 1, "DELETE FROM %s WHERE (%u > _TIME)", pDB->pStatisticsTableName, ulExpirationDate);
 
 		INFO("Query : %s", pQuery);
-		if (sqlite3_exec(pDB->pSQLite3, pQuery, NULL, 0, &pErrorMsg) != 0)
+		if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
 		{
 			xRet = FTM_RET_ERROR;
+			ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
 			sqlite3_free(pErrorMsg);
 		}
-		INFO("Query success!");
 	}
 
 	return	xRet;

@@ -2,6 +2,7 @@
 #define	__FTM_MSG_H__
 
 #include "ftm_types.h"
+#include "ftm_log.h"
 #include "ftm_cctv.h"
 #include "ftm_switch.h"
 
@@ -50,8 +51,13 @@ FTM_CHAR_PTR	FTM_MESSAGE_getString
 
 typedef	struct	FTM_MSG_SEND_ALARM_STRUCT
 {
-	FTM_MSG		xHead;
-	FTM_CHAR	pID[FTM_ID_LEN+1];
+	FTM_MSG			xHead;
+	FTM_LOG_TYPE	xLogType;
+	FTM_CHAR		pID[FTM_ID_LEN+1];
+	FTM_UINT32		ulTime;
+	FTM_CCTV_STAT	xNewStat;
+	FTM_CHAR		pHash[FTM_HASH_LEN+1];
+	FTM_CCTV_STAT 	xOriginalStat;
 } FTM_MSG_SEND_ALARM, _PTR_ FTM_MSG_SEND_ALARM_PTR;
 
 typedef	struct	FTM_MSG_IP_DETECTED_STRUCT

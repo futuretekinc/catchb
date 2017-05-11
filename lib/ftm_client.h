@@ -271,12 +271,17 @@ FTM_RET	FTM_CLIENT_getAlarmNameList
 	FTM_UINT32_PTR	pCount
 );
 
+FTM_RET	FTM_CLIENT_setStatInfo
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_SYSTEM_INFO_PTR	pRequestInfo,
+	FTM_SYSTEM_INFO_PTR	pResultInfo
+);
+
 FTM_RET	FTM_CLIENT_getStatInfo
 (
 	FTM_CLIENT_PTR	pClient,
-	FTM_UINT32_PTR	pulCount,
-	FTM_UINT32_PTR	pulFirstTime,
-	FTM_UINT32_PTR	pulLastTime
+	FTM_SYSTEM_INFO_PTR	pInfo
 );
 
 FTM_RET	FTM_CLIENT_getStatCount

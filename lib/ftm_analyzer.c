@@ -260,13 +260,12 @@ FTM_RET	FTM_ANALYZER_CONFIG_show
 		ulLen += snprintf(&pBuffer[ulLen], sizeof(pBuffer) - ulLen, "%5d ", pConfig->pPortList[i]);
 	}
 
-	OUTPUT(xLevel, "");
-	OUTPUT(xLevel, "[ Analyzer Configuration ]");
-	OUTPUT(xLevel, "%16s : %d ms", 	"Interval", pConfig->ulIPCheckInterval);
-	OUTPUT(xLevel, "%16s : %s", 	"Interface Name", pConfig->pIFName);
-	OUTPUT(xLevel, "%16s : %s", 	"Port", pBuffer);
-	OUTPUT(xLevel, "%16s : %s", 	"Test Enabled", (pConfig->xTest.bEnable)?"yes":"no");
-	OUTPUT(xLevel, "%16s : %d %", 	"Test Error Rate", pConfig->xTest.ulErrorRate);
+	printf("\n[ Analyzer Configuration ]\n");
+	printf("%16s : %d ms\n", 	"Interval", pConfig->ulIPCheckInterval);
+	printf("%16s : %s\n", 	"Interface Name", pConfig->pIFName);
+	printf("%16s : %s\n", 	"Port", pBuffer);
+	printf("%16s : %s\n", 	"Test Enabled", (pConfig->xTest.bEnable)?"yes":"no");
+	printf("%16s : %d %%\n", 	"Test Error Rate", pConfig->xTest.ulErrorRate);
 
 	return	FTM_RET_OK;
 }

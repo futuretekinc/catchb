@@ -15,6 +15,7 @@
 typedef	struct	FTM_DB_CONFIG_STRUCT
 {
 	FTM_CHAR	pFileName[FTM_PATH_LEN + FTM_NAME_LEN + 1];
+	FTM_CHAR	pLogFileName[FTM_PATH_LEN + FTM_NAME_LEN + 1];
 }	FTM_DB_CONFIG, _PTR_ FTM_DB_CONFIG_PTR;
 
 
@@ -56,7 +57,8 @@ typedef	struct	FTM_DB_STRUCT
 	FTM_CHAR	pStatisticsTableName[FTM_NAME_LEN+1];
 	
 	FTM_LOCK_PTR	pLock;
-	sqlite3 _PTR_	pSQLite3;
+	sqlite3 _PTR_	pPrimaryDB;
+	sqlite3 _PTR_	pSecondaryDB;
 }	FTM_DB, _PTR_ FTM_DB_PTR;
 
 FTM_RET	FTM_DB_create
@@ -89,13 +91,6 @@ FTM_RET	FTM_DB_getConfig
 (
 	FTM_DB_PTR	pDB,
 	FTM_DB_CONFIG_PTR	pConfig
-);
-
-FTM_RET FTM_DB_isExistTable
-(
-	FTM_DB_PTR		pDB,
-	FTM_CHAR_PTR    pTableName, 
-	FTM_BOOL_PTR    pExist
 );
 
 FTM_RET	FTM_DB_createCCTVTable

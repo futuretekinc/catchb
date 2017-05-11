@@ -3,6 +3,7 @@
 
 #include "ftm_types.h"
 #include "ftm_list.h"
+#include "ftm_system.h"
 #include "ftm_analyzer.h"
 #include "ftm_notifier.h"
 #include "ftm_logger.h"
@@ -11,6 +12,7 @@
 
 typedef	struct	FTM_CONFIG_STRUCT
 {
+	FTM_SYSTEM_CONFIG	xSystem;
 	FTM_DB_CONFIG		xDB;
 	FTM_ANALYZER_CONFIG	xAnalyzer;
 	FTM_NOTIFIER_CONFIG	xNotifier;

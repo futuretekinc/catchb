@@ -24,6 +24,22 @@ FTM_RET	FTM_SHELL_CMD_config
 
 	switch(nArgc)
 	{
+	case	1:
+		{
+			FTM_CONFIG	xConfig;
+
+			xRet = FTM_CATCHB_getConfig(pCatchB, &xConfig);	
+			if (xRet != FTM_RET_OK)
+			{
+				printf("Failed to get config!\n");
+			}
+			else
+			{
+				FTM_CONFIG_show(&xConfig, FTM_TRACE_LEVEL_INFO);
+			}
+		}
+		break;
+
 	case	3:
 		{
 			if(strcasecmp(pArgv[1], "save") == 0)

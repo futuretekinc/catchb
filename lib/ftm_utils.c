@@ -781,7 +781,7 @@ FTM_RET	FTM_getStatistics
 	FTM_TIME_getCurrent(&pStatistics->xTime);
 	FTM_getCPUUtilization(&pStatistics->fCPU);
 	FTM_getMemoryUtilization(&pStatistics->xMemory.ulTotal, &pStatistics->xMemory.ulFree);
-	FTM_getDiskUtilization(&pStatistics->xDisk);
+//	FTM_getDiskUtilization(&pStatistics->xDisk);
 	FTM_getNetStatistics(&pStatistics->xNet);
 
 	return	FTM_RET_OK;
