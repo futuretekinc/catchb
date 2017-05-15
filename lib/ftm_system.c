@@ -85,7 +85,7 @@ FTM_RET	FTM_SYSTEM_CONFIG_show
 
 	printf("\n[ System Configuration ]\n");
 	printf("%16s : %u\n", "Max Count", pConfig->xStatistics.ulCount);
-	printf("%16s : %u s\n", "Update Interval", pConfig->xStatistics.ulInterval / 1000);
+	printf("%16s : %u ms\n", "Update Interval", pConfig->xStatistics.ulInterval);
 
 	return	FTM_RET_OK;
 }

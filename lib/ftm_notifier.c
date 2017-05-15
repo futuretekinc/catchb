@@ -107,7 +107,6 @@ FTM_RET	FTM_NOTIFIER_CONFIG_show
 {
 	ASSERT(pConfig != NULL);
 
-	printf("\n[ Notifier Configuration ]\n");
 	FTM_NOTIFIER_SYSLOG_CONFIG_show(&pConfig->xSyslog, xLevel);
 	FTM_NOTIFIER_SMTP_CONFIG_show(&pConfig->xSMTP, xLevel);
 
@@ -506,6 +505,61 @@ FTM_RET	FTM_NOTIFIER_stop
 	return	xRet;
 }
 
+FTM_RET	FTM_NOTIIFER_sendSyslog
+(
+	FTM_INT			nLevel,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xOriginalStat,
+	FTM_CCTV_STAT	xNewStat
+)
+{
+	FTM_CHAR	pMessage[1024];
+
+	switch(xNewStat)
+	{
+	case	FTM_CCTV_STAT_ABNORMAL:
+		{
+			sprintf(pMessage, "CCTV ID : %s, IP : %s, LOG : %s[%s -> %s]", pID, pIP,
+					"SIGNATURE NOT MATCH CCTV",
+					FTM_CCTV_STAT_print(xOriginalStat), 
+					FTM_CCTV_STAT_print(xNewStat));
+		}
+		break;
+
+	case	FTM_CCTV_STAT_NORMAL:
+		{
+			sprintf(pMessage, "CCTV ID : %s, IP : %s, LOG : %s[%s -> %s]", pID,  pIP,
+					"NORMALITY CCTV",
+					FTM_CCTV_STAT_print(xOriginalStat), 
+					FTM_CCTV_STAT_print(xNewStat));
+		}
+		break;
+
+	case	FTM_CCTV_STAT_UNUSED:
+		{
+			sprintf(pMessage, "CCTV ID : %s, IP : %s, LOG : %s[%s -> %s]", pID,  pIP,
+					"NETWORK ERROR CCTV",
+					FTM_CCTV_STAT_print(xOriginalStat), 
+					FTM_CCTV_STAT_print(xNewStat));
+		}
+		break;
+
+	default:
+		{
+			sprintf(pMessage, "CCTV ID : %s, IP : %s, LOG : STAT CHANGED[%s -> %s]", pID, pIP,
+					FTM_CCTV_STAT_print(xOriginalStat), 
+					FTM_CCTV_STAT_print(xNewStat));
+		}
+		break;
+	}
+
+
+	syslog(nLevel | LOG_LOCAL0, pMessage);
+	INFO("SYSLOG : %s", pMessage);
+
+	return	FTM_RET_OK;
+}
 
 FTM_VOID_PTR	FTM_NOTIFIER_process
 (
@@ -542,8 +596,6 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 
 					if (pNotifier->xConfig.xSyslog.bEnable)
 					{
-						FTM_CHAR	pMessage[1024];
-
 						switch(pNotifier->xConfig.xSyslog.xMode)
 						{
 						case	FTM_NOTIFIER_SYSLOG_MODE_CHANGED:
@@ -557,14 +609,7 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 										nLevel = LOG_ERR ;
 									}
 
-									sprintf(pMessage, "[%s] CCTV : %s, STAT : %s -> %s, HASH : %s", 
-											FTM_TIME_printf2(pMsg->ulTime, NULL), 
-											pMsg->pID, 
-											FTM_CCTV_STAT_print(pMsg->xOriginalStat), 
-											FTM_CCTV_STAT_print(pMsg->xNewStat), 
-											pMsg->pHash);
-									syslog(nLevel | LOG_LOCAL0, pMessage);
-									INFO("SYSLOG : %s", pMessage);
+									FTM_NOTIIFER_sendSyslog(nLevel, pMsg->pID, pMsg->pIP, pMsg->xOriginalStat, pMsg->xNewStat);
 
 								}
 							}
@@ -581,15 +626,7 @@ FTM_VOID_PTR	FTM_NOTIFIER_process
 										nLevel = LOG_ERR ;
 									}
 
-									sprintf(pMessage, "[%s] CCTV : %s, STAT : %s -> %s, HASH : %s", 
-											FTM_TIME_printf2(pMsg->ulTime, NULL), 
-											pMsg->pID, 
-											FTM_CCTV_STAT_print(pMsg->xOriginalStat), 
-											FTM_CCTV_STAT_print(pMsg->xNewStat), 
-											pMsg->pHash);
-									syslog(nLevel | LOG_LOCAL0, pMessage);
-									INFO("SYSLOG : %s", pMessage);
-
+									FTM_NOTIIFER_sendSyslog(nLevel, pMsg->pID, pMsg->pIP, pMsg->xOriginalStat, pMsg->xNewStat);
 								}
 							}
 							}
@@ -677,6 +714,7 @@ FTM_RET	FTM_NOTIFIER_sendAlarm
 	FTM_NOTIFIER_PTR 	pNotifier,
 	FTM_LOG_TYPE		xLogType,
 	FTM_CHAR_PTR	 	pID,
+	FTM_CHAR_PTR	 	pIP,
 	FTM_UINT32			ulTime,
 	FTM_CCTV_STAT	 	xNewStat,
 	FTM_CHAR_PTR		pHash,
@@ -699,6 +737,7 @@ FTM_RET	FTM_NOTIFIER_sendAlarm
 		pMsg->xHead.ulLen = sizeof(FTM_MSG_SEND_ALARM);
 		pMsg->xLogType = xLogType;
 		strncpy(pMsg->pID, pID, sizeof(pMsg->pID) - 1);
+		strncpy(pMsg->pIP, pIP, sizeof(pMsg->pIP) - 1);
 		pMsg->ulTime = ulTime;
 		pMsg->xNewStat = xNewStat;
 		strncpy(pMsg->pHash, pHash, sizeof(pMsg->pHash) - 1);

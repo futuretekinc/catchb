@@ -174,6 +174,7 @@ FTM_RET	FTM_NOTIFIER_sendAlarm
 	FTM_NOTIFIER_PTR 	pNotifier,
 	FTM_LOG_TYPE		xType,
 	FTM_CHAR_PTR	 	pID,
+	FTM_CHAR_PTR	 	pIP,
 	FTM_UINT32			ulTime,
 	FTM_CCTV_STAT	 	xNewStat,
 	FTM_CHAR_PTR		pHash,

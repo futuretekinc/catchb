@@ -22,6 +22,8 @@ void FTM_SCORE_processIP
 	struct iphdr* pIPHdr 	= ((struct iphdr _PTR_)(pPacket + 14));
 	//FTM_INT	nIPHdrLen = pIPHdr->ihl * 4;  // obtain the length of header in bytes to check for options
 
+	INFO("IP : Protocol : %d, ttl : %d, frag_off : %d", pIPHdr->protocol, pIPHdr->ttl, pIPHdr->frag_off);
+
 	if (pScoreInfo->xOSMatrix.bTTL == FTM_FALSE)
 	{    
 		if ((pIPHdr->ttl > 0) && (pIPHdr->ttl <= 32))
@@ -44,7 +46,7 @@ void FTM_SCORE_processIP
 		pScoreInfo->xOSMatrix.bTTL = FTM_TRUE;
 	}    
 
-
+#if 1
 	if (pScoreInfo->xOSMatrix.bDF == FTM_FALSE)
 	{    
 		if ((htons(pIPHdr->frag_off) & 0x4000) == 0x0000)      //DF = 0
@@ -58,7 +60,7 @@ void FTM_SCORE_processIP
 
 		pScoreInfo->xOSMatrix.bDF = FTM_TRUE;
 	}    
-
+#endif
 
 }//end Process_IP
 
@@ -82,6 +84,7 @@ FTM_VOID	FTM_SCORE_processTCP
 	FTM_UINT32	ulTCPHdrLen = pTCPHdr->doff * 4;  // obtain the length of header in bytes to check for options
 	FTM_UINT32	ulTCPOptLen = ulTCPHdrLen - 20;
 
+	INFO("TCP : src: %d, dest : %d", ntohs(pTCPHdr->source), ntohs(pTCPHdr->dest));
 	FTM_UINT16	ulTCPMSS = 0;
 	FTM_INT32	nWindowScale = -1;
 

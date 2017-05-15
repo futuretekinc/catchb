@@ -1799,7 +1799,7 @@ FTM_RET	FTM_CATCHB_onSetCCTVStat
 
 		if (pCatchB->pNotifier != NULL)
 		{
-			xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, xLogType, pMsg->pID, pMsg->ulTime, pMsg->xStat, ((pMsg->pHash[0] != 0)?pMsg->pHash:pCCTV->xConfig.pHash), pCCTV->xConfig.xStat);
+			xRet = FTM_NOTIFIER_sendAlarm(pCatchB->pNotifier, xLogType, pMsg->pID, pCCTV->xConfig.pIP, pMsg->ulTime, pMsg->xStat, ((pMsg->pHash[0] != 0)?pMsg->pHash:pCCTV->xConfig.pHash), pCCTV->xConfig.xStat);
 			if (xRet != FTM_RET_OK)
 			{
 				ERROR(xRet, "Failed to notify!");	

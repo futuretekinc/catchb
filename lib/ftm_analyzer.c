@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <linux/ip.h>
 #include "ftm_catchb.h"
 #include "ftm_analyzer.h"
 #include "ftm_trace.h"
@@ -87,11 +88,9 @@ FTM_RET	FTM_ANALYZER_CONFIG_load
 	FTM_UINT16_PTR	pPortList = NULL;
 	FTM_UINT32		ulPortCount = 0;
 
-	INFO_ENTRY();	
 	pSection = cJSON_GetObjectItem(pRoot, "ifname");
 	if (pSection != NULL)
 	{
-	INFO_ENTRY();	
 		strncpy(pConfig->pIFName, pSection->valuestring, sizeof(pConfig->pIFName));
 	}
 
@@ -703,8 +702,9 @@ FTM_RET	FTM_ANALYZER_process
 		ulOptionLen += sprintf(&pOptions[ulOptionLen], ")");
 		FTM_PCAP_setFilter(pAnalyzer->pPCAP, pOptions);
 
-		FTM_ANALYZER_PCAP_start(pAnalyzer);
 		FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);
+		
+		FTM_ANALYZER_PCAP_start(pAnalyzer);
 
 		FTM_TIME_getCurrentSecs(&ulTime);
 
@@ -724,7 +724,6 @@ FTM_RET	FTM_ANALYZER_process
 			FTM_SCORE	xScore;
 
 			memset(&xScore, 0, sizeof(xScore));
-
 
 			FTM_ARP_parsing(pCCTV->xConfig.pIP, pMAC); 
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen , "[ip : %s, mac : %s]", pCCTV->xConfig.pIP, pMAC);
@@ -758,8 +757,8 @@ FTM_RET	FTM_ANALYZER_process
 			FTM_ANALYZER_PCAP_stop(pAnalyzer);
 
 			FTM_ANALIZER_PCAP_calcScore(pAnalyzer, &xScore);
-			INFO("xScore.fValue = %.1f", xScore.fValue);
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, "[score : %.1f]", xScore.fValue);
+			INFO("Hash : %s", pHashData);
 
 			FTM_HASH_SHA1((FTM_UINT8_PTR)pHashData, ulHashDataLen, pHashValue, sizeof(pHashValue));
 
@@ -1029,9 +1028,29 @@ FTM_RET	FTM_ANALIZER_PCAP_calcScore
 	ASSERT(pAnalyzer != NULL);
 
 	
-	FTM_UINT32	i;
+	FTM_UINT32	i, j;
 
 	INFO("Packet captured[%d]", pAnalyzer->pPCAP->ulCaptureCount); 
+
+	for(i = 0 ; i < pAnalyzer->pPCAP->ulCaptureCount ; i++)
+	{
+		struct iphdr* 	pIPHdr1	= ((struct iphdr*)(pAnalyzer->pPCAP->ppCapturePackets[i] + 14));
+		for(j = i+1 ; j < pAnalyzer->pPCAP->ulCaptureCount ; j++)
+		{
+			struct iphdr* 	pIPHdr2 	= ((struct iphdr*)(pAnalyzer->pPCAP->ppCapturePackets[j] + 14));
+			
+			if (pIPHdr1->protocol > pIPHdr2->protocol)
+			{
+				FTM_UINT8_PTR	pTemp;
+
+				pTemp = pAnalyzer->pPCAP->ppCapturePackets[i];
+				pAnalyzer->pPCAP->ppCapturePackets[i] = pAnalyzer->pPCAP->ppCapturePackets[j];
+				pAnalyzer->pPCAP->ppCapturePackets[j] = pTemp;
+			}
+		}
+	}
+
+
 	for(i = 0 ; i < pAnalyzer->pPCAP->ulCaptureCount ; i++)
 	{
 		FTM_SCORE_processIP(pScore, pAnalyzer->pPCAP->ppCapturePackets[i], 64);

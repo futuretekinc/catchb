@@ -128,6 +128,174 @@ FTM_RET	FTM_CGI_getSysInfo
 	return	FTM_CGI_finish(pReq, pRoot, FTM_RET_OK);
 }
 
+FTM_RET	FTM_CGI_getSysInfoConfig
+(
+	FTM_CLIENT_PTR	pClient,
+	qentry_t _PTR_ pReq
+)
+{
+	FTM_RET		xRet = FTM_RET_OK;
+	cJSON _PTR_	pRoot;
+	cJSON _PTR_	pSection;
+	FTM_SYSTEM_INFO	xInfo;
+	
+	pRoot = cJSON_CreateObject();
+	if (pRoot == NULL)
+	{
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;	
+		ERROR(xRet, "Failed to create json object!");
+		return	xRet;
+	}
+
+	xRet = FTM_CLIENT_getStatInfo(pClient, &xInfo);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get system statistics information.");
+		goto finished;	
+	}
+
+	pSection = cJSON_CreateObject();
+
+	cJSON_AddNumberToObject(pSection, "interval", 	xInfo.xStatistics.ulInterval);
+	cJSON_AddNumberToObject(pSection, "max count", 	xInfo.xStatistics.ulMaxCount);
+	cJSON_AddNumberToObject(pSection, "count", 		xInfo.xStatistics.ulCount);
+	cJSON_AddStringToObject(pSection, "first time",	FTM_TIME_printf2(xInfo.xStatistics.ulFirstTime, NULL));
+	cJSON_AddStringToObject(pSection, "last time", 	FTM_TIME_printf2(xInfo.xStatistics.ulLastTime, NULL));
+
+	cJSON_AddItemToObject(pRoot, "statistics", pSection);
+finished:
+
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}
+
+FTM_RET	FTM_CGI_setSysInfoConfig
+(
+	FTM_CLIENT_PTR	pClient,
+	qentry_t _PTR_ pReq
+)
+{
+	FTM_RET		xRet = FTM_RET_OK;
+	cJSON _PTR_	pRoot;
+	cJSON _PTR_	pSection;
+	FTM_UINT32	ulCount = 0;
+	FTM_UINT32	ulInterval = 0;
+	FTM_SYSTEM_INFO	xInfo;
+	
+	pRoot = cJSON_CreateObject();
+	if (pRoot == NULL)
+	{
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;	
+		ERROR(xRet, "Failed to create json object!");
+		return	xRet;
+	}
+
+	xRet = FTM_CLIENT_getStatInfo(pClient, &xInfo);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get system statistics information.");
+		goto finished;	
+	}
+
+	xInfo.ulFields = 0;
+
+	xRet = FTM_CGI_getCount(pReq, &ulCount, FTM_FALSE);
+	if (xRet == FTM_RET_OK)
+	{
+		if (xInfo.xStatistics.ulMaxCount != ulCount)
+		{
+			xInfo.xStatistics.ulMaxCount = ulCount;
+			xInfo.ulFields |= FTM_SYSTEM_FIELD_STATISTICS_MAX_COUNT;
+		}
+	}
+
+	xRet = FTM_CGI_getInterval(pReq, &ulInterval, FTM_FALSE);
+	if (xRet == FTM_RET_OK)
+	{
+		if (xInfo.xStatistics.ulInterval != ulInterval)
+		{
+			xInfo.xStatistics.ulInterval = ulInterval;
+			xInfo.ulFields |= FTM_SYSTEM_FIELD_STATISTICS_INTERVAL;
+		}
+	}
+
+	if (xInfo.ulFields != 0)
+	{
+		xRet = FTM_CLIENT_setStatInfo(pClient, &xInfo, &xInfo);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to get system information");
+			goto finished;
+		}
+	}
+
+	pSection = cJSON_CreateObject();
+
+	cJSON_AddNumberToObject(pSection, "interval", 	xInfo.xStatistics.ulInterval);
+	cJSON_AddNumberToObject(pSection, "max count", 	xInfo.xStatistics.ulMaxCount);
+	cJSON_AddNumberToObject(pSection, "count", 		xInfo.xStatistics.ulCount);
+	cJSON_AddStringToObject(pSection, "first time",	FTM_TIME_printf2(xInfo.xStatistics.ulFirstTime, NULL));
+	cJSON_AddStringToObject(pSection, "last time", 	FTM_TIME_printf2(xInfo.xStatistics.ulLastTime, NULL));
+
+	cJSON_AddItemToObject(pRoot, "statistics", pSection);
+finished:
+
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}
+
+FTM_RET	FTM_CGI_checkPasswd
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReq != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	cJSON _PTR_	pRoot;
+	FTM_CHAR	pPasswd[64];
+	FTM_PROFILE	xProfile;
+
+	pRoot = cJSON_CreateObject();
+	if (pRoot == NULL)
+	{
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;	
+		ERROR(xRet, "Failed to create json object!");
+		return	xRet;
+	}
+
+	xRet = FTM_CGI_getProfile(&xProfile);
+	if (xRet != FTM_RET_OK)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to get profile!");
+		goto finished;
+	}
+
+	memset(pPasswd, 0, sizeof(pPasswd));
+
+	xRet = FTM_CGI_getPasswd(pReq, pPasswd, sizeof(pPasswd), FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to change passwd because invalid passwd.!");
+		goto finished;
+	}
+
+	INFO("Passwd  : %s", xProfile.pPasswd);
+	INFO("Input Passwd  : %s", pPasswd);
+	if (strcmp(xProfile.pPasswd, pPasswd) != 0)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to get profile!");
+		cJSON_AddStringToObject(pRoot, "message", "Passwd do not match!");
+		goto finished;
+	}
+
+finished:
+
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}
+
 FTM_RET	FTM_CGI_setPasswd
 (
 	FTM_CLIENT_PTR pClient, 
@@ -143,7 +311,6 @@ FTM_RET	FTM_CGI_setPasswd
 	FTM_CHAR	pNewPasswd[64];
 	FTM_PROFILE	xProfile;
 
-	INFO("System information called!");
 	pRoot = cJSON_CreateObject();
 	if (pRoot == NULL)
 	{
@@ -170,14 +337,14 @@ FTM_RET	FTM_CGI_setPasswd
 		goto finished;
 	}
 
-	xRet = FTM_CGI_getPasswd(pReq, pNewPasswd, sizeof(pNewPasswd), FTM_FALSE);
+	xRet = FTM_CGI_getNewPasswd(pReq, pNewPasswd, sizeof(pNewPasswd), FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to change passwd because invalid new passwd.!");
 		goto finished;
 	}
 
-	if (strcpy(xProfile.pPasswd, pPasswd) != 0)
+	if (strcmp(xProfile.pPasswd, pPasswd) != 0)
 	{
 		xRet = FTM_RET_ERROR;
 		ERROR(xRet, "Failed to get profile!");
@@ -213,6 +380,7 @@ FTM_RET	FTM_CGI_getProfile
 	FTM_PROFILE_PTR	pProfile
 )
 {
+	FTM_RET		xRet = FTM_RET_OK;
 	FTM_PROFILE	xProfile;
 	char		pBuffer[512];
 
@@ -221,7 +389,9 @@ FTM_RET	FTM_CGI_getProfile
 	FILE *fp = popen("/etc/init.d/webadmin get", "r");
 	if (fp == NULL)
 	{
-		return	-1;	
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to get profile!");
+		return	xRet;	
 	}
 
 	while(0 != fgets(pBuffer, sizeof(pBuffer), fp))
@@ -253,6 +423,7 @@ FTM_RET	FTM_CGI_getProfile
 		}
 		else if (0 == strcmp(pTag, "passwd:"))
 		{
+			INFO("PASSWD : %s", pPtr);
 			pPtr = FTM_trim(pPtr + strlen(pTag));
 
 			strncpy(xProfile.pPasswd, pPtr, sizeof(xProfile.pPasswd) - 1);
@@ -272,6 +443,8 @@ FTM_RET	FTM_CGI_getProfile
 	}
 
 	pclose(fp);
+
+	memcpy(pProfile, &xProfile, sizeof(xProfile));
 
 	return	FTM_RET_OK;
 }

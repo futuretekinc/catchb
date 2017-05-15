@@ -133,7 +133,9 @@ FTM_RET	FTM_CONFIG_load
 	cJSON _PTR_		pRoot = NULL;
 	cJSON _PTR_		pSection;
 
-	pFile = fopen(pFileName, "rt");
+	strncpy(pConfig->pFileName, pFileName, sizeof(pConfig->pFileName) - 1);
+
+	pFile = fopen(pConfig->pFileName, "rt");
 	if (pFile == NULL)
 	{         
 		xRet = FTM_RET_CONFIG_LOAD_FAILED; 
@@ -243,13 +245,12 @@ FTM_RET	FTM_CONFIG_save
 )
 {
 	ASSERT(pConfig != NULL);
-	ASSERT(pFileName != NULL);
 
 	FILE *pFile; 
 	FTM_RET		xRet = FTM_RET_OK;
 	cJSON _PTR_		pRoot = NULL;
 	cJSON _PTR_		pSection;
-
+	
 	pRoot = cJSON_CreateObject();
 	if (pRoot == NULL)
 	{    
@@ -343,7 +344,15 @@ FTM_RET	FTM_CONFIG_save
 	}
 
 	
-	pFile = fopen(pFileName, "wt"); 
+	if (pFileName != NULL)
+	{
+		pFile = fopen(pFileName, "wt"); 
+	}
+	else
+	{
+		pFile = fopen(pConfig->pFileName, "wt");
+	}
+
 	if (pFile != NULL)
 	{
 		fprintf(pFile, "%s", cJSON_Print(pRoot));

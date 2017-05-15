@@ -115,7 +115,7 @@ FTM_RET	FTM_DB_CONFIG_save
 	ASSERT(pRoot != NULL);
 
 	cJSON_AddStringToObject(pRoot, "data file", pConfig->pFileName);
-	cJSON_AddStringToObject(pRoot, "log file", pConfig->pFileName);
+	cJSON_AddStringToObject(pRoot, "log file", pConfig->pLogFileName);
 
 	return	FTM_RET_OK;
 }
@@ -129,8 +129,8 @@ FTM_RET	FTM_DB_CONFIG_show
 	ASSERT(pConfig != NULL);
 
 	printf( "\n[ Database Configuration ]\n");
-	printf( "%16s : %s\n", "Data File Name", pConfig->pFileName);
-	printf( "%16s : %s\n", "Log File Name", pConfig->pLogFileName);
+	printf( "%16s : %s\n", "Data File", pConfig->pFileName);
+	printf( "%16s : %s\n", "Log File", pConfig->pLogFileName);
 
 	return	FTM_RET_OK;
 }

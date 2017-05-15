@@ -18,8 +18,8 @@ FTM_SHELL_CMD	pCatchBShellCmdList[];
 extern	
 FTM_UINT32	ulCatchBShellCmdCount;
 
-static	FTM_BOOL	bDebugMode = FTM_FALSE;
-static	FTM_CHAR	pConfigFileName[FTM_PATH_LEN + FTM_FILE_NAME_LEN] = "";
+static FTM_BOOL	bDebugMode = FTM_FALSE;
+static FTM_CHAR	pConfigFileName[FTM_PATH_LEN + FTM_FILE_NAME_LEN] = "";
 
 FTM_RET	FTM_showUsage();
 
@@ -80,8 +80,6 @@ FTM_INT	main
 		goto finished;
 	}
 
-	FTM_CONFIG_show(pConfig, FTM_TRACE_LEVEL_LOG);
-	
     if (!bDebugMode)
 	{
 		pid_t	pid ;

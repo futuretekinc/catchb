@@ -397,7 +397,10 @@ FTM_TRACE_CONFIG	xTraceConfig =
 };
 
 static FTM_UINT32	ulModuleCount = 0;
-static FTM_CHAR	xModuleName[32][32] ;
+static FTM_CHAR	xModuleName[32][32] =
+{
+	"cgi"
+};
 
 FTM_RET		FTM_TRACE_CONFIG_setDefault
 (
@@ -591,6 +594,16 @@ FTM_RET		FTM_TRACE_TYPE_CONFIG_save
 		cJSON_AddNumberToObject(pSection, "size", pConfig->xLevel.ulSize);
 	
 		cJSON_AddItemToObject(pRoot, "level", pSection);
+	}
+
+	pSection = cJSON_CreateArray();
+	if (pSection != NULL)
+	{
+		for(FTM_UINT32 i = 0 ; i < ulModuleCount ; i++)
+		{
+			cJSON_AddItemToArray(pSection, cJSON_CreateString(xModuleName[i]));
+		}
+		cJSON_AddItemToObject(pRoot, "module", pSection);
 	}
 
 	return	FTM_RET_OK;

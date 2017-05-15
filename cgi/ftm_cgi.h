@@ -56,6 +56,12 @@ FTM_RET	FTM_CGI_status
 	qentry_t *pReq
 );
 
+FTM_RET	FTM_CGI_syslog
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
 FTM_RET	FTM_CGI_getUINT16
 (
 	qentry_t *pReq, 

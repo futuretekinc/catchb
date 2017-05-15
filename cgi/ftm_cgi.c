@@ -64,10 +64,24 @@ FTM_CGI_COMMAND	pAlarmCmds[] =
 };
 
 static 
+FTM_CGI_COMMAND	pSyslogCmds[] =
+{
+	{	"add",		FTM_CGI_addLogServer	},
+	{	"del",		FTM_CGI_delLogServer	},
+	{	"get",		FTM_CGI_getLogServer	},
+	{	"set",		FTM_CGI_setLogServer	},
+	{	"list",		FTM_CGI_getLogServerIDList	},
+	{	NULL,		NULL					}
+};
+
+static 
 FTM_CGI_COMMAND	pSysCmds[] =
 {
-	{	"info", FTM_CGI_getSysInfo			},
-	{	"set_passwd", FTM_CGI_setPasswd		},
+	{	"info", 		FTM_CGI_getSysInfo			},
+	{	"get_config", 	FTM_CGI_getSysInfoConfig	},
+	{	"set_config",	FTM_CGI_setSysInfoConfig	},
+	{	"check_passwd",	FTM_CGI_checkPasswd			},
+	{	"passwd", 		FTM_CGI_setPasswd			},
 	{	NULL,		NULL					}
 };
 
@@ -143,6 +157,15 @@ FTM_RET	FTM_CGI_sys
 )
 {
 	return	FTM_CGI_service(pClient, pReq, pSysCmds);
+}
+
+FTM_RET	FTM_CGI_syslog
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+)
+{
+	return	FTM_CGI_service(pClient, pReq, pSyslogCmds);
 }
 
 FTM_RET	FTM_CGI_status

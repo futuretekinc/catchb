@@ -138,6 +138,18 @@ FTM_RET	FTM_CGI_getAlarmInfo
 	qentry_t _PTR_ pReq
 );
 
+FTM_RET	FTM_CGI_getSysInfoConfig
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_setSysInfoConfig
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
 FTM_RET	FTM_CGI_getSysInfo
 (
 	FTM_CLIENT_PTR pClient, 
@@ -162,7 +174,43 @@ FTM_RET	FTM_CGI_getStatusList
 	qentry_t _PTR_ pReq
 );
 
+FTM_RET	FTM_CGI_checkPasswd
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
 FTM_RET	FTM_CGI_setPasswd
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_addLogServer
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_delLogServer
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_getLogServer
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_setLogServer
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_getLogServerIDList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
