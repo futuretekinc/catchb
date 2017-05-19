@@ -165,7 +165,7 @@ FTM_RET	FTM_CATCHB_create
 
 	strcpy(pCatchB->pName, __MODULE__);
 
-	xRet = FTM_SYSTEM_CONFIG_setDefault(&pCatchB->xConfig);
+	xRet = FTM_SYSTEM_CONFIG_setDefault(&pCatchB->xConfig.xSystem);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to init config!");
@@ -414,7 +414,7 @@ FTM_RET	FTM_CATCHB_destroy
 			FTM_MEM_free(pStatistics);
 		}
 
-		xRet = FTM_LIST_destroy(&(*ppCatchB)->pSwitchList);
+		xRet = FTM_LIST_destroy(&(*ppCatchB)->pStatisticsList);
 		if (xRet != FTM_RET_OK)
 		{
 			ERROR(xRet, "Failed to destroy cctv list!");
@@ -484,7 +484,7 @@ FTM_RET	FTM_CATCHB_setConfig
 	FTM_RET	xRet1;
 
 
-	memcpy(&pCatchB->xConfig, &pConfig->xSystem, sizeof(pCatchB->xConfig));
+	memcpy(&pCatchB->xConfig, pConfig, sizeof(pCatchB->xConfig));
 
 	if (pCatchB->pDB != NULL)
 	{
@@ -543,7 +543,7 @@ FTM_RET	FTM_CATCHB_getConfig
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_RET	xRet1;
 
-	memcpy(&pConfig->xSystem, &pCatchB->xConfig, sizeof(pConfig->xSystem));
+	memcpy(pConfig, &pCatchB->xConfig, sizeof(pCatchB->xConfig));
 
 	if (pCatchB->pDB != NULL)
 	{
@@ -961,7 +961,7 @@ FTM_VOID_PTR	FTM_CATCHB_process
 		ERROR(xRet, "Failed to add event!");
 	}
 #endif
-	FTM_TIMER_initMS(&xTimer, pCatchB->xConfig.xStatistics.ulInterval);
+	FTM_TIMER_initMS(&xTimer, pCatchB->xConfig.xSystem.xStatistics.ulInterval);
 
 	pCatchB->bStop = FTM_FALSE;
 	while(!pCatchB->bStop)
@@ -1067,7 +1067,7 @@ FTM_VOID_PTR	FTM_CATCHB_process
 				xStatistics.xNet.ulRxBytes, xStatistics.xNet.ulTxBytes);
 			FTM_CATCHB_addStatistics(pCatchB, &xStatistics);
 
-			FTM_TIMER_addMS(&xTimer, pCatchB->xConfig.xStatistics.ulInterval);
+			FTM_TIMER_addMS(&xTimer, pCatchB->xConfig.xSystem.xStatistics.ulInterval);
 		}	
 	}
 
@@ -2847,6 +2847,34 @@ FTM_BOOL	FTM_CATCHB_ALARM_seeker
 	return	(strcmp(pAlarm->pName, pName) == 0);
 }
 
+FTM_RET	FTM_CATCHB_getSMTP
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pConfig != NULL);
+
+	memcpy(pConfig, &pCatchB->pNotifier->xConfig.xSMTP, sizeof(FTM_NOTIFIER_SMTP_CONFIG));
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_CATCHB_setSMTP
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pConfig != NULL);
+
+	memcpy(&pCatchB->pNotifier->xConfig.xSMTP, pConfig, sizeof(FTM_NOTIFIER_SMTP_CONFIG));
+
+	return	FTM_RET_OK;
+}
+
 FTM_RET	FTM_CATCHB_addLog
 (
 	FTM_CATCHB_PTR	pCatchB,
@@ -2957,7 +2985,7 @@ FTM_RET	FTM_CATCHB_addStatistics
 
 		FTM_LIST_count(pCatchB->pStatisticsList, &ulCount);
 
-		if (ulCount < pCatchB->xConfig.xStatistics.ulCount)
+		if (ulCount < pCatchB->xConfig.xSystem.xStatistics.ulCount)
 		{
 			pNewStatistics = (FTM_STATISTICS_PTR)FTM_MEM_malloc(sizeof(FTM_STATISTICS));
 		}
@@ -3230,7 +3258,7 @@ FTM_RET	FTM_CATCHB_setStatisticsUpdateInterval
 
 	if ((ulInterval >= FTM_CATCHB_STATISTICS_UPDATE_INTERVAL_MIN	) && (ulInterval <= FTM_CATCHB_STATISTICS_UPDATE_INTERVAL_MAX))
 	{
-		pCatchB->xConfig.xStatistics.ulInterval = ulInterval;	
+		pCatchB->xConfig.xSystem.xStatistics.ulInterval = ulInterval;	
 	}
 
 	return	FTM_RET_OK;

@@ -608,6 +608,7 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 	FTM_SSH_PTR	pSSH = NULL;
 	FTM_SSH_CHANNEL_PTR	pChannel = NULL;
 	FTM_TIMER	xTimer;
+	FTM_UINT32	ulTimeout = 3000;
 
 	xRet = FTM_SSH_create(&pSSH);
 	if (xRet != FTM_RET_OK)
@@ -630,7 +631,7 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 		goto finished;
 	}
 
-	FTM_TIMER_initMS(&xTimer, 1000);
+	FTM_TIMER_initMS(&xTimer, ulTimeout);
 
 	xRet = FTM_SSH_CHANNEL_open(pChannel);
 	if (xRet == FTM_RET_OK)
@@ -642,7 +643,8 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 			FTM_CHAR	pReadLine[512];
 			FTM_UINT32	ulReadLen = 0;
 
-			xRet = FTM_SSH_CHANNEL_read(pChannel, pReadLine, sizeof(pReadLine), &ulReadLen);
+			memset(pReadLine, 0, sizeof(pReadLine));
+			xRet = FTM_SSH_CHANNEL_read(pChannel, pReadLine, sizeof(pReadLine)-1, &ulReadLen);
 			if ((ulReadLen != 0) && isprint(pReadLine[0]))
 			{
 				INFO("ReadLine : %s", pReadLine);
@@ -668,6 +670,19 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 					FTM_SSH_CHANNEL_close(pChannel);
 					FTM_SSH_CHANNEL_open(pChannel);
 				}
+				else if (strncasecmp(pReadLine, "%% Already exist flow", 20) == 0)
+				{
+					FTM_SSH_CHANNEL_writeLine(pChannel, "exit");
+					break;	
+				}
+				FTM_TIMER_initMS(&xTimer, ulTimeout);
+			}
+
+
+			if (FTM_TIMER_isExpired(&xTimer))
+			{
+				INFO("TIMEOUT!");
+				break;
 			}
 
 			usleep(1000);
@@ -680,7 +695,6 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 		ERROR(xRet, "Failed to open channel.");	
 	}
 
-	FTM_SSH_disconnect(pSSH);
 
 finished:
 	
@@ -692,6 +706,8 @@ finished:
 
 	if (pSSH != NULL)
 	{
+		FTM_SSH_disconnect(pSSH);
+
 		INFO("FTM_SSH_destroy");
 		FTM_SSH_destroy(&pSSH);	
 	}

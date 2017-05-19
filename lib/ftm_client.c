@@ -1455,6 +1455,66 @@ FTM_RET FTM_CLIENT_getAlarmNameList
 	return	xRet;
 }
 
+FTM_RET	FTM_CLIENT_getSMTP
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_GET_SMTP_PARAMS		xReq;
+	FTM_RESP_GET_SMTP_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_GET_SMTP;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+	if (xRet == FTM_RET_OK)
+	{
+		memcpy(pConfig, &xResp.xSMTP, sizeof(FTM_NOTIFIER_SMTP_CONFIG));
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CLIENT_setSMTP
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig,
+	FTM_NOTIFIER_SMTP_CONFIG_PTR	pResultConfig
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_SET_SMTP_PARAMS		xReq;
+	FTM_RESP_SET_SMTP_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_SET_SMTP;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+	memcpy(&xReq.xSMTP, pConfig, sizeof(FTM_NOTIFIER_SMTP_CONFIG));
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+	if ((xRet == FTM_RET_OK) && (pResultConfig != NULL))
+	{
+		memcpy(pResultConfig, &xResp.xSMTP, sizeof(FTM_NOTIFIER_SMTP_CONFIG));
+	}
+
+	return	xRet;
+}
+
 FTM_RET	FTM_CLIENT_setStatInfo
 (
 	FTM_CLIENT_PTR	pClient,

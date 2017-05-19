@@ -14,7 +14,7 @@ FTM_RET	FTM_BUFFER_create
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_BUFFER_PTR	pBuffer;
 
-	pBuffer = (FTM_BUFFER_PTR)FTM_MEM_malloc(sizeof(FTM_BUFFER) + ulMaxSize);
+	pBuffer = (FTM_BUFFER_PTR)FTM_MEM_malloc(sizeof(FTM_BUFFER) + ulMaxSize + 1024);
 	if (pBuffer == NULL)
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;

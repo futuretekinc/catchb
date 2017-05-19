@@ -192,7 +192,7 @@ FTM_RET	FTM_SHELL_CMD_showLogList
 		return	xRet;	
 	}
 
-	xRet = FTM_CLIENT_getLogList(pClient, ulIndex, ulMaxCount, pLogList, &ulCount);
+	xRet = FTM_CLIENT_getLogList(pClient, 0, NULL, NULL, FTM_CCTV_STAT_UNREGISTERED, 0, 0, ulIndex, ulMaxCount, pLogList, &ulCount);
 	if (xRet == FTM_RET_OK)
 	{
 		FTM_UINT32	i;

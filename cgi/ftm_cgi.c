@@ -60,6 +60,8 @@ FTM_CGI_COMMAND	pAlarmCmds[] =
 	{	"set",	FTM_CGI_setAlarm			},
 	{	"list",	FTM_CGI_getAlarmList		},
 	{	"info",	FTM_CGI_getAlarmInfo		},
+	{	"get_config",	FTM_CGI_getAlarmConfig		},
+	{	"set_config",	FTM_CGI_setAlarmConfig		},
 	{	NULL,		NULL					}
 };
 
@@ -359,6 +361,38 @@ FTM_RET	FTM_CGI_getUserID
 	return	FTM_RET_OK;
 }
 
+FTM_RET	FTM_CGI_getServer
+(
+	qentry_t *pReq, 
+	FTM_CHAR_PTR pServer,
+	FTM_BOOL	bAllowEmpty
+)
+{
+	ASSERT(pReq != NULL);
+	ASSERT(pServer != NULL);
+
+	FTM_CHAR_PTR	pValue;
+
+	pValue = pReq->getstr(pReq, "server", false);
+	if(pValue == NULL)
+	{
+		if(!bAllowEmpty)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;	
+		}
+	}
+	else if((strlen(pValue) > FTM_ID_LEN))
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+	else
+	{
+		strcpy(pServer, pValue);
+	}
+	
+	return	FTM_RET_OK;
+}
+
 FTM_RET	FTM_CGI_getSecure
 (
 	qentry_t *pReq, 
@@ -439,11 +473,11 @@ FTM_RET	FTM_CGI_getEnable
 			return	FTM_RET_OBJECT_NOT_FOUND;	
 		}
 	}
-	else if(strcasecmp(pValue, "true") == 0)
+	else if((strcasecmp(pValue, "true") == 0) || (strcasecmp(pValue, "yes") == 0))
 	{
 		*pEnable = FTM_TRUE;	
 	}
-	else if(strcasecmp(pValue, "false") == 0)
+	else if((strcasecmp(pValue, "false") == 0) || (strcasecmp(pValue, "no") == 0))
 	{
 		*pEnable = FTM_FALSE;	
 	}
@@ -1012,6 +1046,39 @@ FTM_RET	FTM_CGI_getNewPasswd
 	FTM_CHAR_PTR	pValue;
 
 	pValue = pReq->getstr(pReq, "new_passwd", false);
+	if(pValue == NULL)
+	{
+		if(!bAllowEmpty)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;	
+		}
+	}
+	else if (strlen(pValue) < ulBufferLen)
+	{
+		strncpy(pBuffer, pValue, ulBufferLen);
+	}
+	else
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_CGI_getSender
+(
+	qentry_t *pReq, 
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen,
+	FTM_BOOL	bAllowEmpty
+)
+{
+	ASSERT(pReq != NULL);
+	ASSERT(pBuffer != NULL);
+	
+	FTM_CHAR_PTR	pValue;
+
+	pValue = pReq->getstr(pReq, "sender", false);
 	if(pValue == NULL)
 	{
 		if(!bAllowEmpty)

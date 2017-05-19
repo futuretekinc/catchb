@@ -254,6 +254,7 @@ FTM_RET	FTM_SHELL_CMD_switch
 		{
 			printf("Error : The switch[%s] not found!\n", pArgv[2]);	
 		}
+	
 
 		xRet = FTM_SWITCH_addAC(pSwitch, pArgv[3], FTM_SWITCH_AC_POLICY_DENY, &pAC);
 		if (xRet != FTM_RET_OK)

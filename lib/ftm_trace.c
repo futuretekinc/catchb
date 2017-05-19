@@ -396,7 +396,7 @@ FTM_TRACE_CONFIG	xTraceConfig =
 	}
 };
 
-static FTM_UINT32	ulModuleCount = 0;
+static FTM_UINT32	ulModuleCount = 1;
 static FTM_CHAR	xModuleName[32][32] =
 {
 	"cgi"
@@ -1060,7 +1060,7 @@ FTM_RET	FTM_TRACE_writeToFile
 		fprintf(stderr, "Failed to open file[%s:%s]\n", pFileName,strerror(errno));
 		fprintf(stderr, "Command Line : %s\n", pCommandLine);
 		return	xRet;
-	}
+	i
 
 	pclose(pFile);
 

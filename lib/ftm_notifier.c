@@ -316,11 +316,11 @@ FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_save
 	ASSERT(pConfig != NULL);
 	ASSERT(pRoot != NULL);
 
-	cJSON_AddStringToObject(pRoot, "enable", (pConfig->bEnable?"yes":"no"));
-	cJSON_AddStringToObject(pRoot, "server", pConfig->pServer);
-	cJSON_AddNumberToObject(pRoot, "port", pConfig->usPort);
-	cJSON_AddStringToObject(pRoot, "userid", pConfig->pUserID);
-	cJSON_AddStringToObject(pRoot, "passwd", pConfig->pPasswd);
+	cJSON_AddStringToObject(pRoot, "enable",	(pConfig->bEnable?"yes":"no"));
+	cJSON_AddStringToObject(pRoot, "server",	pConfig->pServer);
+	cJSON_AddNumberToObject(pRoot, "port", 		pConfig->usPort);
+	cJSON_AddStringToObject(pRoot, "userid", 	pConfig->pUserID);
+	cJSON_AddStringToObject(pRoot, "passwd", 	pConfig->pPasswd);
 
 	return	FTM_RET_OK;
 
@@ -335,11 +335,11 @@ FTM_RET	FTM_NOTIFIER_SMTP_CONFIG_show
 	ASSERT(pConfig != NULL);
 
 	printf("\n[ SMTP Configuration ]\n");
-	printf("%16s : %s\n", "Enable", (pConfig->bEnable?"yes":"no"));
-	printf("%16s : %s\n", "Server", pConfig->pServer);
-	printf("%16s : %d\n", "Port", 	pConfig->usPort);
-	printf("%16s : %s\n", "user ID", pConfig->pUserID);
-	printf("%16s : %s\n", "Password", pConfig->pPasswd);
+	printf("%16s : %s\n", "Enable", 	(pConfig->bEnable?"yes":"no"));
+	printf("%16s : %s\n", "Server", 	pConfig->pServer);
+	printf("%16s : %d\n", "Port", 		pConfig->usPort);
+	printf("%16s : %s\n", "user ID", 	pConfig->pUserID);
+	printf("%16s : %s\n", "Password", 	pConfig->pPasswd);
 
 	return	FTM_RET_OK;
 }

@@ -428,3 +428,131 @@ finished:
 }
 
 
+FTM_RET	FTM_CGI_getAlarmConfig
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReq != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	cJSON _PTR_	pRoot;
+	FTM_NOTIFIER_SMTP_CONFIG	xConfig;
+
+	pRoot = cJSON_CreateObject();
+
+	xRet = FTM_CLIENT_getSMTP(pClient, &xConfig);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get alarm config");
+		goto finished;	
+	}
+
+	cJSON _PTR_ pConfig = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(pConfig, "enable", 	((xConfig.bEnable)?"yes":"no"));
+	cJSON_AddStringToObject(pConfig, "server", 	xConfig.pServer);
+	cJSON_AddNumberToObject(pConfig, "port", 	xConfig.usPort);
+	cJSON_AddStringToObject(pConfig, "userid", 	xConfig.pUserID);
+	cJSON_AddStringToObject(pConfig, "passwd", 	xConfig.pPasswd);
+	cJSON_AddStringToObject(pConfig, "sender", 	xConfig.pSender);
+
+	cJSON_AddItemToObject(pRoot, "alarm_config", pConfig);
+
+finished:
+
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}
+
+FTM_RET	FTM_CGI_setAlarmConfig
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReq != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	cJSON _PTR_	pRoot;
+	FTM_NOTIFIER_SMTP_CONFIG	xConfig;
+	FTM_NOTIFIER_SMTP_CONFIG	xNewConfig;
+
+
+	pRoot = cJSON_CreateObject();
+
+	xRet = FTM_CLIENT_getSMTP(pClient, &xConfig);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get alarm config");
+		goto finished;	
+	}
+
+	memcpy(&xNewConfig, &xConfig, sizeof(xConfig));
+
+	xRet = FTM_CGI_getEnable(pReq, &xNewConfig.bEnable, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get enable!");
+		goto finished;
+	}
+
+	xRet = FTM_CGI_getServer(pReq, xNewConfig.pServer, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get server!");
+		goto finished;
+	}
+
+	xRet = FTM_CGI_getPort(pReq, &xNewConfig.usPort, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get port!");
+		goto finished;
+	}
+
+	xRet = FTM_CGI_getUserID(pReq, xNewConfig.pUserID, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get user id!");
+		goto finished;
+	}
+
+	xRet = FTM_CGI_getPasswd(pReq, xNewConfig.pPasswd, sizeof(xNewConfig.pPasswd) - 1, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get passwd!");
+		goto finished;
+	}
+
+	xRet = FTM_CGI_getSender(pReq, xNewConfig.pSender, sizeof(xNewConfig.pSender) - 1, FTM_TRUE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get sender!");
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_setSMTP(pClient, &xNewConfig, &xConfig);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get alarm config");
+		goto finished;	
+	}
+
+	cJSON _PTR_ pConfig = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(pConfig, "enable", 	((xConfig.bEnable)?"yes":"no"));
+	cJSON_AddStringToObject(pConfig, "server", 	xConfig.pServer);
+	cJSON_AddNumberToObject(pConfig, "port", 	xConfig.usPort);
+	cJSON_AddStringToObject(pConfig, "userid", xConfig.pUserID);
+	cJSON_AddStringToObject(pConfig, "passwd", 	xConfig.pPasswd);
+	cJSON_AddStringToObject(pConfig, "sender", 	xConfig.pSender);
+
+	cJSON_AddItemToObject(pRoot, "alarm_config", pConfig);
+
+finished:
+
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}

@@ -211,17 +211,20 @@ FTM_RET	FTM_SHELL_final
 	FTM_RET				xRet;
 	FTM_SHELL_CMD_PTR	pCmd;
 
-	FTM_LIST_iteratorStart(pShell->pCmdList);
-	while(FTM_LIST_iteratorNext(pShell->pCmdList, (FTM_VOID_PTR _PTR_)&pCmd) == FTM_RET_OK)
+	if (pShell->pCmdList != NULL)
 	{
-		xRet = FTM_LIST_remove(pShell->pCmdList, pCmd);
-		if (xRet == FTM_RET_OK)
+		FTM_LIST_iteratorStart(pShell->pCmdList);
+		while(FTM_LIST_iteratorNext(pShell->pCmdList, (FTM_VOID_PTR _PTR_)&pCmd) == FTM_RET_OK)
 		{
-			FTM_MEM_free(pCmd);	
+			xRet = FTM_LIST_remove(pShell->pCmdList, pCmd);
+			if (xRet == FTM_RET_OK)
+			{
+				FTM_MEM_free(pCmd);	
+			}
 		}
-	}
 
-	FTM_LIST_destroy(&pShell->pCmdList);
+		FTM_LIST_destroy(&pShell->pCmdList);
+	}
 
 	return	FTM_RET_OK;
 }

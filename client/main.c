@@ -44,7 +44,7 @@ FTM_INT	main
 	FTM_CLIENT_PTR	pClient;
 	FTM_CONFIG_PTR	pConfig = NULL;
 
-	sprintf(pConfigFileName, "%s.conf", program_invocation_short_name);
+	sprintf(pConfigFileName, "/etc/%s.conf", program_invocation_short_name);
 
 	FTM_MEM_init();
 
@@ -53,7 +53,7 @@ FTM_INT	main
 	xRet = FTM_setOptions(nArgc, ppArgv);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Invalid arguemtns!\n");
+		printf("Invalid arguemtns!\n");
 		FTM_showUsage();
 		goto finished;
 	}
@@ -61,7 +61,7 @@ FTM_INT	main
 	xRet = FTM_loadConfig(pConfigFileName);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to load config!\n");
+		printf("Failed to load config[%s]!\n", pConfigFileName);
 		goto finished;
 	}
 
@@ -70,7 +70,7 @@ FTM_INT	main
 	xRet = FTM_CLIENT_create(&xClientConfig, &pClient);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to client!");
+		printf("Failed to client!\n");
 		goto finished;
 	}
 
@@ -106,7 +106,7 @@ FTM_RET	FTM_setOptions
 {
 	FTM_CHAR	xOption;
 
-    while ((xOption = getopt(nArgc, ppArgv, "c:d")) != -1)
+    while ((xOption = getopt(nArgc, ppArgv, "c:d")) != (FTM_CHAR)-1)
     {
         switch (xOption)
         {
@@ -115,6 +115,7 @@ FTM_RET	FTM_setOptions
 			break;
 
 		default:
+			printf("Invalid option : %c\n", xOption);
 			return	FTM_RET_INVALID_ARGUMENTS;
         }
     }

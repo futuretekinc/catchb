@@ -35,6 +35,9 @@
 #include "ftm_trace.h"
 #include "ftm_mem.h"
 
+#undef	__MODULE__
+#define	__MODULE__	"smtp"
+
 FTM_RET	FTM_SMTPC_CONNECTION_open
 (	
 	FTM_CHAR_PTR	pHostName, 

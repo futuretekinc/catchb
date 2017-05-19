@@ -49,7 +49,7 @@ FTM_INT	main
 	xRet = FTM_setOptions(nArgc, ppArgv);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Invalid arguemtns!\n");
+		printf("Invalid arguemtns!\n");
 		FTM_showUsage();
 		goto finished;
 	}
@@ -61,7 +61,7 @@ FTM_INT	main
 		if (bDuplicated)
 		{
 			xRet = FTM_RET_ALREADY_RUNNING;
-			ERROR(xRet ,"%s is already running!!\n", program_invocation_short_name);
+			printf("%s is already running!!\n", program_invocation_short_name);
 			goto finished;
 		}
 	}
@@ -69,14 +69,14 @@ FTM_INT	main
 	xRet = FTM_CONFIG_create(&pConfig);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to create config!\n");
+		printf("Failed to create config!\n");
 		goto finished;
 	}
 
 	xRet = FTM_CONFIG_load(pConfig, pConfigFileName);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to load config!\n");
+		printf("Failed to load config!\n");
 		goto finished;
 	}
 

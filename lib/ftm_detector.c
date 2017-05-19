@@ -148,7 +148,11 @@ FTM_RET	FTM_DETECTOR_destroy
 		{
 			FTM_MEM_free(pID);
 		}
-		FTM_LIST_destroy(&(*ppDetector)->pList);
+
+		if ((*ppDetector)->pList != NULL)
+		{
+			FTM_LIST_destroy(&(*ppDetector)->pList);
+		}
 	}
 
 	if ((*ppDetector)->pLock != NULL)

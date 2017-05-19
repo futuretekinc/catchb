@@ -6,6 +6,7 @@
 #include "ftm_system.h"
 #include "ftm_switch.h"
 #include "ftm_alarm.h"
+#include "ftm_notifier.h"
 #include "ftm_utils.h"
 #include "ftm_log.h"
 
@@ -45,6 +46,8 @@ typedef	enum
 	FTM_CMD_GET_ALARM,
 	FTM_CMD_SET_ALARM,
 	FTM_CMD_GET_ALARM_NAME_LIST,
+	FTM_CMD_SET_SMTP,
+	FTM_CMD_GET_SMTP,
 
 	FTM_CMD_GET_STAT_INFO,
 	FTM_CMD_SET_STAT_INFO,
@@ -402,6 +405,29 @@ typedef	struct
 	FTM_UINT32		ulCount;
 	FTM_NAME		pNameList[];
 }	FTM_RESP_GET_ALARM_NAME_LIST_PARAMS, _PTR_ FTM_RESP_GET_ALARM_NAME_LIST_PARAMS_PTR;
+
+typedef	struct
+{
+	FTM_REQ_PARAMS	xCommon;
+	FTM_NOTIFIER_SMTP_CONFIG	xSMTP;
+}	FTM_REQ_SET_SMTP_PARAMS, _PTR_ FTM_REQ_SET_SMTP_PARAMS_PTR;
+
+typedef	struct
+{
+	FTM_RESP_PARAMS	xCommon;
+	FTM_NOTIFIER_SMTP_CONFIG	xSMTP;
+}	FTM_RESP_SET_SMTP_PARAMS, _PTR_ FTM_RESP_SET_SMTP_PARAMS_PTR; 
+
+typedef	struct
+{
+	FTM_REQ_PARAMS	xCommon;
+}	FTM_REQ_GET_SMTP_PARAMS, _PTR_ FTM_REQ_GET_SMTP_PARAMS_PTR;
+
+typedef	struct
+{
+	FTM_RESP_PARAMS	xCommon;
+	FTM_NOTIFIER_SMTP_CONFIG	xSMTP;
+}	FTM_RESP_GET_SMTP_PARAMS, _PTR_ FTM_RESP_GET_SMTP_PARAMS_PTR; 
 
 typedef	struct
 {

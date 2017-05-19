@@ -346,10 +346,12 @@ FTM_RET	FTM_CONFIG_save
 	
 	if (pFileName != NULL)
 	{
+		INFO("Configuraion save to %s", pFileName);
 		pFile = fopen(pFileName, "wt"); 
 	}
 	else
 	{
+		INFO("Configuraion save to %s", pConfig->pFileName);
 		pFile = fopen(pConfig->pFileName, "wt");
 	}
 
@@ -358,6 +360,10 @@ FTM_RET	FTM_CONFIG_save
 		fprintf(pFile, "%s", cJSON_Print(pRoot));
 
 		fclose(pFile);
+	}
+	else
+	{
+		ERROR(FTM_RET_ERROR, "Failed to save configuraion");
 	}
 
 finished:

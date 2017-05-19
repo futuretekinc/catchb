@@ -66,6 +66,9 @@ static FTM_SERVER_CMD_SET	pCmdSet[] =
 	MK_CMD_SET(FTM_CMD_SET_ALARM,				FTM_SERVER_setAlarm),
 	MK_CMD_SET(FTM_CMD_GET_ALARM_NAME_LIST,		FTM_SERVER_getAlarmNameList),
 
+	MK_CMD_SET(FTM_CMD_SET_SMTP,				FTM_SERVER_setSMTP),
+	MK_CMD_SET(FTM_CMD_GET_SMTP,				FTM_SERVER_getSMTP),
+
 	MK_CMD_SET(FTM_CMD_GET_STAT_COUNT,			FTM_SERVER_getStatCount),
 	MK_CMD_SET(FTM_CMD_SET_STAT_INFO,			FTM_SERVER_setStatInfo),
 	MK_CMD_SET(FTM_CMD_GET_STAT_INFO,			FTM_SERVER_getStatInfo),
@@ -1352,6 +1355,78 @@ FTM_RET	FTM_SERVER_getAlarmNameList
 	return	xRet;
 }
 
+FTM_RET	FTM_SERVER_getSMTP
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_GET_SMTP_PARAMS_PTR	pReq,
+	FTM_RESP_GET_SMTP_PARAMS_PTR	pResp
+)
+{
+	FTM_RET			xRet;
+	FTM_CATCHB_PTR	pCatchB;
+
+	pCatchB = pServer->pCatchB;
+
+	xRet = FTM_CATCHB_getSMTP(pCatchB, &pResp->xSMTP);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get alarm list!");
+	}
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet = xRet;
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_GET_SMTP_PARAMS);
+
+	return	xRet;
+}
+
+FTM_RET	FTM_SERVER_setSMTP
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_SET_SMTP_PARAMS_PTR	pReq,
+	FTM_RESP_SET_SMTP_PARAMS_PTR	pResp
+)
+{
+	FTM_RET			xRet;
+	FTM_CATCHB_PTR	pCatchB;
+
+	pCatchB = pServer->pCatchB;
+
+	xRet = FTM_CATCHB_setSMTP(pCatchB, &pReq->xSMTP);
+	if (xRet == FTM_RET_OK)
+	{
+		FTM_CONFIG	xConfig;
+
+		xRet = FTM_CATCHB_getConfig(pCatchB, &xConfig);
+		if (xRet == FTM_RET_OK)
+		{
+			xRet = FTM_CATCHB_getSMTP(pCatchB, &pResp->xSMTP);
+			if (xRet != FTM_RET_OK)
+			{
+				ERROR(xRet, "Failed to get alarm list!");
+			}
+			else
+			{
+				FTM_CONFIG_save(&xConfig, NULL);
+			}
+		}
+		else
+		{
+			ERROR(xRet, "Failed to get catchb configuration!");
+		}
+	}
+	else
+	{
+		ERROR(xRet, "Failed to get alarm list!");
+	}
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet = xRet;
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_SET_SMTP_PARAMS);
+
+	return	xRet;
+}
+
 FTM_RET	FTM_SERVER_getStatList
 (
 	FTM_SERVER_PTR pServer, 
@@ -1522,8 +1597,8 @@ FTM_RET	FTM_SERVER_getStatInfo
 						|	FTM_SYSTEM_FIELD_STATISTICS_COUNT	
 						|	FTM_SYSTEM_FIELD_STATISTICS_FIRST_TIME
 						|	FTM_SYSTEM_FIELD_STATISTICS_LAST_TIME;
-	pResp->xInfo.xStatistics.ulMaxCount	= pCatchB->xConfig.xStatistics.ulCount;
-	pResp->xInfo.xStatistics.ulInterval = pCatchB->xConfig.xStatistics.ulInterval;
+	pResp->xInfo.xStatistics.ulMaxCount	= pCatchB->xConfig.xSystem.xStatistics.ulCount;
+	pResp->xInfo.xStatistics.ulInterval = pCatchB->xConfig.xSystem.xStatistics.ulInterval;
 	pResp->xInfo.xStatistics.ulCount 	= ulCount;
 	pResp->xInfo.xStatistics.ulFirstTime= ulFirstTime;
 	pResp->xInfo.xStatistics.ulLastTime	= ulLastTime;
@@ -1556,18 +1631,28 @@ FTM_RET	FTM_SERVER_setStatInfo
 		FTM_CATCHB_setStatisticsMaxCount(pCatchB, pReq->xInfo.xStatistics.ulMaxCount);
 	}
 
+	FTM_CONFIG	xConfig;
 
-	xRet = FTM_CATCHB_getStatisticsInfo(pCatchB, &ulCount, &ulFirstTime, &ulLastTime);
-	if (xRet != FTM_RET_OK)
+	xRet = FTM_CATCHB_getConfig(pCatchB, &xConfig);
+	if (xRet == FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to get log info!");
+		FTM_CONFIG_save(&xConfig, NULL);
+		xRet = FTM_CATCHB_getStatisticsInfo(pCatchB, &ulCount, &ulFirstTime, &ulLastTime);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to get log info!");
+		}
+	}
+	else
+	{
+		ERROR(xRet, "Failed to get configuration!");
 	}
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
 	pResp->xCommon.ulLen = sizeof(FTM_RESP_SET_STAT_INFO_PARAMS);
-	pResp->xInfo.xStatistics.ulMaxCount	= pCatchB->xConfig.xStatistics.ulCount;
-	pResp->xInfo.xStatistics.ulInterval 	= pCatchB->xConfig.xStatistics.ulInterval;
+	pResp->xInfo.xStatistics.ulMaxCount	= pCatchB->xConfig.xSystem.xStatistics.ulCount;
+	pResp->xInfo.xStatistics.ulInterval 	= pCatchB->xConfig.xSystem.xStatistics.ulInterval;
 	pResp->xInfo.xStatistics.ulCount = ulCount;
 	pResp->xInfo.xStatistics.ulFirstTime= ulFirstTime;
 	pResp->xInfo.xStatistics.ulLastTime= ulLastTime;

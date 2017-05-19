@@ -16,6 +16,7 @@ FTM_RET	FTM_SHELL_CMD_switch(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR p
 FTM_RET	FTM_SHELL_CMD_trace(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_config(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_net(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
+FTM_RET	FTM_SHELL_CMD_catchb(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 
 FTM_SHELL_CMD	pCatchBShellCmdList[] = 
 {
@@ -169,6 +170,17 @@ FTM_SHELL_CMD	pCatchBShellCmdList[] =
 					  "MODEL:\n"
 					  "  nst    NST\n"
 					  "  dasan  Dasan networks.\n" ,
+		.pData		= NULL
+	},
+	{
+		.pString	= "catchb",
+		.function	= FTM_SHELL_CMD_catchb,
+		.pShortHelp	= "CatchB management.",
+		.pHelp		= "<cmd>\n"
+					  "  CatchbB configuration.\n"
+					  "COMMANDS:\n"
+					  "  deny <ID>\n"
+					  "  allow <ID>\n",
 		.pData		= NULL
 	},
 	{

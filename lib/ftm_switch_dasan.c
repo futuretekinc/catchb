@@ -116,18 +116,18 @@ FTM_RET	FTM_SWITCH_DASAN_setAC
 	{
 		switch(pCommand->ulSubIndex)
 		{
-		case	1: 	sprintf(pCommand->pInput,	"flow catchb_main_%d create\n", ulIndex); break;
-		case	2: 	sprintf(pCommand->pInput,	"ip %s/32 %s/32\n", pTargetIP, pLocalIP); break;
-		case	3: 	sprintf(pCommand->pInput,	"flow catchb_%d create\n", ulIndex); break;
-		case	4: 	sprintf(pCommand->pInput,	"ip %s/32 any\n", pTargetIP); break;
-		case	5: 	sprintf(pCommand->pInput,	"policy catchb_main_%d create\n", ulIndex); break;
-		case	6: 	sprintf(pCommand->pInput,	"include-flow catchb_main_%d\n", ulIndex); break;
-		case	7: 	sprintf(pCommand->pInput,	"policy catchb_%d create\n", ulIndex); break;
-		case	8: 	sprintf(pCommand->pInput,	"include-flow catchb_%d\n", ulIndex); break;
-		case	9:	sprintf(pCommand->pInput,	"no policy catchb_%d\n", ulIndex); break;
-		case	10:	sprintf(pCommand->pInput,	"no flow catchb_%d\n", ulIndex); break;
-		case	11:	sprintf(pCommand->pInput,	"no policy catchb_main_%d\n", ulIndex); break;
-		case	12:	sprintf(pCommand->pInput, 	"no flow catchb_main_%d\n", ulIndex); break;
+		case	1: 	sprintf(pCommand->pInput,	"flow catchb_main_%d create", ulIndex); break;
+		case	2: 	sprintf(pCommand->pInput,	"ip %s/32 %s/32", pTargetIP, pLocalIP); break;
+		case	3: 	sprintf(pCommand->pInput,	"flow catchb_%d create", ulIndex); break;
+		case	4: 	sprintf(pCommand->pInput,	"ip %s/32 any", pTargetIP); break;
+		case	5: 	sprintf(pCommand->pInput,	"policy catchb_main_%d create", ulIndex); break;
+		case	6: 	sprintf(pCommand->pInput,	"include-flow catchb_main_%d", ulIndex); break;
+		case	7: 	sprintf(pCommand->pInput,	"policy catchb_%d create", ulIndex); break;
+		case	8: 	sprintf(pCommand->pInput,	"include-flow catchb_%d", ulIndex); break;
+		case	9:	sprintf(pCommand->pInput,	"no policy catchb_%d", ulIndex); break;
+		case	10:	sprintf(pCommand->pInput,	"no flow catchb_%d", ulIndex); break;
+		case	11:	sprintf(pCommand->pInput,	"no policy catchb_main_%d", ulIndex); break;
+		case	12:	sprintf(pCommand->pInput, 	"no flow catchb_main_%d", ulIndex); break;
 		default: break;
 		}
 

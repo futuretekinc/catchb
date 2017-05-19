@@ -527,7 +527,7 @@ FTM_RET	FTM_SSH_CHANNEL_create
 
 	*ppChannel = pChannel;
 
-	INFO("SSH channel created successfully.");
+	INFO("SSH channel[%08x] created successfully.", pChannel->pChannel);
 	
 finished:
 	if (xRet != FTM_RET_OK)
@@ -560,6 +560,10 @@ FTM_RET	FTM_SSH_CHANNEL_destroy
 {
 	ASSERT(ppChannel != NULL);
 
+	INFO("SSH channel[%08x] free.", (*ppChannel)->pChannel);
+	ssh_channel_free((*ppChannel)->pChannel);
+	INFO("SSH channel[%08x] free.", (*ppChannel)->pChannel);
+
 	if ((*ppChannel)->pBuffer != NULL)
 	{
 		FTM_BUFFER_destroy(&(*ppChannel)->pBuffer);	
@@ -570,7 +574,6 @@ FTM_RET	FTM_SSH_CHANNEL_destroy
 		FTM_LOCK_destroy(&(*ppChannel)->pLock);	
 	}
 
-	ssh_channel_free((*ppChannel)->pChannel);
 
 	FTM_MEM_free(*ppChannel);
 	*ppChannel = NULL;
@@ -1013,7 +1016,7 @@ finished:
 	if (ulReadLen != 0)
 	{
 		pBuffer[ulReadLen] = 0;
-		INFO("SSH READ : %s", pBuffer);	
+//		INFO("SSH READ : %s", pBuffer);	
 	}
 	return	xRet;
 }
@@ -1046,7 +1049,7 @@ FTM_VOID_PTR	FTM_SSH_CHANNEL_threadMain
 		if (nReadLen > 0)
 		{
 			pBuffer[nReadLen] = 0;
-			INFO("SSH RECEIVED[%d] : %s", nReadLen, pBuffer);
+//			INFO("SSH RECEIVED[%d] : %s", nReadLen, pBuffer);
 			FTM_LOCK_set(pChannel->pLock);
 			for(FTM_INT i = 0 ; i < nReadLen ; i++)
 			{

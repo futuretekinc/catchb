@@ -16,7 +16,7 @@
 
 typedef	struct	FTM_CATCHB_STRUCT
 {
-	FTM_SYSTEM_CONFIG	xConfig;
+	FTM_CONFIG			xConfig;
 
 	FTM_CHAR			pName[FTM_NAME_LEN+1];
 
@@ -271,6 +271,18 @@ FTM_RET	FTM_CATCHB_getAlarmNameList
 	FTM_UINT32		ulMaxCount,
 	FTM_NAME_PTR  	pNameList,
 	FTM_UINT32_PTR	pCount
+);
+
+FTM_RET	FTM_CATCHB_getSMTP
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig
+);
+
+FTM_RET	FTM_CATCHB_setSMTP
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig
 );
 
 FTM_RET	FTM_CATCHB_removeExpiredLog

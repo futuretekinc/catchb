@@ -138,6 +138,18 @@ FTM_RET	FTM_CGI_getAlarmInfo
 	qentry_t _PTR_ pReq
 );
 
+FTM_RET	FTM_CGI_getAlarmConfig
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_setAlarmConfig
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
 FTM_RET	FTM_CGI_getSysInfoConfig
 (
 	FTM_CLIENT_PTR pClient, 

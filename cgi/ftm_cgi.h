@@ -88,6 +88,13 @@ FTM_RET	FTM_CGI_getSTRING
 );
 
 
+FTM_RET	FTM_CGI_getServer
+(
+	qentry_t *pReq, 
+	FTM_CHAR_PTR pServer,
+	FTM_BOOL	bAllowEmpty
+);
+
 FTM_RET	FTM_CGI_getID
 (
 	qentry_t *pReq, 
@@ -232,6 +239,14 @@ FTM_RET	FTM_CGI_getPasswd
 );
 
 FTM_RET	FTM_CGI_getNewPasswd
+(
+	qentry_t *pReq, 
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen,
+	FTM_BOOL	bAllowEmpty
+);
+
+FTM_RET	FTM_CGI_getSender
 (
 	qentry_t *pReq, 
 	FTM_CHAR_PTR	pBuffer,
