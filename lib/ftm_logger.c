@@ -150,6 +150,7 @@ FTM_RET	FTM_LOGGER_destroy
 			FTM_MSGQ_destroy(&(*ppLogger)->pMsgQ);
 		}
 
+		INFO("%s stopped", (*ppLogger)->pName);
 		FTM_MEM_free(*ppLogger);
 
 		*ppLogger = NULL;
@@ -235,8 +236,6 @@ FTM_RET	FTM_LOGGER_stop
 
 	if (!pLogger->bStop)
 	{
-		FTM_MSGQ_pushQuit(pLogger->pMsgQ);
-
 		pLogger->bStop = FTM_TRUE;
 		pthread_join(pLogger->xThread, NULL);
 		pLogger->xThread = 0;
@@ -260,7 +259,7 @@ FTM_VOID_PTR	FTM_LOGGER_threadMain
 	FTM_TIME	xDiffTime;
 	FTM_TIMER	xLogExpireTimer;
 
-	INFO("%s started", pLogger->pName);
+	pLogger->bStop = FTM_FALSE;
 
 	FTM_CATCHB_removeExpiredLog(pLogger->pCatchB, pLogger->xConfig.ulRetentionPeriod);
 
@@ -276,8 +275,6 @@ FTM_VOID_PTR	FTM_LOGGER_threadMain
 
 	FTM_TIMER_initTime(&xLogExpireTimer, &xDiffTime);
 
-	pLogger->bStop = FTM_FALSE;
-
 	while(!pLogger->bStop)
 	{
 		FTM_MSG_PTR	pRcvdMsg;
@@ -289,6 +286,7 @@ FTM_VOID_PTR	FTM_LOGGER_threadMain
 			{
 			case	FTM_MSG_TYPE_QUIT:
 				{
+					INFO("Quit Mesage !");
 					pLogger->bStop = FTM_TRUE;
 				}
 				break;

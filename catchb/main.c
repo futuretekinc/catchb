@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
 #include <common_libssh.h>
 #include "ftm_trace.h"
 #include "ftm_config.h"
@@ -20,8 +21,11 @@ FTM_UINT32	ulCatchBShellCmdCount;
 
 static FTM_BOOL	bDebugMode = FTM_FALSE;
 static FTM_CHAR	pConfigFileName[FTM_PATH_LEN + FTM_FILE_NAME_LEN] = "";
+static	FTM_BOOL	bStop = FTM_FALSE;
+static	FTM_CATCHB_PTR	pCatchB = NULL;
 
 FTM_RET	FTM_showUsage();
+void	FTM_signalStop(int signal);
 
 FTM_RET	FTM_setOptions
 (
@@ -38,7 +42,6 @@ FTM_INT	main
 	FTM_RET			xRet;
 	FTM_BOOL		bDuplicated = FTM_FALSE;
 	FTM_CONFIG_PTR	pConfig = NULL;
-	FTM_CATCHB_PTR	pCatchB = NULL;
 	FTM_UINT32		ulPID = 0;
 
 	LOG("");
@@ -118,9 +121,13 @@ FTM_INT	main
 		goto finished;	
 	}
 
+	signal(SIGINT, FTM_signalStop);
+	signal(SIGKILL, FTM_signalStop);
+	signal(SIGTERM, FTM_signalStop);
+
 	if (!bDebugMode)
 	{
-    	while(FTM_TRUE)
+    	while(!bStop)
     	{
 			sleep(1);    
     	}
@@ -196,3 +203,11 @@ FTM_RET	FTM_showUsage()
 	
 }
 
+void	FTM_signalStop(int signal)
+{
+	if (!bDebugMode)
+	{
+		FTM_CATCHB_stop(pCatchB);
+		bStop = FTM_TRUE;
+	}
+}

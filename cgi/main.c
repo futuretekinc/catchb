@@ -23,6 +23,8 @@ FTM_CGI_COMMAND	pCmds[] =
 	{	NULL,		NULL			}
 };
 
+extern	char*	program_invocation_short_name;
+
 FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 {
     // Parse queries.
@@ -48,7 +50,7 @@ FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 	INFO("CGI Start!");
 	while(pCmd->pName != NULL)
 	{
-		if (strcasecmp(pCmd->pName, pArgv[0]) == 0)
+		if (strcasecmp(pCmd->pName, program_invocation_short_name) == 0)
 		{
 			break;
 		}
@@ -58,8 +60,8 @@ FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 
 	if (pCmd->pName == NULL)
 	{
-		INFO("Command not found[%s]!", pArgv[0]);
-		qcgires_error(pReq, "Not supported command!");
+		INFO("Command not found[%s]!", program_invocation_short_name);
+		qcgires_error(pReq, "Not supported command[%s]!", program_invocation_short_name);
 	}
 	else	
 	{

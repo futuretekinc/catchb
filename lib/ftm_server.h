@@ -36,6 +36,7 @@ typedef	struct
 	pthread_t			xThread;
 	FTM_INT				hSocket;
 	FTM_LIST			xSessionList;
+	FTM_LIST			xReleaseSessionList;
 }	FTM_SERVER, _PTR_ FTM_SERVER_PTR;
 
 typedef	struct

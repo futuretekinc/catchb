@@ -417,6 +417,7 @@ FTM_RET	FTM_NOTIFIER_destroy
 
 	*ppNotifier = NULL;
 
+	INFO("Notifier destroyed!");
 	return	FTM_RET_OK;
 }
 

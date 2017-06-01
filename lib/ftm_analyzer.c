@@ -414,7 +414,8 @@ FTM_RET	FTM_ANALYZER_destroy
 	}
 
 	FTM_MEM_free(*ppAnalyzer);
-	
+
+	INFO("Analyzer destroyed!");
 	*ppAnalyzer= NULL;
 
 	return	FTM_RET_OK;

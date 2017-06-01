@@ -365,11 +365,14 @@ FTM_RET	FTM_EVENT_TIMER_MANAGER_stop
 )
 {
 	ASSERT(pETM != NULL);
-
-	pETM->bStop = FTM_TRUE;
 	
-	pthread_join(pETM->xThreadMain, NULL);
-	pETM->xThreadMain = 0;
+	if (pETM->xThreadMain != 0)
+	{
+		pETM->bStop = FTM_TRUE;
+	
+		pthread_join(pETM->xThreadMain, NULL);
+		pETM->xThreadMain = 0;
+	}
 
 	return	FTM_RET_OK;
 }

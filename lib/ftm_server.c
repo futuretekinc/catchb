@@ -104,6 +104,7 @@ FTM_RET	FTM_SERVER_create
 	pServer->xConfig.ulBufferLen 	= FTM_SERVER_DEFAULT_BUFFER_LEN;
 
 	FTM_LIST_init(&pServer->xSessionList);
+	FTM_LIST_init(&pServer->xReleaseSessionList);
 	FTM_LIST_setSeeker(&pServer->xSessionList, FTM_SERVER_SESSION_LIST_seeker);
 
 	*ppServer = pServer;
@@ -120,6 +121,7 @@ FTM_RET	FTM_SERVER_destroy
 
 	FTM_SERVER_stop(*ppServer);
 
+	FTM_LIST_final(&(*ppServer)->xReleaseSessionList);
 	FTM_LIST_final(&(*ppServer)->xSessionList);
 
 	FTM_MEM_free((*ppServer));
@@ -264,6 +266,7 @@ FTM_VOID_PTR FTM_SERVER_process(FTM_VOID_PTR pData)
 	{
 		FTM_INT	hClient;
 		FTM_INT	nSockAddrInLen = sizeof(struct sockaddr_in);	
+		FTM_UINT32	ulCount = 0;
 
 		hClient = accept(pServer->hSocket, (struct sockaddr *)&xClient, (socklen_t *)&nSockAddrInLen);
 		if (hClient > 0)
@@ -293,6 +296,41 @@ FTM_VOID_PTR FTM_SERVER_process(FTM_VOID_PTR pData)
 				}
 			}
 		}
+
+
+		FTM_LIST_count(&pServer->xReleaseSessionList, &ulCount);
+		if (ulCount != 0)
+		{
+			FTM_SESSION_PTR	pSession = NULL;
+
+			while(1)
+			{
+				FTM_LIST_count(&pServer->xReleaseSessionList, &ulCount);
+				
+				if (ulCount == 0)
+				{
+					break;
+				}
+
+				if (FTM_LIST_getFirst(&pServer->xReleaseSessionList, (FTM_VOID_PTR _PTR_)&pSession) != FTM_RET_OK)
+				{
+					break;
+				}
+
+				FTM_LIST_removeAt(&pServer->xReleaseSessionList, 0);
+				
+
+				pSession->bStop = FTM_TRUE;
+				shutdown(pSession->hSocket, SHUT_RD);
+				pthread_join(pSession->xThread, 0);
+
+				FTM_SERVER_destroySession(pServer, &pSession);
+			}
+
+			FTM_LIST_count(&pServer->xSessionList, &ulCount);
+			INFO("Session Count : %d", ulCount);
+		}
+
 		usleep(1000);
 	}
 
@@ -301,6 +339,7 @@ FTM_VOID_PTR FTM_SERVER_process(FTM_VOID_PTR pData)
 	FTM_LIST_iteratorStart(&pServer->xSessionList);
 	while(FTM_LIST_iteratorNext(&pServer->xSessionList, (FTM_VOID_PTR _PTR_)&pSession) == FTM_RET_OK)
 	{
+		INFO("Session rlease(%x)", pSession->hSocket);
 		pSession->bStop = FTM_TRUE;
 		shutdown(pSession->hSocket, SHUT_RD);
 		pthread_join(pSession->xThread, 0);
@@ -372,11 +411,15 @@ FTM_VOID_PTR FTM_SERVER_service(FTM_VOID_PTR pData)
 		}
 	}
 
-	FTM_SERVER_destroySession(pServer, &pSession);
+	FTM_LIST_append(&pServer->xReleaseSessionList, pSession);
+	FTM_UINT32	ulCount = 0;	
+	FTM_LIST_count(&pServer->xReleaseSessionList, &ulCount);
+	INFO("Session Count : %d", ulCount);
+//	FTM_SERVER_destroySession(pServer, &pSession);
 
 	sem_post(&pServer->xSemaphore);
 
-	pthread_exit(0);
+//	pthread_exit(0);
 
 	return	0;
 }

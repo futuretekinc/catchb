@@ -246,6 +246,7 @@ FTM_RET	FTM_CATCHB_create
 		ERROR(xRet, "Failed to create logger!");
 		goto error;
 	}
+	INFO("Logger created[%08x]", pCatchB->pLogger);
 
 	xRet = FTM_EVENT_TIMER_MANAGER_create(&pCatchB->pEventManager);
 	if (xRet != FTM_RET_OK)
@@ -348,9 +349,38 @@ FTM_RET	FTM_CATCHB_destroy
 
 	FTM_CATCHB_stop((*ppCatchB));
 
+	if ((*ppCatchB)->pEventManager != NULL)
+	{
+		xRet = FTM_EVENT_TIMER_MANAGER_destroy(&(*ppCatchB)->pEventManager);
+		if (xRet != FTM_RET_OK)
+		{
+			ERROR(xRet, "Failed to destroy event timer manager!");
+		}
+	}
+
 	if ((*ppCatchB)->pServer != NULL)
 	{
 		FTM_SERVER_destroy(&(*ppCatchB)->pServer);
+	}
+
+	if ((*ppCatchB)->pAnalyzer != NULL)
+	{
+		FTM_ANALYZER_destroy(&(*ppCatchB)->pAnalyzer);	
+	}
+
+	if ((*ppCatchB)->pNotifier != NULL)
+	{
+		FTM_NOTIFIER_destroy(&(*ppCatchB)->pNotifier);	
+	}
+
+	if ((*ppCatchB)->pDetector != NULL)
+	{
+		FTM_DETECTOR_destroy(&(*ppCatchB)->pDetector);	
+	}
+
+	if ((*ppCatchB)->pDB != NULL)
+	{
+		FTM_DB_destroy(&(*ppCatchB)->pDB);
 	}
 
 	if ((*ppCatchB)->pAlarmList != NULL)
@@ -430,39 +460,11 @@ FTM_RET	FTM_CATCHB_destroy
 		}
 	}
 
-	if ((*ppCatchB)->pDB != NULL)
-	{
-		FTM_DB_destroy(&(*ppCatchB)->pDB);
-	}
-
-	if ((*ppCatchB)->pNotifier != NULL)
-	{
-		FTM_NOTIFIER_destroy(&(*ppCatchB)->pNotifier);	
-	}
-
-	if ((*ppCatchB)->pDetector != NULL)
-	{
-		FTM_DETECTOR_destroy(&(*ppCatchB)->pDetector);	
-	}
-
-	if ((*ppCatchB)->pAnalyzer != NULL)
-	{
-		FTM_ANALYZER_destroy(&(*ppCatchB)->pAnalyzer);	
-	}
-
 	if ((*ppCatchB)->pLogger != NULL)
 	{
 		FTM_LOGGER_destroy(&(*ppCatchB)->pLogger);	
 	}
 
-	if ((*ppCatchB)->pEventManager != NULL)
-	{
-		xRet = FTM_EVENT_TIMER_MANAGER_destroy(&(*ppCatchB)->pEventManager);
-		if (xRet != FTM_RET_OK)
-		{
-			ERROR(xRet, "Failed to destroy event timer manager!");
-		}
-	}
 
 	FTM_MEM_free(*ppCatchB);
 
@@ -1073,9 +1075,13 @@ FTM_VOID_PTR	FTM_CATCHB_process
 
 	FTM_SERVER_stop(pCatchB->pServer);
 	FTM_EVENT_TIMER_MANAGER_stop(pCatchB->pEventManager);
-	FTM_NOTIFIER_stop(pCatchB->pNotifier);
-	FTM_DETECTOR_stop(pCatchB->pDetector);
+	INFO("Analyzer stop.");
 	FTM_ANALYZER_stop(pCatchB->pAnalyzer);
+	INFO("Notifier stop.");
+	FTM_NOTIFIER_stop(pCatchB->pNotifier);
+	INFO("Detector stop.");
+	FTM_DETECTOR_stop(pCatchB->pDetector);
+	INFO("Logger stop.");
 	FTM_LOGGER_stop(pCatchB->pLogger);
 	
 	INFO("%s stopped.", pCatchB->pName);

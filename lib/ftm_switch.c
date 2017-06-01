@@ -402,6 +402,7 @@ FTM_RET	FTM_SWITCH_deleteAC
 	FTM_SWITCH_AC_PTR	pAC;
 	FTM_SWITCH_INFO_PTR	pInfo;
 
+	INFO("Delete switch access control entry");
 	xRet = FTM_SWITCH_getInfo(pSwitch, &pInfo);
 	if (xRet != FTM_RET_OK)
 	{
@@ -439,6 +440,8 @@ FTM_RET	FTM_SWITCH_deleteAC
 
 		FTM_MEM_free(pAC);
 	}
+
+	INFO("Delete switch access control exit");
 
 	return	xRet;
 }

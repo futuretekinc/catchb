@@ -27,6 +27,9 @@ case    "$1" in
 
 		[ -e "/etc/config/syslogd" ] && mv /etc/config/syslogd /etc/config/syslogd.old
 		mv /tmp/syslogd.tmp /etc/config/syslogd
+		sync
+
+		/etc/rc.d/S22syslogd start
 	fi
 	;;
 

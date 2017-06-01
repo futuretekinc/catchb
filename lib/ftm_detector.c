@@ -164,6 +164,7 @@ FTM_RET	FTM_DETECTOR_destroy
 
 	*ppDetector = NULL;
 
+	INFO("Detector destroyed!");
 	return	FTM_RET_OK;
 }
 
@@ -201,7 +202,7 @@ FTM_RET	FTM_DETECTOR_stop
 
 	if (pDetector->xThread != 0)
 	{
-		FTM_MSGQ_pushQuit(pDetector->pMsgQ);
+	//	FTM_MSGQ_pushQuit(pDetector->pMsgQ);
 
 		pDetector->bStop = FTM_TRUE;	
 		pthread_join(pDetector->xThread, NULL);
