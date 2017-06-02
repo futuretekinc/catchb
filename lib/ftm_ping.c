@@ -30,6 +30,7 @@ char pkg[] = "netkit-base-0.10";
 #include <common.h>
 #include "ftm_types.h"
 #include "ftm_trace.h"
+#include "ftm_timer.h"
 
 #undef	__MODULE__
 #define	__MODULE__	"ping"
@@ -56,7 +57,7 @@ char pkg[] = "netkit-base-0.10";
 #define	TST(bit)	(A(bit) & B(bit))
 
 /* various options */
-int options;
+int options = 0;
 #define	F_FLOOD		0x001
 #define	F_INTERVAL	0x002
 #define	F_NUMERIC	0x004
@@ -333,6 +334,9 @@ FTM_RET	FTM_PING_check
     int fail_count = 0;
 
 
+	FTM_TIMER	xTimeout;
+
+	FTM_TIMER_initS(&xTimeout, 2);
     for (;;) 
 	{
         struct sockaddr_in from;
@@ -352,6 +356,7 @@ FTM_RET	FTM_PING_check
             fdmask = 1 << sfd;
             if (select(sfd + 1, (fd_set *)&fdmask, (fd_set *)NULL, (fd_set *)NULL, &timeout) < 1)
 			{
+				INFO("Select error!");
                 continue;
 			}
         }
@@ -361,6 +366,7 @@ FTM_RET	FTM_PING_check
 		{
             if (errno == EINTR)
 			{
+				INFO("Receive error!");
                 continue;
 			}
 
@@ -370,9 +376,16 @@ FTM_RET	FTM_PING_check
         }
 
         FTM_PING_printPacket((FTM_UINT8_PTR)packet, cc, &from, result_num);
+#if 0
         if (npackets && nreceived >= npackets)
 		{
             break;
+		}
+#endif
+		if (npackets || FTM_TIMER_isExpired(&xTimeout))
+		{
+			break;
+		
 		}
     }
 

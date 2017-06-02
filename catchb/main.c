@@ -205,6 +205,9 @@ FTM_RET	FTM_showUsage()
 
 void	FTM_signalStop(int signal)
 {
+	LOG("########################################");
+	LOG("## Received kill signal               ##"); 
+	LOG("########################################");
 	if (!bDebugMode)
 	{
 		FTM_CATCHB_stop(pCatchB);
