@@ -7,7 +7,7 @@
 #undef	__MODULE__
 #define	__MODULE__ "cgi"
 
-FTM_RET	FTM_CGI_addCCTV
+FTM_RET	FTM_CGI_CCTV_add
 (
 	FTM_CLIENT_PTR pClient,
 	qentry_t _PTR_ pReq
@@ -17,6 +17,7 @@ FTM_RET	FTM_CGI_addCCTV
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pID[FTM_ID_LEN+1];
 	FTM_CHAR	pIP[FTM_IP_LEN+1];
 	FTM_CHAR	pSwitchID[FTM_ID_LEN+1];
@@ -31,7 +32,8 @@ FTM_RET	FTM_CGI_addCCTV
 	memset(pSwitchID, 0, sizeof(pSwitchID));
 	memset(pComment, 0, sizeof(pComment));
 
-	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	xRet |= FTM_CGI_getID(pReq, pID, FTM_FALSE);
 	xRet |= FTM_CGI_getIPString(pReq, pIP, FTM_IP_LEN, FTM_TRUE);
 	xRet |= FTM_CGI_getSwitchID(pReq, pSwitchID, FTM_TRUE);
 	xRet |= FTM_CGI_getComment(pReq, pComment, FTM_TRUE);
@@ -41,7 +43,7 @@ FTM_RET	FTM_CGI_addCCTV
 		goto finish;
 	}
 
-	xRet = FTM_CLIENT_addCCTV(pClient, pID, pIP, pSwitchID, pComment);
+	xRet = FTM_CLIENT_CCTV_add(pClient, pSSID, pID, pIP, pSwitchID, pComment);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to add CCTV.!");
@@ -49,7 +51,7 @@ FTM_RET	FTM_CGI_addCCTV
 		goto finish;
 	}
 
-	xRet = FTM_CLIENT_getCCTVProperties(pClient, pID, &xConfig);
+	xRet = FTM_CLIENT_CCTV_getProperties(pClient, pSSID, pID, &xConfig);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get CCTV properties.!");
@@ -73,7 +75,7 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_delCCTV
+FTM_RET	FTM_CGI_CCTV_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -83,6 +85,7 @@ FTM_RET	FTM_CGI_delCCTV
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pID[FTM_ID_LEN+1];
 	cJSON _PTR_	pRoot;
 
@@ -90,13 +93,14 @@ FTM_RET	FTM_CGI_delCCTV
 
 	memset(pID, 0, sizeof(pID));
 
-	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	xRet |= FTM_CGI_getID(pReq, pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finish;
 	}
 
-	xRet = FTM_CLIENT_delCCTV(pClient, pID);
+	xRet = FTM_CLIENT_CCTV_del(pClient, pSSID, pID);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finish;
@@ -112,7 +116,7 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_getCCTV
+FTM_RET	FTM_CGI_CCTV_get
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -122,6 +126,7 @@ FTM_RET	FTM_CGI_getCCTV
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pID[FTM_ID_LEN+1];
 	FTM_CCTV_CONFIG	xConfig;
 
@@ -131,14 +136,15 @@ FTM_RET	FTM_CGI_getCCTV
 
 	memset(pID, 0, sizeof(pID));
 
-	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	xRet |= FTM_CGI_getID(pReq, pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "CCTV ID not found!");
 		goto finish;
 	}
 
-	xRet = FTM_CLIENT_getCCTVProperties(pClient, pID, &xConfig);
+	xRet = FTM_CLIENT_CCTV_getProperties(pClient, pSSID, pID, &xConfig);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "CCTV[%s] not found!", pID);
@@ -161,7 +167,7 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_setCCTV
+FTM_RET	FTM_CGI_CCTV_set
 (
 	FTM_CLIENT_PTR	pClient,
 	qentry_t _PTR_ pReq
@@ -171,6 +177,7 @@ FTM_RET	FTM_CGI_setCCTV
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_UINT32	ulFieldFlags = 0;
 	FTM_CCTV_CONFIG	xConfig;
 	cJSON _PTR_	pRoot;
@@ -179,7 +186,8 @@ FTM_RET	FTM_CGI_setCCTV
 
 	memset(&xConfig, 0, sizeof(xConfig));
 
-	xRet = FTM_CGI_getID(pReq, xConfig.pID, FTM_FALSE);
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	xRet |= FTM_CGI_getID(pReq, xConfig.pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finish;
@@ -204,13 +212,13 @@ FTM_RET	FTM_CGI_setCCTV
 	}
 
 
-	xRet = FTM_CLIENT_setCCTVProperties(pClient, xConfig.pID, &xConfig, ulFieldFlags);
+	xRet = FTM_CLIENT_CCTV_setProperties(pClient, pSSID, xConfig.pID, &xConfig, ulFieldFlags);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finish;
 	}
 
-	xRet = FTM_CLIENT_getCCTVProperties(pClient, xConfig.pID, &xConfig);
+	xRet = FTM_CLIENT_CCTV_getProperties(pClient, pSSID, xConfig.pID, &xConfig);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finish;
@@ -231,7 +239,7 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_getCCTVIDList
+FTM_RET	FTM_CGI_CCTV_getIDList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -241,6 +249,7 @@ FTM_RET	FTM_CGI_getCCTVIDList
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_UINT32	i = 0;
 	FTM_UINT32	ulIndex = 0;
 	FTM_UINT32	ulCount = 20;
@@ -255,14 +264,15 @@ FTM_RET	FTM_CGI_getCCTVIDList
 		goto finish;			
 	}
 
-	xRet = FTM_CGI_getIndex(pReq, &ulIndex, FTM_TRUE);
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	xRet |= FTM_CGI_getIndex(pReq, &ulIndex, FTM_TRUE);
 	xRet |= FTM_CGI_getCount(pReq, &ulCount, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finish;
 	}
 
-	xRet = FTM_CLIENT_getCCTVIDList(pClient, ulCount, pIDList, &ulCount);
+	xRet = FTM_CLIENT_CCTV_getIDList(pClient, pSSID, ulCount, pIDList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finish;
@@ -289,7 +299,7 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_setCCTVPolicy
+FTM_RET	FTM_CGI_CCTV_setPolicy
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -300,6 +310,7 @@ FTM_RET	FTM_CGI_setCCTVPolicy
 
 	FTM_RET		xRet = FTM_RET_OK;
 	FTM_SWITCH_AC_POLICY	xPolicy;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pID[FTM_ID_LEN+1];
 	cJSON _PTR_	pRoot;
 
@@ -307,7 +318,8 @@ FTM_RET	FTM_CGI_setCCTVPolicy
 
 	memset(pID, 0, sizeof(pID));
 
-	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
+	xRet = FTM_CGI_getSSID(pReq, pID, FTM_FALSE);
+	xRet |= FTM_CGI_getID(pReq, pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finish;
@@ -319,7 +331,7 @@ FTM_RET	FTM_CGI_setCCTVPolicy
 		goto finish;
 	}
 
-	xRet = FTM_CLIENT_setCCTVPolicy(pClient, pID, xPolicy);
+	xRet = FTM_CLIENT_CCTV_setPolicy(pClient, pSSID, pID, xPolicy);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finish;
@@ -335,7 +347,7 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_resetCCTV
+FTM_RET	FTM_CGI_CCTV_reset
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -345,14 +357,22 @@ FTM_RET	FTM_CGI_resetCCTV
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pID[FTM_ID_LEN+1];
 	FTM_CHAR	pHash[FTM_HASH_LEN+1];
 	cJSON _PTR_	pRoot;
 
 	pRoot = cJSON_CreateObject();
 
-	memset(pID, 0, sizeof(pID));
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to reset cctv because ssid invalid.");
+		goto finish;
+	}
 
+	memset(pID, 0, sizeof(pID));
 	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
@@ -367,7 +387,7 @@ FTM_RET	FTM_CGI_resetCCTV
 		goto finish;
 	}
 
-	xRet = FTM_CLIENT_resetCCTV(pClient, pID, pHash);
+	xRet = FTM_CLIENT_CCTV_reset(pClient, pSSID, pID, pHash);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to reset cctv[%s]", pID);

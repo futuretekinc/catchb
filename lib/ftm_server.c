@@ -17,6 +17,7 @@
 #include "ftm_mem.h"
 #include "ftm_cctv.h"
 #include "ftm_catchb.h"
+#include "ftm_ssid.h"
 
 #undef	__MODULE__
 #define	__MODULE__	"server"
@@ -36,46 +37,50 @@ static FTM_BOOL		FTM_SERVER_SESSION_LIST_seeker(const FTM_VOID_PTR pElement, con
 
 static FTM_SERVER_CMD_SET	pCmdSet[] =
 {
-	MK_CMD_SET(FTM_CMD_ADD_CCTV,				FTM_SERVER_addCCTV),
-	MK_CMD_SET(FTM_CMD_DEL_CCTV,				FTM_SERVER_delCCTV),
-	MK_CMD_SET(FTM_CMD_GET_CCTV_COUNT,			FTM_SERVER_getCCTVCount),
-	MK_CMD_SET(FTM_CMD_GET_CCTV_PROPERTIES,		FTM_SERVER_getCCTVProperties),
-	MK_CMD_SET(FTM_CMD_SET_CCTV_PROPERTIES,		FTM_SERVER_setCCTVProperties),
-	MK_CMD_SET(FTM_CMD_GET_CCTV_ID_LIST,		FTM_SERVER_getCCTVIDList),
-	MK_CMD_SET(FTM_CMD_GET_CCTV_LIST,			FTM_SERVER_getCCTVList),
-	MK_CMD_SET(FTM_CMD_SET_CCTV_POLICY,			FTM_SERVER_setCCTVPolicy),
-	MK_CMD_SET(FTM_CMD_RESET_CCTV,				FTM_SERVER_resetCCTV),
+	MK_CMD_SET(FTM_CMD_CCTV_ADD,				FTM_SERVER_CCTV_add),
+	MK_CMD_SET(FTM_CMD_CCTV_DEL,				FTM_SERVER_CCTV_del),
+	MK_CMD_SET(FTM_CMD_CCTV_GET_COUNT,			FTM_SERVER_CCTV_getCount),
+	MK_CMD_SET(FTM_CMD_CCTV_GET_PROPERTIES,		FTM_SERVER_CCTV_getProperties),
+	MK_CMD_SET(FTM_CMD_CCTV_SET_PROPERTIES,		FTM_SERVER_CCTV_setProperties),
+	MK_CMD_SET(FTM_CMD_CCTV_GET_ID_LIST,		FTM_SERVER_CCTV_getIDList),
+	MK_CMD_SET(FTM_CMD_CCTV_GET_LIST,			FTM_SERVER_CCTV_getList),
+	MK_CMD_SET(FTM_CMD_CCTV_SET_POLICY,			FTM_SERVER_CCTV_setPolicy),
+	MK_CMD_SET(FTM_CMD_CCTV_RESET,				FTM_SERVER_CCTV_reset),
 
-	MK_CMD_SET(FTM_CMD_ADD_SWITCH,				FTM_SERVER_addSwitch),
-	MK_CMD_SET(FTM_CMD_DEL_SWITCH,				FTM_SERVER_delSwitch),
-	MK_CMD_SET(FTM_CMD_GET_SWITCH_COUNT,		FTM_SERVER_getSwitchCount),
-	MK_CMD_SET(FTM_CMD_GET_SWITCH_PROPERTIES,	FTM_SERVER_getSwitchProperties),
-	MK_CMD_SET(FTM_CMD_SET_SWITCH_PROPERTIES,	FTM_SERVER_setSwitchProperties),
-	MK_CMD_SET(FTM_CMD_GET_SWITCH_ID_LIST,		FTM_SERVER_getSwitchIDList),
-	MK_CMD_SET(FTM_CMD_GET_SWITCH_LIST,			FTM_SERVER_getSwitchList),
+	MK_CMD_SET(FTM_CMD_SWITCH_ADD,				FTM_SERVER_SWITCH_add),
+	MK_CMD_SET(FTM_CMD_SWITCH_DEL,				FTM_SERVER_SWITCH_del),
+	MK_CMD_SET(FTM_CMD_SWITCH_GET_COUNT,		FTM_SERVER_SWITCH_getCount),
+	MK_CMD_SET(FTM_CMD_SWITCH_GET_PROPERTIES,	FTM_SERVER_SWITCH_getProperties),
+	MK_CMD_SET(FTM_CMD_SWITCH_SET_PROPERTIES,	FTM_SERVER_SWITCH_setProperties),
+	MK_CMD_SET(FTM_CMD_SWITCH_GET_ID_LIST,		FTM_SERVER_SWITCH_getIDList),
+	MK_CMD_SET(FTM_CMD_SWITCH_GET_LIST,			FTM_SERVER_SWITCH_getList),
 
-	MK_CMD_SET(FTM_CMD_GET_LOG_COUNT,			FTM_SERVER_getLogCount),
-	MK_CMD_SET(FTM_CMD_GET_LOG_INFO,			FTM_SERVER_getLogInfo),
-	MK_CMD_SET(FTM_CMD_GET_LOG_LIST,			FTM_SERVER_getLogList),
-	MK_CMD_SET(FTM_CMD_DEL_LOG,					FTM_SERVER_delLog),
+	MK_CMD_SET(FTM_CMD_LOG_GET_COUNT,			FTM_SERVER_LOG_getCount),
+	MK_CMD_SET(FTM_CMD_LOG_GET_INFO,			FTM_SERVER_LOG_getInfo),
+	MK_CMD_SET(FTM_CMD_LOG_GET_LIST,			FTM_SERVER_LOG_getList),
+	MK_CMD_SET(FTM_CMD_LOG_DEL,					FTM_SERVER_LOG_del),
 	
-	MK_CMD_SET(FTM_CMD_ADD_ALARM,				FTM_SERVER_addAlarm),
-	MK_CMD_SET(FTM_CMD_DEL_ALARM,				FTM_SERVER_delAlarm),
-	MK_CMD_SET(FTM_CMD_GET_ALARM_COUNT,			FTM_SERVER_getAlarmCount),
-	MK_CMD_SET(FTM_CMD_GET_ALARM,				FTM_SERVER_getAlarm),
-	MK_CMD_SET(FTM_CMD_SET_ALARM,				FTM_SERVER_setAlarm),
-	MK_CMD_SET(FTM_CMD_GET_ALARM_NAME_LIST,		FTM_SERVER_getAlarmNameList),
+	MK_CMD_SET(FTM_CMD_ALARM_ADD,				FTM_SERVER_ALARM_add),
+	MK_CMD_SET(FTM_CMD_ALARM_DEL,				FTM_SERVER_ALARM_del),
+	MK_CMD_SET(FTM_CMD_ALARM_GET_COUNT,			FTM_SERVER_ALARM_getCount),
+	MK_CMD_SET(FTM_CMD_ALARM_GET,				FTM_SERVER_ALARM_get),
+	MK_CMD_SET(FTM_CMD_ALARM_SET,				FTM_SERVER_ALARM_set),
+	MK_CMD_SET(FTM_CMD_ALARM_GET_NAME_LIST,		FTM_SERVER_ALARM_getNameList),
 
-	MK_CMD_SET(FTM_CMD_SET_SMTP,				FTM_SERVER_setSMTP),
-	MK_CMD_SET(FTM_CMD_GET_SMTP,				FTM_SERVER_getSMTP),
+	MK_CMD_SET(FTM_CMD_SMTP_SET,				FTM_SERVER_SMTP_set),
+	MK_CMD_SET(FTM_CMD_SMTP_GET,				FTM_SERVER_SMTP_get),
 
-	MK_CMD_SET(FTM_CMD_GET_STAT_COUNT,			FTM_SERVER_getStatCount),
-	MK_CMD_SET(FTM_CMD_SET_STAT_INFO,			FTM_SERVER_setStatInfo),
-	MK_CMD_SET(FTM_CMD_GET_STAT_INFO,			FTM_SERVER_getStatInfo),
-	MK_CMD_SET(FTM_CMD_GET_STAT_LIST,			FTM_SERVER_getStatList),
-	MK_CMD_SET(FTM_CMD_DEL_STAT,				FTM_SERVER_delStat),
-	MK_CMD_SET(FTM_CMD_DEL_STAT2,				FTM_SERVER_delStat2),
+	MK_CMD_SET(FTM_CMD_STAT_GET_COUNT,			FTM_SERVER_STAT_getCount),
+	MK_CMD_SET(FTM_CMD_STAT_SET_INFO,			FTM_SERVER_STAT_setInfo),
+	MK_CMD_SET(FTM_CMD_STAT_GET_INFO,			FTM_SERVER_STAT_getInfo),
+	MK_CMD_SET(FTM_CMD_STAT_GET_LIST,			FTM_SERVER_STAT_getList),
+	MK_CMD_SET(FTM_CMD_STAT_DEL,				FTM_SERVER_STAT_del),
+	MK_CMD_SET(FTM_CMD_STAT_DEL2,				FTM_SERVER_STAT_del2),
 	
+	MK_CMD_SET(FTM_CMD_SSID_CREATE,				FTM_SERVER_SSID_create),
+	MK_CMD_SET(FTM_CMD_SSID_DEL,				FTM_SERVER_SSID_del),
+	MK_CMD_SET(FTM_CMD_SSID_VERIFY,				FTM_SERVER_SSID_verify),
+
 	MK_CMD_SET(FTM_CMD_UNKNOWN, 				NULL)
 };
 
@@ -433,21 +438,23 @@ FTM_RET	FTM_SERVER_serviceCall
 {
 	FTM_RET				xRet;
 	FTM_SERVER_CMD_SET_PTR	pSet = pCmdSet;
-	
-	while(pSet->xCmd != FTM_CMD_UNKNOWN)
+
+	if ((pReq->xCmd == FTM_CMD_SSID_CREATE) || (FTM_SSID_isValid(pReq->pSSID) == FTM_RET_OK))
 	{
-		if (pSet->xCmd == pReq->xCmd)
+		while(pSet->xCmd != FTM_CMD_UNKNOWN)
 		{
-			INFO("Servce called : %s", pSet->pCmdString);
-			xRet = pSet->fService(pServer, pReq, pResp);
-			INFO("Servce returned : %d", xRet);
+			if (pSet->xCmd == pReq->xCmd)
+			{
+				INFO("Servce called : %s", pSet->pCmdString);
+				xRet = pSet->fService(pServer, pReq, pResp);
+				INFO("Servce returned : %d", xRet);
 
-			return	xRet;
+				return	xRet;
+			}
+
+			pSet++;
 		}
-
-		pSet++;
 	}
-
 	ERROR(FTM_RET_FUNCTION_NOT_SUPPORTED, "Function[%d] not supported.\n", pReq->xCmd);
 	return	FTM_RET_FUNCTION_NOT_SUPPORTED;
 }
@@ -614,11 +621,11 @@ FTM_RET	FTM_SERVER_getSessionInfo(FTM_SERVER_PTR pServer, FTM_UINT32 ulIndex, FT
 	return	xRet;
 }
 
-FTM_RET	FTM_SERVER_addCCTV
+FTM_RET	FTM_SERVER_CCTV_add
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_ADD_CCTV_PARAMS_PTR		pReq,
-	FTM_RESP_ADD_CCTV_PARAMS_PTR	pResp
+	FTM_REQ_CCTV_ADD_PARAMS_PTR		pReq,
+	FTM_RESP_CCTV_ADD_PARAMS_PTR	pResp
 )
 {
 	FTM_RET	xRet;
@@ -639,16 +646,16 @@ FTM_RET	FTM_SERVER_addCCTV
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet	= xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_ADD_CCTV_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_CCTV_ADD_PARAMS);
 
 	return	FTM_RET_OK;	
 }
 
-FTM_RET	FTM_SERVER_delCCTV
+FTM_RET	FTM_SERVER_CCTV_del
 (
 	FTM_SERVER_PTR	pServer,
-	FTM_REQ_DEL_CCTV_PARAMS_PTR	pReq,
-	FTM_RESP_DEL_CCTV_PARAMS_PTR	pResp
+	FTM_REQ_CCTV_DEL_PARAMS_PTR	pReq,
+	FTM_RESP_CCTV_DEL_PARAMS_PTR	pResp
 )
 {
 	FTM_RET	xRet;
@@ -661,16 +668,16 @@ FTM_RET	FTM_SERVER_delCCTV
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet	= xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_DEL_CCTV_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_CCTV_DEL_PARAMS);
 
 	return	FTM_RET_OK;	
 }
 
-FTM_RET	FTM_SERVER_getCCTVProperties
+FTM_RET	FTM_SERVER_CCTV_getProperties
 (
 	FTM_SERVER_PTR	pServer,
-	FTM_REQ_GET_CCTV_PROPERTIES_PARAMS_PTR	pReq,
-	FTM_RESP_GET_CCTV_PROPERTIES_PARAMS_PTR	pResp
+	FTM_REQ_CCTV_GET_PROPERTIES_PARAMS_PTR	pReq,
+	FTM_RESP_CCTV_GET_PROPERTIES_PARAMS_PTR	pResp
 )
 {
 	FTM_RET	xRet;
@@ -684,17 +691,17 @@ FTM_RET	FTM_SERVER_getCCTVProperties
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet	= xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_GET_CCTV_PROPERTIES_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_CCTV_GET_PROPERTIES_PARAMS);
 	memcpy(&pResp->xConfig, &xConfig, sizeof(FTM_CCTV_CONFIG));
 
 	return	FTM_RET_OK;	
 }
 
-FTM_RET	FTM_SERVER_setCCTVProperties
+FTM_RET	FTM_SERVER_CCTV_setProperties
 (
 	FTM_SERVER_PTR	pServer,
-	FTM_REQ_SET_CCTV_PROPERTIES_PARAMS_PTR	pReq,
-	FTM_RESP_SET_CCTV_PROPERTIES_PARAMS_PTR	pResp
+	FTM_REQ_CCTV_SET_PROPERTIES_PARAMS_PTR	pReq,
+	FTM_RESP_CCTV_SET_PROPERTIES_PARAMS_PTR	pResp
 )
 {
 	FTM_RET	xRet;
@@ -708,30 +715,30 @@ FTM_RET	FTM_SERVER_setCCTVProperties
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet	= xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_SET_CCTV_PROPERTIES_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_CCTV_SET_PROPERTIES_PARAMS);
 
 	return	FTM_RET_OK;	
 }
 
-FTM_RET	FTM_SERVER_getCCTVCount
+FTM_RET	FTM_SERVER_CCTV_getCount
 (
 	FTM_SERVER_PTR	pServer,
-	FTM_REQ_GET_CCTV_COUNT_PARAMS_PTR	pReq,
-	FTM_RESP_GET_CCTV_COUNT_PARAMS_PTR	pResp
+	FTM_REQ_CCTV_GET_COUNT_PARAMS_PTR	pReq,
+	FTM_RESP_CCTV_GET_COUNT_PARAMS_PTR	pResp
 )
 {
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_GET_CCTV_COUNT_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_CCTV_GET_COUNT_PARAMS);
 	pResp->xCommon.xRet	= FTM_CATCHB_getCCTVCount(pServer->pCatchB, &pResp->ulCount);
 
 	return	FTM_RET_OK;	
 }
 
-FTM_RET	FTM_SERVER_getCCTVIDList
+FTM_RET	FTM_SERVER_CCTV_getIDList
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_CCTV_ID_LIST_PARAMS_PTR		pReq,
-	FTM_RESP_GET_CCTV_ID_LIST_PARAMS_PTR	pResp
+	FTM_REQ_CCTV_GET_ID_LIST_PARAMS_PTR		pReq,
+	FTM_RESP_CCTV_GET_ID_LIST_PARAMS_PTR	pResp
 )
 {
 	FTM_CATCHB_PTR	pCatchB;
@@ -740,27 +747,27 @@ FTM_RET	FTM_SERVER_getCCTVIDList
 	pCatchB = pServer->pCatchB;
 
 	INFO("CCTV get id list !");
-	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_GET_CCTV_ID_LIST_PARAMS)) / sizeof(FTM_ID);
+	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_CCTV_GET_ID_LIST_PARAMS)) / sizeof(FTM_ID);
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = FTM_CATCHB_getCCTVIDList(pCatchB, pResp->pIDList, ulMaxCount ,&pResp->ulCount);
 	if (pResp->xCommon.xRet == FTM_RET_OK)
 	{
-		pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_CCTV_ID_LIST_PARAMS) + sizeof(FTM_ID) * pResp->ulCount;	
+		pResp->xCommon.ulLen = sizeof(FTM_RESP_CCTV_GET_ID_LIST_PARAMS) + sizeof(FTM_ID) * pResp->ulCount;	
 	}
 	else
 	{
-		pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_CCTV_ID_LIST_PARAMS);
+		pResp->xCommon.ulLen = sizeof(FTM_RESP_CCTV_GET_ID_LIST_PARAMS);
 	}
 
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_getCCTVList
+FTM_RET	FTM_SERVER_CCTV_getList
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_CCTV_LIST_PARAMS_PTR	pReq,
-	FTM_RESP_GET_CCTV_LIST_PARAMS_PTR	pResp
+	FTM_REQ_CCTV_GET_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_CCTV_GET_LIST_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -771,7 +778,7 @@ FTM_RET	FTM_SERVER_getCCTVList
 
 	pCatchB = pServer->pCatchB;
 
-	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_GET_CCTV_LIST_PARAMS)) / sizeof(FTM_CCTV_CONFIG);
+	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_CCTV_GET_LIST_PARAMS)) / sizeof(FTM_CCTV_CONFIG);
 	if (ulMaxCount > pReq->ulCount)
 	{
 		ulMaxCount = pReq->ulCount;
@@ -801,17 +808,17 @@ FTM_RET	FTM_SERVER_getCCTVList
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_CCTV_LIST_PARAMS) + sizeof(FTM_CCTV_CONFIG) * ulCount;	
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_CCTV_GET_LIST_PARAMS) + sizeof(FTM_CCTV_CONFIG) * ulCount;	
 	pResp->ulCount = ulCount;
 
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_setCCTVPolicy
+FTM_RET	FTM_SERVER_CCTV_setPolicy
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_SET_CCTV_POLICY_PARAMS_PTR	pReq,
-	FTM_RESP_SET_CCTV_POLICY_PARAMS_PTR	pResp
+	FTM_REQ_CCTV_SET_POLICY_PARAMS_PTR	pReq,
+	FTM_RESP_CCTV_SET_POLICY_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -835,16 +842,16 @@ FTM_RET	FTM_SERVER_setCCTVPolicy
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen = sizeof(FTM_RESP_SET_CCTV_POLICY_PARAMS);
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_CCTV_SET_POLICY_PARAMS);
 
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_resetCCTV
+FTM_RET	FTM_SERVER_CCTV_reset
 (
 	FTM_SERVER_PTR	pServer,
-	FTM_REQ_RESET_CCTV_PARAMS_PTR	pReq,
-	FTM_RESP_RESET_CCTV_PARAMS_PTR	pResp
+	FTM_REQ_CCTV_RESET_PARAMS_PTR	pReq,
+	FTM_RESP_CCTV_RESET_PARAMS_PTR	pResp
 )
 {
 	FTM_RET	xRet;
@@ -903,16 +910,16 @@ FTM_RET	FTM_SERVER_resetCCTV
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet	= xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_RESET_CCTV_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_CCTV_RESET_PARAMS);
 
 	return	FTM_RET_OK;	
 }
 
-FTM_RET	FTM_SERVER_addSwitch
+FTM_RET	FTM_SERVER_SWITCH_add
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_ADD_SWITCH_PARAMS_PTR	pReq,
-	FTM_RESP_ADD_SWITCH_PARAMS_PTR	pResp
+	FTM_REQ_SWITCH_ADD_PARAMS_PTR	pReq,
+	FTM_RESP_SWITCH_ADD_PARAMS_PTR	pResp
 )
 {
 	FTM_RET	xRet;
@@ -925,16 +932,16 @@ FTM_RET	FTM_SERVER_addSwitch
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet	= xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_ADD_SWITCH_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_SWITCH_ADD_PARAMS);
 
 	return	FTM_RET_OK;	
 }
 
-FTM_RET	FTM_SERVER_delSwitch
+FTM_RET	FTM_SERVER_SWITCH_del
 (
 	FTM_SERVER_PTR	pServer,
-	FTM_REQ_DEL_SWITCH_PARAMS_PTR	pReq,
-	FTM_RESP_DEL_SWITCH_PARAMS_PTR	pResp
+	FTM_REQ_SWITCH_DEL_PARAMS_PTR	pReq,
+	FTM_RESP_SWITCH_DEL_PARAMS_PTR	pResp
 )
 {
 	FTM_RET	xRet;
@@ -947,30 +954,30 @@ FTM_RET	FTM_SERVER_delSwitch
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet	= xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_DEL_SWITCH_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_SWITCH_DEL_PARAMS);
 
 	return	FTM_RET_OK;	
 }
 
-FTM_RET	FTM_SERVER_getSwitchCount
+FTM_RET	FTM_SERVER_SWITCH_getCount
 (
 	FTM_SERVER_PTR	pServer,
-	FTM_REQ_GET_SWITCH_COUNT_PARAMS_PTR	pReq,
-	FTM_RESP_GET_SWITCH_COUNT_PARAMS_PTR	pResp
+	FTM_REQ_SWITCH_GET_COUNT_PARAMS_PTR	pReq,
+	FTM_RESP_SWITCH_GET_COUNT_PARAMS_PTR	pResp
 )
 {
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_GET_SWITCH_COUNT_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_SWITCH_GET_COUNT_PARAMS);
 	pResp->xCommon.xRet	= FTM_CATCHB_getSwitchCount(pServer->pCatchB, &pResp->ulCount);
 
 	return	FTM_RET_OK;	
 }
 
-FTM_RET	FTM_SERVER_getSwitchProperties
+FTM_RET	FTM_SERVER_SWITCH_getProperties
 (
 	FTM_SERVER_PTR	pServer,
-	FTM_REQ_GET_SWITCH_PROPERTIES_PARAMS_PTR	pReq,
-	FTM_RESP_GET_SWITCH_PROPERTIES_PARAMS_PTR	pResp
+	FTM_REQ_SWITCH_GET_PROPERTIES_PARAMS_PTR	pReq,
+	FTM_RESP_SWITCH_GET_PROPERTIES_PARAMS_PTR	pResp
 )
 {
 	FTM_RET	xRet;
@@ -984,17 +991,17 @@ FTM_RET	FTM_SERVER_getSwitchProperties
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet	= xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_GET_SWITCH_PROPERTIES_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_SWITCH_GET_PROPERTIES_PARAMS);
 	memcpy(&pResp->xConfig, &xConfig, sizeof(FTM_SWITCH_CONFIG));
 
 	return	FTM_RET_OK;	
 }
 
-FTM_RET	FTM_SERVER_setSwitchProperties
+FTM_RET	FTM_SERVER_SWITCH_setProperties
 (
 	FTM_SERVER_PTR	pServer,
-	FTM_REQ_SET_SWITCH_PROPERTIES_PARAMS_PTR	pReq,
-	FTM_RESP_SET_SWITCH_PROPERTIES_PARAMS_PTR	pResp
+	FTM_REQ_SWITCH_SET_PROPERTIES_PARAMS_PTR	pReq,
+	FTM_RESP_SWITCH_SET_PROPERTIES_PARAMS_PTR	pResp
 )
 {
 	FTM_RET	xRet;
@@ -1008,16 +1015,16 @@ FTM_RET	FTM_SERVER_setSwitchProperties
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet	= xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_SET_SWITCH_PROPERTIES_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_SWITCH_SET_PROPERTIES_PARAMS);
 
 	return	FTM_RET_OK;	
 }
 
-FTM_RET	FTM_SERVER_getSwitchIDList
+FTM_RET	FTM_SERVER_SWITCH_getIDList
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_SWITCH_ID_LIST_PARAMS_PTR	pReq,
-	FTM_RESP_GET_SWITCH_ID_LIST_PARAMS_PTR	pResp
+	FTM_REQ_SWITCH_GET_ID_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_SWITCH_GET_ID_LIST_PARAMS_PTR	pResp
 )
 {
 	FTM_CATCHB_PTR	pCatchB;
@@ -1025,7 +1032,7 @@ FTM_RET	FTM_SERVER_getSwitchIDList
 
 	pCatchB = pServer->pCatchB;
 
-	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_GET_SWITCH_ID_LIST_PARAMS)) / sizeof(FTM_ID);
+	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_SWITCH_GET_ID_LIST_PARAMS)) / sizeof(FTM_ID);
 	if (ulMaxCount > pReq->ulCount)
 	{
 		ulMaxCount = pReq->ulCount;
@@ -1037,22 +1044,22 @@ FTM_RET	FTM_SERVER_getSwitchIDList
 	pResp->xCommon.xRet = FTM_CATCHB_getSwitchIDList(pCatchB, ulMaxCount, pResp->pIDList,&pResp->ulCount);
 	if (pResp->xCommon.xRet == FTM_RET_OK)
 	{
-		pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_SWITCH_ID_LIST_PARAMS) + sizeof(FTM_ID) * pResp->ulCount;	
+		pResp->xCommon.ulLen = sizeof(FTM_RESP_SWITCH_GET_ID_LIST_PARAMS) + sizeof(FTM_ID) * pResp->ulCount;	
 	}
 	else
 	{
 		ERROR(xRet, "Failed to get switch ID list");
-		pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_SWITCH_ID_LIST_PARAMS);
+		pResp->xCommon.ulLen = sizeof(FTM_RESP_SWITCH_GET_ID_LIST_PARAMS);
 	}
 
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_getSwitchList
+FTM_RET	FTM_SERVER_SWITCH_getList
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_SWITCH_LIST_PARAMS_PTR	pReq,
-	FTM_RESP_GET_SWITCH_LIST_PARAMS_PTR	pResp
+	FTM_REQ_SWITCH_GET_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_SWITCH_GET_LIST_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1063,7 +1070,7 @@ FTM_RET	FTM_SERVER_getSwitchList
 
 	pCatchB = pServer->pCatchB;
 
-	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_GET_SWITCH_LIST_PARAMS)) / sizeof(FTM_SWITCH_CONFIG);
+	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_SWITCH_GET_LIST_PARAMS)) / sizeof(FTM_SWITCH_CONFIG);
 	if (ulMaxCount > pReq->ulCount)
 	{
 		ulMaxCount = pReq->ulCount;
@@ -1093,17 +1100,17 @@ FTM_RET	FTM_SERVER_getSwitchList
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_SWITCH_LIST_PARAMS) + sizeof(FTM_SWITCH_CONFIG) * ulCount;	
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_SWITCH_GET_LIST_PARAMS) + sizeof(FTM_SWITCH_CONFIG) * ulCount;	
 	pResp->ulCount = ulCount;
 
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_getLogList
+FTM_RET	FTM_SERVER_LOG_getList
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_LOG_LIST_PARAMS_PTR	pReq,
-	FTM_RESP_GET_LOG_LIST_PARAMS_PTR	pResp
+	FTM_REQ_LOG_GET_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_LOG_GET_LIST_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1113,7 +1120,7 @@ FTM_RET	FTM_SERVER_getLogList
 
 	pCatchB = pServer->pCatchB;
 
-	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_GET_LOG_LIST_PARAMS)) / sizeof(FTM_LOG);
+	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_LOG_GET_LIST_PARAMS)) / sizeof(FTM_LOG);
 	if (ulMaxCount > pReq->ulCount)
 	{
 		ulMaxCount = pReq->ulCount;
@@ -1129,7 +1136,7 @@ FTM_RET	FTM_SERVER_getLogList
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_LOG_LIST_PARAMS) + sizeof(FTM_LOG) * ulCount;	
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_LOG_GET_LIST_PARAMS) + sizeof(FTM_LOG) * ulCount;	
 
 	INFO("GetLogList Response : %d", pResp->xCommon.ulLen);
 	pResp->ulCount = ulCount;
@@ -1137,11 +1144,11 @@ FTM_RET	FTM_SERVER_getLogList
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_delLog
+FTM_RET	FTM_SERVER_LOG_del
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_DEL_LOG_PARAMS_PTR	pReq,
-	FTM_RESP_DEL_LOG_PARAMS_PTR	pResp
+	FTM_REQ_LOG_DEL_PARAMS_PTR	pReq,
+	FTM_RESP_LOG_DEL_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1169,7 +1176,7 @@ FTM_RET	FTM_SERVER_delLog
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_DEL_LOG_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_LOG_DEL_PARAMS);
 	pResp->ulCount 		= ulCount;
 	pResp->ulFirstTime	= ulFirstTime;
 	pResp->ulLastTime	= ulLastTime;
@@ -1177,11 +1184,11 @@ FTM_RET	FTM_SERVER_delLog
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_getLogCount
+FTM_RET	FTM_SERVER_LOG_getCount
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_LOG_COUNT_PARAMS_PTR	pReq,
-	FTM_RESP_GET_LOG_COUNT_PARAMS_PTR	pResp
+	FTM_REQ_LOG_GET_COUNT_PARAMS_PTR	pReq,
+	FTM_RESP_LOG_GET_COUNT_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1198,17 +1205,17 @@ FTM_RET	FTM_SERVER_getLogCount
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_LOG_COUNT_PARAMS);
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_LOG_GET_COUNT_PARAMS);
 	pResp->ulCount = ulCount;
 
 	return	xRet;
 }
 
-FTM_RET	FTM_SERVER_getLogInfo
+FTM_RET	FTM_SERVER_LOG_getInfo
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_LOG_INFO_PARAMS_PTR	pReq,
-	FTM_RESP_GET_LOG_INFO_PARAMS_PTR	pResp
+	FTM_REQ_LOG_GET_INFO_PARAMS_PTR	pReq,
+	FTM_RESP_LOG_GET_INFO_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1227,7 +1234,7 @@ FTM_RET	FTM_SERVER_getLogInfo
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_LOG_INFO_PARAMS);
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_LOG_GET_INFO_PARAMS);
 	pResp->ulCount = ulCount;
 	pResp->ulFirstTime= ulFirstTime;
 	pResp->ulLastTime= ulLastTime;
@@ -1236,11 +1243,11 @@ FTM_RET	FTM_SERVER_getLogInfo
 }
 
 
-FTM_RET	FTM_SERVER_addAlarm
+FTM_RET	FTM_SERVER_ALARM_add
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_ADD_ALARM_PARAMS_PTR	pReq,
-	FTM_RESP_ADD_ALARM_PARAMS_PTR	pResp
+	FTM_REQ_ALARM_ADD_PARAMS_PTR	pReq,
+	FTM_RESP_ALARM_ADD_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1257,16 +1264,16 @@ FTM_RET	FTM_SERVER_addAlarm
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_ADD_ALARM_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_ALARM_ADD_PARAMS);
 
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_delAlarm
+FTM_RET	FTM_SERVER_ALARM_del
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_DEL_ALARM_PARAMS_PTR	pReq,
-	FTM_RESP_DEL_ALARM_PARAMS_PTR	pResp
+	FTM_REQ_ALARM_DEL_PARAMS_PTR	pReq,
+	FTM_RESP_ALARM_DEL_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1283,16 +1290,16 @@ FTM_RET	FTM_SERVER_delAlarm
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_DEL_ALARM_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_ALARM_DEL_PARAMS);
 
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_getAlarmCount
+FTM_RET	FTM_SERVER_ALARM_getCount
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_ALARM_COUNT_PARAMS_PTR	pReq,
-	FTM_RESP_GET_ALARM_COUNT_PARAMS_PTR	pResp
+	FTM_REQ_ALARM_GET_COUNT_PARAMS_PTR	pReq,
+	FTM_RESP_ALARM_GET_COUNT_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1309,17 +1316,17 @@ FTM_RET	FTM_SERVER_getAlarmCount
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_ALARM_COUNT_PARAMS);
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_ALARM_GET_COUNT_PARAMS);
 	pResp->ulCount = ulCount;
 
 	return	xRet;
 }
 
-FTM_RET	FTM_SERVER_getAlarm
+FTM_RET	FTM_SERVER_ALARM_get
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_ALARM_PARAMS_PTR	pReq,
-	FTM_RESP_GET_ALARM_PARAMS_PTR	pResp
+	FTM_REQ_ALARM_GET_PARAMS_PTR	pReq,
+	FTM_RESP_ALARM_GET_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1335,16 +1342,16 @@ FTM_RET	FTM_SERVER_getAlarm
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_GET_ALARM_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_ALARM_GET_PARAMS);
 
 	return	xRet;
 }
 
-FTM_RET	FTM_SERVER_setAlarm
+FTM_RET	FTM_SERVER_ALARM_set
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_SET_ALARM_PARAMS_PTR	pReq,
-	FTM_RESP_SET_ALARM_PARAMS_PTR	pResp
+	FTM_REQ_ALARM_SET_PARAMS_PTR	pReq,
+	FTM_RESP_ALARM_SET_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1360,16 +1367,16 @@ FTM_RET	FTM_SERVER_setAlarm
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_SET_ALARM_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_ALARM_SET_PARAMS);
 
 	return	xRet;
 }
 
-FTM_RET	FTM_SERVER_getAlarmNameList
+FTM_RET	FTM_SERVER_ALARM_getNameList
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_ALARM_NAME_LIST_PARAMS_PTR	pReq,
-	FTM_RESP_GET_ALARM_NAME_LIST_PARAMS_PTR	pResp
+	FTM_REQ_ALARM_GET_NAME_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_ALARM_GET_NAME_LIST_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1378,7 +1385,7 @@ FTM_RET	FTM_SERVER_getAlarmNameList
 
 	pCatchB = pServer->pCatchB;
 
-	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_GET_ALARM_NAME_LIST_PARAMS)) / sizeof(FTM_NAME);
+	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_ALARM_GET_NAME_LIST_PARAMS)) / sizeof(FTM_NAME);
 	if (ulMaxCount > pReq->ulCount)
 	{
 		ulMaxCount = pReq->ulCount;	
@@ -1393,16 +1400,16 @@ FTM_RET	FTM_SERVER_getAlarmNameList
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_GET_ALARM_NAME_LIST_PARAMS) + sizeof(FTM_NAME) * pResp->ulCount;;
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_ALARM_GET_NAME_LIST_PARAMS) + sizeof(FTM_NAME) * pResp->ulCount;;
 
 	return	xRet;
 }
 
-FTM_RET	FTM_SERVER_getSMTP
+FTM_RET	FTM_SERVER_SMTP_get
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_SMTP_PARAMS_PTR	pReq,
-	FTM_RESP_GET_SMTP_PARAMS_PTR	pResp
+	FTM_REQ_SMTP_GET_PARAMS_PTR	pReq,
+	FTM_RESP_SMTP_GET_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1418,16 +1425,16 @@ FTM_RET	FTM_SERVER_getSMTP
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_GET_SMTP_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_SMTP_GET_PARAMS);
 
 	return	xRet;
 }
 
-FTM_RET	FTM_SERVER_setSMTP
+FTM_RET	FTM_SERVER_SMTP_set
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_SET_SMTP_PARAMS_PTR	pReq,
-	FTM_RESP_SET_SMTP_PARAMS_PTR	pResp
+	FTM_REQ_SMTP_SET_PARAMS_PTR	pReq,
+	FTM_RESP_SMTP_SET_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1465,16 +1472,16 @@ FTM_RET	FTM_SERVER_setSMTP
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_SET_SMTP_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_SMTP_SET_PARAMS);
 
 	return	xRet;
 }
 
-FTM_RET	FTM_SERVER_getStatList
+FTM_RET	FTM_SERVER_STAT_getList
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_STAT_LIST_PARAMS_PTR	pReq,
-	FTM_RESP_GET_STAT_LIST_PARAMS_PTR	pResp
+	FTM_REQ_STAT_GET_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_STAT_GET_LIST_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1484,7 +1491,7 @@ FTM_RET	FTM_SERVER_getStatList
 
 	pCatchB = pServer->pCatchB;
 
-	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_GET_STAT_LIST_PARAMS)) / sizeof(FTM_STATISTICS);
+	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_STAT_GET_LIST_PARAMS)) / sizeof(FTM_STATISTICS);
 	if (ulMaxCount > pReq->ulCount)
 	{
 		ulMaxCount = pReq->ulCount;
@@ -1498,17 +1505,17 @@ FTM_RET	FTM_SERVER_getStatList
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_STAT_LIST_PARAMS) + sizeof(FTM_STATISTICS) * ulCount;	
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_STAT_GET_LIST_PARAMS) + sizeof(FTM_STATISTICS) * ulCount;	
 	pResp->ulCount = ulCount;
 
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_delStat
+FTM_RET	FTM_SERVER_STAT_del
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_DEL_STAT_PARAMS_PTR	pReq,
-	FTM_RESP_DEL_STAT_PARAMS_PTR	pResp
+	FTM_REQ_STAT_DEL_PARAMS_PTR	pReq,
+	FTM_RESP_STAT_DEL_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1536,7 +1543,7 @@ FTM_RET	FTM_SERVER_delStat
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_DEL_STAT_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_STAT_DEL_PARAMS);
 	pResp->ulCount 		= ulCount;
 	pResp->ulFirstTime	= ulFirstTime;
 	pResp->ulLastTime	= ulLastTime;
@@ -1544,11 +1551,11 @@ FTM_RET	FTM_SERVER_delStat
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_delStat2
+FTM_RET	FTM_SERVER_STAT_del2
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_DEL_STAT2_PARAMS_PTR	pReq,
-	FTM_RESP_DEL_STAT2_PARAMS_PTR	pResp
+	FTM_REQ_STAT_DEL2_PARAMS_PTR	pReq,
+	FTM_RESP_STAT_DEL2_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1576,7 +1583,7 @@ FTM_RET	FTM_SERVER_delStat2
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen= sizeof(FTM_RESP_DEL_STAT2_PARAMS);
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_STAT_DEL2_PARAMS);
 	pResp->ulCount 		= ulCount;
 	pResp->ulFirstTime	= ulFirstTime;
 	pResp->ulLastTime	= ulLastTime;
@@ -1584,11 +1591,11 @@ FTM_RET	FTM_SERVER_delStat2
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_getStatCount
+FTM_RET	FTM_SERVER_STAT_getCount
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_STAT_COUNT_PARAMS_PTR	pReq,
-	FTM_RESP_GET_STAT_COUNT_PARAMS_PTR	pResp
+	FTM_REQ_STAT_GET_COUNT_PARAMS_PTR	pReq,
+	FTM_RESP_STAT_GET_COUNT_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1605,17 +1612,17 @@ FTM_RET	FTM_SERVER_getStatCount
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_STAT_COUNT_PARAMS);
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_STAT_GET_COUNT_PARAMS);
 	pResp->ulCount = ulCount;
 
 	return	xRet;
 }
 
-FTM_RET	FTM_SERVER_getStatInfo
+FTM_RET	FTM_SERVER_STAT_getInfo
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_GET_STAT_INFO_PARAMS_PTR	pReq,
-	FTM_RESP_GET_STAT_INFO_PARAMS_PTR	pResp
+	FTM_REQ_STAT_GET_INFO_PARAMS_PTR	pReq,
+	FTM_RESP_STAT_GET_INFO_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1634,7 +1641,7 @@ FTM_RET	FTM_SERVER_getStatInfo
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen = sizeof(FTM_RESP_GET_STAT_INFO_PARAMS);
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_STAT_GET_INFO_PARAMS);
 	pResp->xInfo.ulFields =	FTM_SYSTEM_FIELD_STATISTICS_INTERVAL
 						| 	FTM_SYSTEM_FIELD_STATISTICS_MAX_COUNT
 						|	FTM_SYSTEM_FIELD_STATISTICS_COUNT	
@@ -1649,11 +1656,11 @@ FTM_RET	FTM_SERVER_getStatInfo
 	return	xRet;
 }
 
-FTM_RET	FTM_SERVER_setStatInfo
+FTM_RET	FTM_SERVER_STAT_setInfo
 (
 	FTM_SERVER_PTR pServer, 
-	FTM_REQ_SET_STAT_INFO_PARAMS_PTR	pReq,
-	FTM_RESP_SET_STAT_INFO_PARAMS_PTR	pResp
+	FTM_REQ_STAT_SET_INFO_PARAMS_PTR	pReq,
+	FTM_RESP_STAT_SET_INFO_PARAMS_PTR	pResp
 )
 {
 	FTM_RET			xRet;
@@ -1693,7 +1700,7 @@ FTM_RET	FTM_SERVER_setStatInfo
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
-	pResp->xCommon.ulLen = sizeof(FTM_RESP_SET_STAT_INFO_PARAMS);
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_STAT_SET_INFO_PARAMS);
 	pResp->xInfo.xStatistics.ulMaxCount	= pCatchB->xConfig.xSystem.xStatistics.ulCount;
 	pResp->xInfo.xStatistics.ulInterval 	= pCatchB->xConfig.xSystem.xStatistics.ulInterval;
 	pResp->xInfo.xStatistics.ulCount = ulCount;
@@ -1702,4 +1709,61 @@ FTM_RET	FTM_SERVER_setStatInfo
 
 	return	xRet;
 }
+
+FTM_RET	FTM_SERVER_SSID_create
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_SSID_CREATE_PARAMS_PTR	pReq,
+	FTM_RESP_SSID_CREATE_PARAMS_PTR	pResp
+)
+{
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_CHAR	pSSID[FTM_SSID_LEN + 1];
+
+	xRet = FTM_SSID_create(pReq->pID, pReq->pPasswd, pSSID);
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet	= xRet;
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_SSID_CREATE_PARAMS);
+	strncpy(pResp->pSSID, pSSID, FTM_SSID_LEN);
+
+	return	xRet;
+}
+
+FTM_RET	FTM_SERVER_SSID_del
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_SSID_DEL_PARAMS_PTR	pReq,
+	FTM_RESP_SSID_DEL_PARAMS_PTR	pResp
+)
+{
+	FTM_RET	xRet;
+
+	xRet = FTM_SSID_destroy(pReq->xCommon.pSSID);
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet	= xRet;
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_SSID_DEL_PARAMS);
+
+	return	xRet;
+}
+
+FTM_RET	FTM_SERVER_SSID_verify
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_SSID_VERIFY_PARAMS_PTR	pReq,
+	FTM_RESP_SSID_VERIFY_PARAMS_PTR	pResp
+)
+{
+	FTM_RET	xRet;
+
+	xRet = FTM_SSID_isValid(pReq->xCommon.pSSID);
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet	= xRet;
+	pResp->xCommon.ulLen= sizeof(FTM_RESP_SSID_VERIFY_PARAMS);
+
+	return	xRet;
+}
+
 

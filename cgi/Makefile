@@ -12,6 +12,8 @@ BIN_CFLAGS:=$(CFLAGS)\
 
 BIN_LDFLAGS:=$(LDFLAGS)\
 		-lcatchb\
+		-lsqlite3\
+		-lpcap\
 		-lssh\
 		-ltelnet\
 		-lcjson \

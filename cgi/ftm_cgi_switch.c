@@ -7,7 +7,7 @@
 #undef	__MODULE__
 #define	__MODULE__	"cgi"
 
-FTM_RET	FTM_CGI_addSwitch
+FTM_RET	FTM_CGI_SWITCH_add
 (
 	FTM_CLIENT_PTR pClient,
 	qentry_t _PTR_ pReq
@@ -17,10 +17,19 @@ FTM_RET	FTM_CGI_addSwitch
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_SWITCH_CONFIG	xConfig;
 	cJSON _PTR_	pRoot;
 
 	pRoot = cJSON_CreateObject();
+
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log because invalid ssid.");
+		goto finished;
+	}
 
 	memset(&xConfig, 0, sizeof(xConfig));
 
@@ -33,19 +42,19 @@ FTM_RET	FTM_CGI_addSwitch
 	xRet |= FTM_CGI_getComment(pReq, xConfig.pComment, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
-	xRet = FTM_CLIENT_addSwitch(pClient, &xConfig);
+	xRet = FTM_CLIENT_SWITCH_add(pClient, pSSID, &xConfig);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
-	xRet = FTM_CLIENT_getSwitchProperties(pClient, xConfig.pID, &xConfig);
+	xRet = FTM_CLIENT_SWITCH_getProperties(pClient, pSSID, xConfig.pID, &xConfig);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
 	cJSON _PTR_ pSwitch = cJSON_CreateObject();
@@ -59,12 +68,12 @@ FTM_RET	FTM_CGI_addSwitch
 	cJSON_AddStringToObject(pSwitch, "comment", xConfig.pComment);
 
 	cJSON_AddItemToObject(pRoot, "switch", pSwitch);
-finish:
+finished:
 
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_delSwitch
+FTM_RET	FTM_CGI_SWITCH_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -74,23 +83,31 @@ FTM_RET	FTM_CGI_delSwitch
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pID[FTM_ID_LEN+1];
 	cJSON _PTR_	pRoot;
 
 	pRoot = cJSON_CreateObject();
 
-	memset(pID, 0, sizeof(pID));
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log because invalid ssid.");
+		goto finished;
+	}
 
+	memset(pID, 0, sizeof(pID));
 	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
-	xRet = FTM_CLIENT_delSwitch(pClient, pID);
+	xRet = FTM_CLIENT_SWITCH_del(pClient, pSSID, pID);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
 	cJSON _PTR_ pSwitch = cJSON_CreateObject();
@@ -98,12 +115,12 @@ FTM_RET	FTM_CGI_delSwitch
 	cJSON_AddStringToObject(pSwitch, "id", pID);
 
 	cJSON_AddItemToObject(pRoot, "switch", pSwitch);
-finish:
+finished:
 
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_getSwitch
+FTM_RET	FTM_CGI_SWITCH_get
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -113,6 +130,7 @@ FTM_RET	FTM_CGI_getSwitch
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pID[FTM_ID_LEN+1];
 	FTM_SWITCH_CONFIG	xConfig;
 
@@ -120,18 +138,25 @@ FTM_RET	FTM_CGI_getSwitch
 
 	pRoot = cJSON_CreateObject();
 
-	memset(pID, 0, sizeof(pID));
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log because invalid ssid.");
+		goto finished;
+	}
 
+	memset(pID, 0, sizeof(pID));
 	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
-	xRet = FTM_CLIENT_getSwitchProperties(pClient, pID, &xConfig);
+	xRet = FTM_CLIENT_SWITCH_getProperties(pClient, pSSID, pID, &xConfig);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
 	cJSON _PTR_ pSwitch = cJSON_CreateObject();
@@ -146,12 +171,12 @@ FTM_RET	FTM_CGI_getSwitch
 
 	cJSON_AddItemToObject(pRoot, "switch", pSwitch);
 
-finish:
+finished:
 
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_setSwitch
+FTM_RET	FTM_CGI_SWITCH_set
 (
 	FTM_CLIENT_PTR	pClient,
 	qentry_t _PTR_ pReq
@@ -161,18 +186,26 @@ FTM_RET	FTM_CGI_setSwitch
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_UINT32	ulFieldFlags = 0;
 	FTM_SWITCH_CONFIG	xConfig;
 	cJSON _PTR_	pRoot;
 
 	pRoot = cJSON_CreateObject();
 
-	memset(&xConfig, 0, sizeof(xConfig));
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log because invalid ssid.");
+		goto finished;
+	}
 
+	memset(&xConfig, 0, sizeof(xConfig));
 	xRet = FTM_CGI_getID(pReq, xConfig.pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
 	xRet = FTM_CGI_getIPString(pReq, xConfig.pIP, FTM_IP_LEN, FTM_FALSE);
@@ -206,16 +239,16 @@ FTM_RET	FTM_CGI_setSwitch
 	}
 
 
-	xRet = FTM_CLIENT_setSwitchProperties(pClient, xConfig.pID, &xConfig, ulFieldFlags);
+	xRet = FTM_CLIENT_SWITCH_setProperties(pClient, pSSID, xConfig.pID, &xConfig, ulFieldFlags);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
-	xRet = FTM_CLIENT_getSwitchProperties(pClient, xConfig.pID, &xConfig);
+	xRet = FTM_CLIENT_SWITCH_getProperties(pClient, pSSID, xConfig.pID, &xConfig);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
 	cJSON _PTR_ pSwitch = cJSON_CreateObject();
@@ -229,12 +262,12 @@ FTM_RET	FTM_CGI_setSwitch
 	cJSON_AddStringToObject(pSwitch, "comment", xConfig.pComment);
 
 	cJSON_AddItemToObject(pRoot, "switch", pSwitch);
-finish:
+finished:
 
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_getSwitchIDList
+FTM_RET	FTM_CGI_SWITCH_getIDList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -245,6 +278,7 @@ FTM_RET	FTM_CGI_getSwitchIDList
 
 	FTM_RET		xRet;
 	FTM_UINT32	i = 0;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_UINT32	ulIndex = 0;
 	FTM_UINT32	ulCount = 20;
 	FTM_ID_PTR	pIDList = NULL;
@@ -252,23 +286,31 @@ FTM_RET	FTM_CGI_getSwitchIDList
 
 	pRoot = cJSON_CreateObject();
 
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log because invalid ssid.");
+		goto finished;
+	}
+
 	pIDList = (FTM_ID_PTR)FTM_MEM_malloc(sizeof(FTM_ID) * ulCount);
 	if (pIDList == NULL)
 	{
-		goto finish;			
+		goto finished;			
 	}
 
 	xRet = FTM_CGI_getIndex(pReq, &ulIndex, FTM_TRUE);
 	xRet |= FTM_CGI_getCount(pReq, &ulCount, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
-	xRet = FTM_CLIENT_getSwitchIDList(pClient, ulCount, pIDList, &ulCount);
+	xRet = FTM_CLIENT_SWITCH_getIDList(pClient, pSSID, ulCount, pIDList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
 	cJSON _PTR_ pIDArray;
@@ -282,7 +324,7 @@ FTM_RET	FTM_CGI_getSwitchIDList
 
 	cJSON_AddItemToObject(pRoot, "idlist", pIDArray);
 
-finish:
+finished:
 
 	if (pIDList != NULL)
 	{

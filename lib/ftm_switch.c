@@ -10,6 +10,8 @@
 #include "ftm_telnet.h"
 #include "ftm_ssh.h"
 #include "ftm_timer.h"
+#include "ftm_log.h"
+#include "ftm_catchb.h"
 
 #undef	__MODULE__ 
 #define	__MODULE__ "switch"
@@ -206,6 +208,7 @@ FTM_RET	FTM_SWITCH_CONFIG_load
 FTM_RET	FTM_SWITCH_create
 (
 	FTM_SWITCH_CONFIG_PTR	pConfig,
+	struct FTM_CATCHB_STRUCT* pCatchB,
 	FTM_SWITCH_AC_PTR	pACs,
 	FTM_UINT32			ulACCount,
 	FTM_SWITCH_PTR _PTR_ ppSwitch
@@ -230,6 +233,7 @@ FTM_RET	FTM_SWITCH_create
 		memcpy(&pSwitch->xConfig, pConfig, sizeof(FTM_SWITCH_CONFIG));	
 	}
 
+	pSwitch->pCatchB = pCatchB;
 	xRet = FTM_LIST_create(&pSwitch->pACList);
 	if (xRet != FTM_RET_OK)
 	{
@@ -531,30 +535,35 @@ FTM_RET	FTM_SWITCH_TELNET_setAC
 (
 	FTM_SWITCH_PTR	pSwitch,
 	FTM_CHAR_PTR	pTargetIP,
-	FTM_SWITCH_SCRIPT_PTR	pScript 
+	FTM_SWS_CMD_PTR	pLines,
+	FTM_UINT32		ulCount
 )
 {
 	ASSERT(pSwitch != NULL);
 	ASSERT(pTargetIP != NULL);
 
 	FTM_RET		xRet;
+	FTM_TIMER	xTimer;
+	FTM_UINT32	ulTimeout = 3000;
+	FTM_BOOL	bSuccess = FTM_TRUE;
 	FTM_TELNET_CLIENT_PTR	pClient;
 
 
 	xRet = FTM_TELNET_CLIENT_create(&pClient);
 	if (xRet != FTM_RET_OK)
 	{
-		printf("Failed to create client!\n");	
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "The telnet connection to switch failed.");
 		goto finished;
 	}
+
+	FTM_TIMER_initMS(&xTimer, ulTimeout);
 
 	xRet = FTM_TELNET_CLIENT_open(pClient, pSwitch->xConfig.pIP, 23);
 	if (xRet == FTM_RET_OK)
 	{
-		FTM_UINT32	ulCommandLine = 0;
-		printf("telnet open success!\n");	
+		FTM_UINT32	ulLine = 0;
 
-		while(pScript->pCommands[ulCommandLine].pPrompt != NULL)
+		while(ulLine < ulCount)
 		{
 			FTM_CHAR	pReadLine[512];
 			FTM_UINT32	ulReadLen;
@@ -566,29 +575,47 @@ FTM_RET	FTM_SWITCH_TELNET_setAC
 			if ((ulReadLen != 0) && isprint(pReadLine[0]))
 			{
 				INFO("READ : %s", pReadLine);
-				if (strncasecmp(pReadLine, pScript->pCommands[ulCommandLine].pPrompt, strlen(pScript->pCommands[ulCommandLine].pPrompt)) == 0)
+				if (strncasecmp(pReadLine, pLines[ulLine].pPrompt, strlen(pLines[ulLine].pPrompt)) == 0)
 				{
-					FTM_TELNET_CLIENT_writel(pClient, pScript->pCommands[ulCommandLine].pInput, strlen(pScript->pCommands[ulCommandLine].pInput));
-					ulCommandLine++;
+					FTM_TELNET_CLIENT_writel(pClient, pLines[ulLine].pInput, strlen(pLines[ulLine].pInput));
+					ulLine++;
 				}
+				FTM_TIMER_initMS(&xTimer, ulTimeout);
 			}
+
+			if (FTM_TIMER_isExpired(&xTimer))
+			{
+				bSuccess = FTM_FALSE;
+				break;
+			}
+
+		}
+
+		if (bSuccess)
+		{
+			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "Applied the ACL policy to switch.");
+			INFO("Applied the ACL policy to switch.");
+		}
+		else
+		{
+			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "Failed to apply ACL policy.");
+			INFO("Failed to apply ACL policy.");
 		}
 
 		xRet = FTM_TELNET_CLIENT_close(pClient);
 		if (xRet != FTM_RET_OK)
 		{
-			printf("Failed to close telnet!\n");	
 		}
+
 	}
 	else
 	{
-		printf("telnet open failed!\n");	
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "The telnet connection to switch failed.");
 	}
 
 	xRet = FTM_TELNET_CLIENT_destroy(&pClient);
 	if (xRet != FTM_RET_OK)
 	{
-		printf("Failed to destroy telnet clinet!\n");
 	}
 
 finished:
@@ -601,7 +628,8 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 (
 	FTM_SWITCH_PTR	pSwitch,
 	FTM_CHAR_PTR	pTargetIP,
-	FTM_SWITCH_SCRIPT_PTR	pScript 
+	FTM_SWS_CMD_PTR	pLines,
+	FTM_UINT32		ulCount
 )
 {
 	ASSERT(pSwitch != NULL);
@@ -612,6 +640,7 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 	FTM_SSH_CHANNEL_PTR	pChannel = NULL;
 	FTM_TIMER	xTimer;
 	FTM_UINT32	ulTimeout = 3000;
+	FTM_BOOL	bSuccess = FTM_TRUE;
 
 	xRet = FTM_SSH_create(&pSSH);
 	if (xRet != FTM_RET_OK)
@@ -623,6 +652,8 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 	xRet = FTM_SSH_connect(pSSH, pSwitch->xConfig.pIP, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd);
 	if (xRet != FTM_RET_OK)
 	{
+		
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "The ssh connection to switch failed.");
 		ERROR(xRet, "Failed to connect ssh!");	
 		goto finished;
 	}
@@ -630,6 +661,7 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 	xRet = FTM_SSH_CHANNEL_create(pSSH, &pChannel);
 	if (xRet != FTM_RET_OK)
 	{
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "The ssh connection to switch failed.");
 		ERROR(xRet, "Failed to create channel!");	
 		goto finished;
 	}
@@ -639,9 +671,11 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 	xRet = FTM_SSH_CHANNEL_open(pChannel);
 	if (xRet == FTM_RET_OK)
 	{
-		FTM_UINT32	ulCommandLine = 0;
+		FTM_UINT32	ulLine = 0;
 
-		while(pScript->pCommands[ulCommandLine].pPrompt != NULL)
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_NORMAL, 0, "", pTargetIP, 0, "The ssh connected to switch.");
+
+		while(ulLine < ulCount)
 		{
 			FTM_CHAR	pReadLine[512];
 			FTM_UINT32	ulReadLen = 0;
@@ -651,17 +685,17 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 			if ((ulReadLen != 0) && isprint(pReadLine[0]))
 			{
 				INFO("ReadLine : %s", pReadLine);
-				INFO("Waiting : %s", pScript->pCommands[ulCommandLine].pPrompt);
-				if (strncasecmp(pReadLine, pScript->pCommands[ulCommandLine].pPrompt, strlen(pScript->pCommands[ulCommandLine].pPrompt)) == 0)
+				INFO("Waiting : %s", pLines[ulLine].pPrompt);
+				if (strncasecmp(pReadLine, pLines[ulLine].pPrompt, strlen(pLines[ulLine].pPrompt)) == 0)
 				{
-					FTM_SSH_CHANNEL_writeLine(pChannel, pScript->pCommands[ulCommandLine].pInput);
-					ulCommandLine++;
+					FTM_SSH_CHANNEL_writeLine(pChannel, pLines[ulLine].pInput);
+					ulLine++;
 					usleep(100000);
 				}
 				else if (strncasecmp(pReadLine, "% Authentication", 16) == 0)
 				{
 					FTM_SSH_CHANNEL_writeLine(pChannel, "\n");
-					ulCommandLine = 0;
+					ulLine = 0;
 				}
 				else if (strncasecmp(pReadLine, "Press any key", 12) == 0)
 				{
@@ -684,17 +718,28 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 
 			if (FTM_TIMER_isExpired(&xTimer))
 			{
-				INFO("TIMEOUT!");
+				bSuccess = FTM_FALSE;
 				break;
 			}
 
 			usleep(1000);
 		}
 
+		if (bSuccess)
+		{
+			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "Applied the ACL policy to switch.");
+			INFO("Applied the ACL policy to switch.");
+		}
+		else
+		{
+			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "Failed to apply ACL policy.");
+			INFO("Failed to apply ACL policy.");
+		}
 		FTM_SSH_CHANNEL_close(pChannel);
 	}
 	else
 	{
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "The ssh connection to switch failed.");
 		ERROR(xRet, "Failed to open channel.");	
 	}
 
@@ -718,3 +763,179 @@ finished:
 	return	xRet;
 }
 
+const FTM_CHAR_PTR	pConvertFormat = "sed "
+									 "-e 's/\\${index}/%d/g' "
+									 "-e 's/\\${index*3}/%d/g' "
+									 "-e 's/\\${index*3+1}/%d/g' "
+									 "-e 's/\\${index*3+2}/%d/g' "
+									 "-e 's/\\${local}/%s/g' "
+									 "-e 's/\\${target}/%s/g' %s";
+
+FTM_RET	FTM_SWITCH_loadScript
+(
+	FTM_CHAR_PTR	pFileName,
+	FTM_UINT32		ulIndex,
+	FTM_CHAR_PTR	pLocalIP,
+	FTM_CHAR_PTR	pTargetIP,
+	FTM_SWITCH_SCRIPT_PTR pScript
+)
+{
+	FTM_RET			xRet = FTM_RET_OK;
+	FILE *pFile 	= NULL; 
+	FTM_CHAR_PTR	pData = NULL;
+	FTM_UINT32		ulFileLen;
+	FTM_UINT32		ulReadSize;
+	FTM_CHAR		pBuffer[1024];
+
+	cJSON _PTR_		pRoot = NULL;
+	cJSON _PTR_		pSection;
+
+	pFile = fopen(pFileName, "rt");
+	if (pFile == NULL)
+	{    
+		xRet = FTM_RET_CONFIG_LOAD_FAILED; 
+		ERROR(xRet, "Can't open file[%s]\n", pFileName);
+		return  xRet; 
+	}    
+
+	fseek(pFile, 0L, SEEK_END);
+	ulFileLen = ftell(pFile);
+	fseek(pFile, 0L, SEEK_SET);
+	fclose(pFile);
+
+	if (ulFileLen > 0)
+	{
+		ulFileLen += 1024;
+		pData = (FTM_CHAR_PTR)FTM_MEM_malloc(ulFileLen);
+		if (pData == NULL)
+		{    
+			xRet = FTM_RET_NOT_ENOUGH_MEMORY;  
+			ERROR(xRet, "Failed to alloc buffer[size = %u]\n", ulFileLen);
+			goto finished;
+		}    
+		memset(pData, 0, ulFileLen);
+	}
+
+	sprintf(pBuffer, pConvertFormat, ulIndex, ulIndex*3, ulIndex*3+1, ulIndex*3+2, pLocalIP, pTargetIP, pFileName);
+	
+	pFile = popen(pBuffer, "r");
+	if (pFile == NULL)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to covert script!");
+		goto finished;
+	}
+
+	ulReadSize = fread(pData, 1, ulFileLen, pFile); 
+	if (ulReadSize == 0)
+	{    
+		xRet = FTM_RET_FAILED_TO_READ_FILE;
+		ERROR(xRet, "Failed to read configuration file[%u:%u]\n", ulFileLen, ulReadSize);
+		goto finished;
+	}    
+
+	pclose(pFile);
+	pFile = NULL;
+
+	pRoot = cJSON_Parse(pData);
+	if (pRoot == NULL)
+	{    
+		xRet = FTM_RET_INVALID_JSON_FORMAT;
+		ERROR(xRet, "Invalid json format!\n");
+		goto finished;
+	}    
+
+
+	pSection = cJSON_GetObjectItem(pRoot, "allow");
+	if (pSection == NULL)
+	{
+		ERROR(xRet, "Invlalid script!");
+		goto finished;	
+	}
+
+	if (pSection->type != cJSON_Array)
+	{
+		ERROR(xRet, "Invlalid script!");
+		goto finished;	
+	}
+
+	FTM_UINT32	ulCount = cJSON_GetArraySize(pSection);
+	for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
+	{
+		cJSON _PTR_ pLine = cJSON_GetArrayItem(pSection, i);
+		if (pLine == NULL)
+		{
+			ERROR(xRet, "Invlalid script!");
+			goto finished;	
+		}
+
+		cJSON _PTR_ pPrompt = cJSON_GetObjectItem(pLine, "prompt");
+		cJSON _PTR_ pCommand= cJSON_GetObjectItem(pLine, "command");
+
+		if ((pPrompt == NULL) || (pCommand == NULL) || (pPrompt->type != cJSON_String) || (pCommand->type != cJSON_String))
+		{
+			ERROR(xRet, "Invlalid script!");
+			goto finished;	
+		}
+
+		strncpy(pScript->xAllow.pLines[i].pPrompt, pPrompt->valuestring, sizeof(pScript->xAllow.pLines[i].pPrompt) - 1);
+		strncpy(pScript->xAllow.pLines[i].pInput, pCommand->valuestring, sizeof(pScript->xAllow.pLines[i].pInput) - 1);
+	}
+	
+	pSection = cJSON_GetObjectItem(pRoot, "deny");
+	if (pSection == NULL)
+	{
+		ERROR(xRet, "Invlalid script!");
+		goto finished;	
+	}
+
+	if (pSection->type != cJSON_Array)
+	{
+		ERROR(xRet, "Invlalid script!");
+		goto finished;	
+	}
+
+	ulCount = cJSON_GetArraySize(pSection);
+	for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
+	{
+		cJSON _PTR_ pLine = cJSON_GetArrayItem(pSection, i);
+		if (pLine == NULL)
+		{
+			ERROR(xRet, "Invlalid script!");
+			goto finished;	
+		}
+
+		cJSON _PTR_ pPrompt = cJSON_GetObjectItem(pLine, "prompt");
+		cJSON _PTR_ pCommand= cJSON_GetObjectItem(pLine, "command");
+
+		if ((pPrompt == NULL) || (pCommand == NULL) || (pPrompt->type != cJSON_String) || (pCommand->type != cJSON_String))
+		{
+			ERROR(xRet, "Invlalid script!");
+			goto finished;	
+		}
+
+		strncpy(pScript->xDeny.pLines[i].pPrompt, 	pPrompt->valuestring, 	sizeof(pScript->xDeny.pLines[i].pPrompt) - 1);
+		strncpy(pScript->xDeny.pLines[i].pInput, 	pCommand->valuestring, 	sizeof(pScript->xDeny.pLines[i].pInput) - 1);
+	}
+	
+finished:
+	if (pRoot != NULL)
+	{
+		cJSON_Delete(pRoot);
+		pRoot = NULL;
+	}
+
+	if (pData != NULL)
+	{
+		FTM_MEM_free(pData);
+		pData = NULL;
+	}
+
+	if (pFile != NULL)
+	{
+		pclose(pFile);	
+		pFile = NULL;
+	}
+
+	return	xRet;
+}

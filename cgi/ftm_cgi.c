@@ -21,78 +21,87 @@ FTM_RET	FTM_CGI_service
 static 
 FTM_CGI_COMMAND	pCCTVCmds[] =
 {
-	{	"add",		FTM_CGI_addCCTV			},
-	{	"del",		FTM_CGI_delCCTV			},
-	{	"get",		FTM_CGI_getCCTV			},
-	{	"set",		FTM_CGI_setCCTV			},
-	{	"list",		FTM_CGI_getCCTVIDList	},
-	{	"policy",	FTM_CGI_setCCTVPolicy	},
-	{	"reset",	FTM_CGI_resetCCTV		},
+	{	"add",		FTM_CGI_CCTV_add		},
+	{	"del",		FTM_CGI_CCTV_del		},
+	{	"get",		FTM_CGI_CCTV_get		},
+	{	"set",		FTM_CGI_CCTV_set		},
+	{	"list",		FTM_CGI_CCTV_getIDList	},
+	{	"policy",	FTM_CGI_CCTV_setPolicy	},
+	{	"reset",	FTM_CGI_CCTV_reset		},
 	{	NULL,		NULL					}
 };
 
 static 
 FTM_CGI_COMMAND	pSwitchCmds[] =
 {
-	{	"add",		FTM_CGI_addSwitch		},
-	{	"del",		FTM_CGI_delSwitch		},
-	{	"get",		FTM_CGI_getSwitch		},
-	{	"set",		FTM_CGI_setSwitch		},
-	{	"list",		FTM_CGI_getSwitchIDList	},
+	{	"add",		FTM_CGI_SWITCH_add		},
+	{	"del",		FTM_CGI_SWITCH_del		},
+	{	"get",		FTM_CGI_SWITCH_get		},
+	{	"set",		FTM_CGI_SWITCH_set		},
+	{	"list",		FTM_CGI_SWITCH_getIDList},
 	{	NULL,		NULL					}
 };
 
 static 
 FTM_CGI_COMMAND	pLogCmds[] =
 {
-	{	"info", FTM_CGI_getLogInfo		},
-	{	"get",	FTM_CGI_getLogList		},
-	{	"del",	FTM_CGI_delLog			},
+	{	"info", FTM_CGI_LOG_getInfo			},
+	{	"get",	FTM_CGI_LOG_getList			},
+	{	"del",	FTM_CGI_LOG_del				},
 	{	NULL,		NULL					}
 };
 
 static 
 FTM_CGI_COMMAND	pAlarmCmds[] =
 {
-	{	"add",  FTM_CGI_addAlarm			},
-	{	"del",	FTM_CGI_delAlarm			},
-	{	"get",	FTM_CGI_getAlarm			},
-	{	"set",	FTM_CGI_setAlarm			},
-	{	"list",	FTM_CGI_getAlarmList		},
-	{	"info",	FTM_CGI_getAlarmInfo		},
-	{	"get_config",	FTM_CGI_getAlarmConfig		},
-	{	"set_config",	FTM_CGI_setAlarmConfig		},
+	{	"add",  	FTM_CGI_ALARM_add		},
+	{	"del",		FTM_CGI_ALARM_del		},
+	{	"get",		FTM_CGI_ALARM_get		},
+	{	"set",		FTM_CGI_ALARM_set		},
+	{	"list",		FTM_CGI_ALARM_getList	},
+	{	"info",		FTM_CGI_ALARM_getInfo	},
+	{	"get_config",FTM_CGI_ALARM_getConfig},
+	{	"set_config",FTM_CGI_ALARM_setConfig},
+	{	NULL,		NULL					}
+};
+
+static 
+FTM_CGI_COMMAND	pSSIDCmds[] =
+{
+	{	"get",		FTM_CGI_SSID_create		},
+	{	"del",		FTM_CGI_SSID_del		},
+	{	"verify",	FTM_CGI_SSID_verify		},
 	{	NULL,		NULL					}
 };
 
 static 
 FTM_CGI_COMMAND	pSyslogCmds[] =
 {
-	{	"add",		FTM_CGI_addLogServer	},
-	{	"del",		FTM_CGI_delLogServer	},
-	{	"get",		FTM_CGI_getLogServer	},
-	{	"set",		FTM_CGI_setLogServer	},
-	{	"list",		FTM_CGI_getLogServerIDList	},
+	{	"add",		FTM_CGI_SYSLOG_add		},
+	{	"del",		FTM_CGI_SYSLOG_del		},
+	{	"get",		FTM_CGI_SYSLOG_get		},
+	{	"set",		FTM_CGI_SYSLOG_set		},
+	{	"list",		FTM_CGI_SYSLOG_getIDList},
 	{	NULL,		NULL					}
 };
 
 static 
 FTM_CGI_COMMAND	pSysCmds[] =
 {
-	{	"info", 		FTM_CGI_getSysInfo			},
-	{	"get_config", 	FTM_CGI_getSysInfoConfig	},
-	{	"set_config",	FTM_CGI_setSysInfoConfig	},
-	{	"check_passwd",	FTM_CGI_checkPasswd			},
-	{	"passwd", 		FTM_CGI_setPasswd			},
+	{	"info", 		FTM_CGI_SYS_getInfo			},
+	{	"get_config", 	FTM_CGI_SYS_getInfoConfig	},
+	{	"set_config",	FTM_CGI_SYS_setInfoConfig	},
+	{	"check_passwd",	FTM_CGI_SYS_checkPasswd		},
+	{	"passwd", 		FTM_CGI_SYS_setPasswd		},
 	{	NULL,		NULL					}
 };
 
 static 
 FTM_CGI_COMMAND	pStatusCmds[] =
 {
-	{	"info", FTM_CGI_getStatusInfo		},
-	{	"get",	FTM_CGI_getStatusList		},
-	{	"del",	FTM_CGI_delStatus			},
+	{	"info", FTM_CGI_STATUS_getInfo		},
+	{	"get",	FTM_CGI_STATUS_getList		},
+	{	"del",	FTM_CGI_STATUS_del			},
 	{	NULL,		NULL					}
 };
 
@@ -150,6 +159,15 @@ FTM_RET	FTM_CGI_alarm
 )
 {
 	return	FTM_CGI_service(pClient, pReq, pAlarmCmds);
+}
+
+FTM_RET	FTM_CGI_ssid
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+)
+{
+	return	FTM_CGI_service(pClient, pReq, pSSIDCmds);
 }
 
 FTM_RET	FTM_CGI_sys
@@ -297,6 +315,38 @@ FTM_RET	FTM_CGI_getSTRING
 }
 
 	
+FTM_RET	FTM_CGI_getSSID
+(
+	qentry_t 		*pReq, 
+	FTM_CHAR_PTR	pSessionID,
+	FTM_BOOL		bAllowEmpty
+)
+{
+	ASSERT(pReq != NULL);
+	ASSERT(pSessionID != NULL);
+
+	FTM_CHAR_PTR	pValue;
+
+	pValue = pReq->getstr(pReq, "ssid", false);
+	if((pValue == NULL) || (strlen(pValue) == 0))
+	{
+		if(!bAllowEmpty)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;	
+		}
+	}
+	else if((strlen(pValue) > FTM_SESSION_ID_LEN))
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+	else
+	{
+		strcpy(pSessionID, pValue);
+	}
+	
+	return	FTM_RET_OK;
+}
+
 FTM_RET	FTM_CGI_getID
 (
 	qentry_t *pReq, 
@@ -576,6 +626,34 @@ FTM_RET	FTM_CGI_getTimeout
 	else	
 	{
 		*pTimeout = strtoul(pValue, 0, 10);
+	}
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_CGI_getDate
+(
+	qentry_t *pReq, 
+	FTM_UINT32_PTR	pDate,	
+	FTM_BOOL	bAllowEmpty
+)
+{
+	ASSERT(pReq != NULL);
+	ASSERT(pDate != NULL);
+
+	FTM_CHAR_PTR	pValue;
+
+	pValue = pReq->getstr(pReq, "time", false);
+	if(pValue == NULL)
+	{
+		if(!bAllowEmpty)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;	
+		}
+	}
+	else	
+	{
+		*pDate = strtoul(pValue, 0, 10);
 	}
 
 	return	FTM_RET_OK;

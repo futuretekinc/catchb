@@ -44,6 +44,12 @@ FTM_RET	FTM_CGI_alarm
 	qentry_t *pReq
 );
 
+FTM_RET	FTM_CGI_ssid
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
 FTM_RET	FTM_CGI_sys
 (
 	FTM_CLIENT_PTR pClient, 
@@ -87,6 +93,13 @@ FTM_RET	FTM_CGI_getSTRING
 	FTM_BOOL	bAllowEmpty
 );
 
+
+FTM_RET	FTM_CGI_getSSID
+(
+	qentry_t 		*pReq, 
+	FTM_CHAR_PTR	pSessionID,
+	FTM_BOOL		bAllowEmtry
+);
 
 FTM_RET	FTM_CGI_getServer
 (
@@ -253,4 +266,12 @@ FTM_RET	FTM_CGI_getSender
 	FTM_UINT32		ulBufferLen,
 	FTM_BOOL	bAllowEmpty
 );
+
+FTM_RET	FTM_CGI_getDate
+(
+	qentry_t 		*pReq, 
+	FTM_UINT32_PTR	pDate,
+	FTM_BOOL		bAllowEmtry
+);
+
 #endif

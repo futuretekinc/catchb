@@ -7,7 +7,7 @@
 #undef	__MODULE__
 #define	__MODULE__	"cgi"
 
-FTM_RET	FTM_CGI_addAlarm
+FTM_RET	FTM_CGI_ALARM_add
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -20,6 +20,7 @@ FTM_RET	FTM_CGI_addAlarm
 	cJSON _PTR_	pRoot;
 	cJSON _PTR_ pReqRoot = NULL;
 	FTM_ALARM	xAlarm;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pName[FTM_NAME_LEN+1];
 	FTM_CHAR	pEmail[FTM_EMAIL_LEN+1];
 	FTM_CHAR	pMessage[FTM_ALARM_MESSAGE_LEN+1];
@@ -41,7 +42,15 @@ FTM_RET	FTM_CGI_addAlarm
 	memset(pEmail, 0, sizeof(pEmail));
 	memset(pMessage, 0, sizeof(pMessage));
 
-	cJSON _PTR_ pItem = cJSON_GetObjectItem(pReqRoot, "name");
+	memset(pSSID, 0, sizeof(pSSID));
+	cJSON _PTR_ pItem = cJSON_GetObjectItem(pReqRoot, "ssid");
+	if ((pItem == NULL) || (pItem->type != cJSON_String) || (strlen(pItem->valuestring) > FTM_SSID_LEN))
+	{
+		goto finished;	
+	}
+	strcpy(pSSID, pItem->valuestring);
+
+	pItem = cJSON_GetObjectItem(pReqRoot, "name");
 	if ((pItem == NULL) || (pItem->type != cJSON_String) || (strlen(pItem->valuestring) > FTM_NAME_LEN))
 	{
 		goto finished;	
@@ -68,13 +77,13 @@ FTM_RET	FTM_CGI_addAlarm
 		strcpy(pMessage, pItem->valuestring);
 	}
 
-	xRet = FTM_CLIENT_addAlarm(pClient, pName, pEmail, pMessage);
+	xRet = FTM_CLIENT_ALARM_add(pClient, pSSID, pName, pEmail, pMessage);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;
 	}
 
-	xRet = FTM_CLIENT_getAlarm(pClient, pName, &xAlarm);
+	xRet = FTM_CLIENT_ALARM_get(pClient, pSSID, pName, &xAlarm);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;
@@ -98,7 +107,7 @@ finished:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_delAlarm
+FTM_RET	FTM_CGI_ALARM_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -108,10 +117,18 @@ FTM_RET	FTM_CGI_delAlarm
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pName[FTM_NAME_LEN+1];
 	cJSON _PTR_	pRoot;
 
 	pRoot = cJSON_CreateObject();
+
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSTRING(pReq, "ssid", pSSID, FTM_SSID_LEN, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
 
 	xRet = FTM_CGI_getSTRING(pReq, "name", pName, FTM_NAME_LEN, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
@@ -119,7 +136,7 @@ FTM_RET	FTM_CGI_delAlarm
 		goto finished;
 	}
 
-	xRet = FTM_CLIENT_delAlarm(pClient, pName);
+	xRet = FTM_CLIENT_ALARM_del(pClient, pSSID, pName);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;
@@ -134,7 +151,7 @@ finished:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_getAlarm
+FTM_RET	FTM_CGI_ALARM_get
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -144,11 +161,19 @@ FTM_RET	FTM_CGI_getAlarm
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet = FTM_RET_OK;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pName[FTM_NAME_LEN+1];
 	FTM_ALARM	xAlarm;
 	cJSON _PTR_	pRoot;
 
 	pRoot = cJSON_CreateObject();
+
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSTRING(pReq, "ssid", pSSID, FTM_SSID_LEN, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
 
 	xRet = FTM_CGI_getSTRING(pReq, "name", pName, FTM_NAME_LEN, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
@@ -156,7 +181,7 @@ FTM_RET	FTM_CGI_getAlarm
 		goto finished;
 	}
 
-	xRet = FTM_CLIENT_getAlarm(pClient, pName, &xAlarm);
+	xRet = FTM_CLIENT_ALARM_get(pClient, pSSID, pName, &xAlarm);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get alarm");
@@ -178,7 +203,7 @@ finished:
 }
 
 
-FTM_RET	FTM_CGI_getAlarmList
+FTM_RET	FTM_CGI_ALARM_getList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -191,11 +216,19 @@ FTM_RET	FTM_CGI_getAlarmList
 	FTM_INT		i;
 	FTM_UINT32	ulIndex = 0;
 	FTM_UINT32	ulCount = 20;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_NAME_PTR	pAlarmNameList = NULL;
 	FTM_ALARM_PTR	pAlarmList = NULL;
 	cJSON _PTR_	pRoot;
 
 	pRoot = cJSON_CreateObject();
+
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSTRING(pReq, "ssid", pSSID, FTM_SSID_LEN, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
 
 	xRet = FTM_CGI_getCount(pReq, &ulIndex, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
@@ -219,7 +252,7 @@ FTM_RET	FTM_CGI_getAlarmList
 		goto finished;	
 	}
 	
-	xRet = FTM_CLIENT_getAlarmNameList(pClient, ulIndex, ulCount, pAlarmNameList, &ulCount);
+	xRet = FTM_CLIENT_ALARM_getNameList(pClient, pSSID, ulIndex, ulCount, pAlarmNameList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get alarm name list!");
@@ -237,7 +270,7 @@ FTM_RET	FTM_CGI_getAlarmList
 	
 	for(i = 0 ; i < ulCount ; i++)
 	{
-		xRet = FTM_CLIENT_getAlarm(pClient, pAlarmNameList[i], &pAlarmList[i]);
+		xRet = FTM_CLIENT_ALARM_get(pClient, pSSID, pAlarmNameList[i], &pAlarmList[i]);
 		if (xRet != FTM_RET_OK)
 		{
 			ERROR(xRet, "Failed to get alarm[%s]!", pAlarmNameList[i]);
@@ -277,7 +310,7 @@ finished:
 }
 
 
-FTM_RET	FTM_CGI_setAlarm
+FTM_RET	FTM_CGI_ALARM_set
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -288,11 +321,13 @@ FTM_RET	FTM_CGI_setAlarm
 
 	FTM_RET		xRet;
 	cJSON _PTR_	pRoot;
+	cJSON _PTR_	pItem;
 	cJSON _PTR_ pReqRoot = NULL;
 	FTM_UINT32	ulFieldFlags = 0;
 	FTM_ALARM	xAlarm;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pName[FTM_NAME_LEN+1];
-
+	
 	pRoot = cJSON_CreateObject();
 
 	FTM_CHAR_PTR	pBody = qcgireq_getquery(Q_CGI_POST);
@@ -312,8 +347,14 @@ FTM_RET	FTM_CGI_setAlarm
 		goto finished;	
 	}
 
-	memset(pName, 0, sizeof(pName));
 	memset(&xAlarm, 0, sizeof(xAlarm));
+
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSTRING(pReq, "ssid", pSSID, FTM_SSID_LEN, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
 
 	cJSON _PTR_ pAlarmItem = cJSON_GetObjectItem(pReqRoot, "alarm");
 	if (pAlarmItem == NULL)
@@ -323,18 +364,15 @@ FTM_RET	FTM_CGI_setAlarm
 		goto finished;	
 	}
 	
-	cJSON _PTR_ pItem = cJSON_GetObjectItem(pAlarmItem, "name");
-	if ((pItem == NULL) || (pItem->type != cJSON_String) || (strlen(pItem->valuestring) > FTM_NAME_LEN))
+	memset(pName, 0, sizeof(pName));
+	xRet = FTM_CGI_getSTRING(pReq, "name", pName, FTM_NAME_LEN, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
 	{
-		xRet = FTM_RET_OBJECT_NOT_FOUND;
 		ERROR(xRet, "Failed to get alarm name!");
-		goto finished;	
+		goto finished;
 	}
 
-	strcpy(pName, pItem->valuestring);
-
-
-	xRet = FTM_CLIENT_getAlarm(pClient, pName, &xAlarm);
+	xRet = FTM_CLIENT_ALARM_get(pClient, pSSID, pName, &xAlarm);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get alarm");
@@ -365,13 +403,13 @@ FTM_RET	FTM_CGI_setAlarm
 		ulFieldFlags |= FTM_ALARM_FIELD_MESSAGE;
 	}
 
-	xRet = FTM_CLIENT_setAlarm(pClient, pName, &xAlarm, ulFieldFlags);
+	xRet = FTM_CLIENT_ALARM_set(pClient, pSSID, pName, &xAlarm, ulFieldFlags);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;
 	}
 
-	xRet = FTM_CLIENT_getAlarm(pClient, pName, &xAlarm);
+	xRet = FTM_CLIENT_ALARM_get(pClient, pSSID, pName, &xAlarm);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;
@@ -394,7 +432,7 @@ finished:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_getAlarmInfo
+FTM_RET	FTM_CGI_ALARM_getInfo
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -404,12 +442,20 @@ FTM_RET	FTM_CGI_getAlarmInfo
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet = FTM_RET_OK;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_UINT32	ulCount = 0;
 	cJSON _PTR_	pRoot;
 
 	pRoot = cJSON_CreateObject();
 
-	xRet = FTM_CLIENT_getAlarmCount(pClient, &ulCount);
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSTRING(pReq, "ssid", pSSID, FTM_SSID_LEN, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_ALARM_getCount(pClient, pSSID, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get alarm");
@@ -428,7 +474,7 @@ finished:
 }
 
 
-FTM_RET	FTM_CGI_getAlarmConfig
+FTM_RET	FTM_CGI_ALARM_getConfig
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -439,11 +485,19 @@ FTM_RET	FTM_CGI_getAlarmConfig
 
 	FTM_RET		xRet = FTM_RET_OK;
 	cJSON _PTR_	pRoot;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_NOTIFIER_SMTP_CONFIG	xConfig;
 
 	pRoot = cJSON_CreateObject();
 
-	xRet = FTM_CLIENT_getSMTP(pClient, &xConfig);
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSTRING(pReq, "ssid", pSSID, FTM_SSID_LEN, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_SMTP_get(pClient, pSSID, &xConfig);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get alarm config");
@@ -466,7 +520,7 @@ finished:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_setAlarmConfig
+FTM_RET	FTM_CGI_ALARM_setConfig
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -477,13 +531,21 @@ FTM_RET	FTM_CGI_setAlarmConfig
 
 	FTM_RET		xRet = FTM_RET_OK;
 	cJSON _PTR_	pRoot;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_NOTIFIER_SMTP_CONFIG	xConfig;
 	FTM_NOTIFIER_SMTP_CONFIG	xNewConfig;
 
 
 	pRoot = cJSON_CreateObject();
 
-	xRet = FTM_CLIENT_getSMTP(pClient, &xConfig);
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSTRING(pReq, "ssid", pSSID, FTM_SSID_LEN, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_SMTP_get(pClient, pSSID, &xConfig);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get alarm config");
@@ -534,7 +596,7 @@ FTM_RET	FTM_CGI_setAlarmConfig
 		goto finished;
 	}
 
-	xRet = FTM_CLIENT_setSMTP(pClient, &xNewConfig, &xConfig);
+	xRet = FTM_CLIENT_SMTP_set(pClient, pSSID, &xNewConfig, &xConfig);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get alarm config");

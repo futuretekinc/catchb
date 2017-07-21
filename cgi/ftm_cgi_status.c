@@ -7,7 +7,7 @@
 #undef	__MODULE__
 #define	__MODULE__	"cgi"
 
-FTM_RET	FTM_CGI_setStatusInfo
+FTM_RET	FTM_CGI_STATUS_setInfo
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -17,6 +17,7 @@ FTM_RET	FTM_CGI_setStatusInfo
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_SYSTEM_INFO	xInfo;
 	FTM_UINT32	ulField = 0;
 	cJSON _PTR_	pRoot;
@@ -24,6 +25,14 @@ FTM_RET	FTM_CGI_setStatusInfo
 	memset(&xInfo, 0, sizeof(xInfo));
 
 	pRoot = cJSON_CreateObject();
+
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log because invalid ssid.");
+		goto finished;
+	}
 
 	xRet = FTM_CGI_getInterval(pReq, &xInfo.xStatistics.ulInterval, FTM_FALSE);
 	if (xRet == FTM_RET_OK)
@@ -37,7 +46,7 @@ FTM_RET	FTM_CGI_setStatusInfo
 		ulField |= FTM_SYSTEM_FIELD_STATISTICS_COUNT;
 	}
 
-	xRet = FTM_CLIENT_setStatInfo(pClient, &xInfo, &xInfo);
+	xRet = FTM_CLIENT_STAT_setInfo(pClient, pSSID, &xInfo, &xInfo);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to set stat info!");
@@ -58,7 +67,7 @@ finished:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_getStatusInfo
+FTM_RET	FTM_CGI_STATUS_getInfo
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -68,6 +77,7 @@ FTM_RET	FTM_CGI_getStatusInfo
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_SYSTEM_INFO	xInfo;
 	cJSON _PTR_	pRoot;
 
@@ -75,7 +85,15 @@ FTM_RET	FTM_CGI_getStatusInfo
 
 	pRoot = cJSON_CreateObject();
 
-	xRet = FTM_CLIENT_getStatInfo(pClient, &xInfo);
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log because invalid ssid.");
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_STAT_getInfo(pClient, pSSID, &xInfo);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;
@@ -95,7 +113,7 @@ finished:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_delStatus
+FTM_RET	FTM_CGI_STATUS_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -105,6 +123,7 @@ FTM_RET	FTM_CGI_delStatus
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_UINT32	ulIndex = 0;
 	FTM_UINT32	ulCount = 0;
 	FTM_UINT32	ulRemainCount = 0;
@@ -116,6 +135,14 @@ FTM_RET	FTM_CGI_delStatus
 	cJSON _PTR_	pRoot;
 
 	pRoot = cJSON_CreateObject();
+
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log because invalid ssid.");
+		goto finished;
+	}
 
 	xRet = FTM_CGI_getBeginTime(pReq, &ulBeginTime, FTM_FALSE);
 	if (xRet == FTM_RET_OK)
@@ -143,7 +170,7 @@ FTM_RET	FTM_CGI_delStatus
 	{
 		INFO("Begin : %d(%s)", ulBeginTime, FTM_TIME_printf2(ulBeginTime, NULL));
 		INFO("End : %d(%s)", ulEndTime, FTM_TIME_printf2(ulEndTime, NULL));
-		xRet = FTM_CLIENT_delStat2(pClient, ulBeginTime, ulEndTime, &ulRemainCount, &ulFirstTime, &ulLastTime);
+		xRet = FTM_CLIENT_STAT_del2(pClient, pSSID, ulBeginTime, ulEndTime, &ulRemainCount, &ulFirstTime, &ulLastTime);
 		if (xRet != FTM_RET_OK)
 		{
 			goto finished;
@@ -151,7 +178,7 @@ FTM_RET	FTM_CGI_delStatus
 	}
 	else
 	{
-		xRet = FTM_CLIENT_delStat(pClient, ulIndex, ulCount, &ulRemainCount, &ulFirstTime, &ulLastTime);
+		xRet = FTM_CLIENT_STAT_del(pClient, pSSID, ulIndex, ulCount, &ulRemainCount, &ulFirstTime, &ulLastTime);
 		if (xRet != FTM_RET_OK)
 		{
 			goto finished;
@@ -169,7 +196,7 @@ finished:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_getStatusList
+FTM_RET	FTM_CGI_STATUS_getList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -180,6 +207,7 @@ FTM_RET	FTM_CGI_getStatusList
 
 	FTM_RET		xRet = FTM_RET_OK;
 	FTM_INT		i;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_UINT32	ulIndex = 0;
 	FTM_UINT32	ulCount = 20;
 	FTM_STATISTICS_PTR	pStatList = NULL;
@@ -187,6 +215,14 @@ FTM_RET	FTM_CGI_getStatusList
 	cJSON _PTR_	pRoot;
 
 	pRoot = cJSON_CreateObject();
+
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log because invalid ssid.");
+		goto finished;
+	}
 
 	xRet = FTM_CGI_getIndex(pReq, &ulIndex, FTM_TRUE);
 	xRet |= FTM_CGI_getCount(pReq, &ulCount, FTM_FALSE);
@@ -201,7 +237,7 @@ FTM_RET	FTM_CGI_getStatusList
 		goto finished;	
 	}
 
-	xRet = FTM_CLIENT_getStatList(pClient, ulIndex, ulCount, pStatList, &ulCount);
+	xRet = FTM_CLIENT_STAT_getList(pClient, pSSID, ulIndex, ulCount, pStatList, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
 		goto finished;

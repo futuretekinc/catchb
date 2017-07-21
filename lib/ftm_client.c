@@ -332,9 +332,10 @@ FTM_RET FTM_CLIENT_request
 /*****************************************************************
  *
  *****************************************************************/
-FTM_RET FTM_CLIENT_addCCTV
+FTM_RET FTM_CLIENT_CCTV_add
 (
  	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pID,
 	FTM_CHAR_PTR	pIP,
 	FTM_CHAR_PTR	pSwitchID,
@@ -342,8 +343,8 @@ FTM_RET FTM_CLIENT_addCCTV
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_ADD_CCTV_PARAMS		xReq;
-	FTM_RESP_ADD_CCTV_PARAMS	xResp;
+	FTM_REQ_CCTV_ADD_PARAMS		xReq;
+	FTM_RESP_CCTV_ADD_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -352,8 +353,9 @@ FTM_RET FTM_CLIENT_addCCTV
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_ADD_CCTV;
+	xReq.xCommon.xCmd	=	FTM_CMD_CCTV_ADD;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	if (pID != NULL)
 	{
@@ -384,15 +386,16 @@ FTM_RET FTM_CLIENT_addCCTV
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_delCCTV
+FTM_RET	FTM_CLIENT_CCTV_del
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pID
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_DEL_CCTV_PARAMS		xReq;
-	FTM_RESP_DEL_CCTV_PARAMS	xResp;
+	FTM_REQ_CCTV_DEL_PARAMS		xReq;
+	FTM_RESP_CCTV_DEL_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -406,8 +409,9 @@ FTM_RET	FTM_CLIENT_delCCTV
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_DEL_CCTV;
+	xReq.xCommon.xCmd	=	FTM_CMD_CCTV_DEL;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
 
@@ -420,15 +424,16 @@ FTM_RET	FTM_CLIENT_delCCTV
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_getCCTVCount
+FTM_RET	FTM_CLIENT_CCTV_getCount
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32_PTR	pCount
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_CCTV_COUNT_PARAMS		xReq;
-	FTM_RESP_GET_CCTV_COUNT_PARAMS	xResp;
+	FTM_REQ_CCTV_GET_COUNT_PARAMS		xReq;
+	FTM_RESP_CCTV_GET_COUNT_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -442,8 +447,9 @@ FTM_RET	FTM_CLIENT_getCCTVCount
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_CCTV_COUNT;
+	xReq.xCommon.xCmd	=	FTM_CMD_CCTV_GET_COUNT;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
 	if (xRet != FTM_RET_OK)
@@ -456,17 +462,18 @@ FTM_RET	FTM_CLIENT_getCCTVCount
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_setCCTVProperties
+FTM_RET	FTM_CLIENT_CCTV_setProperties
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pID,
 	FTM_CCTV_CONFIG_PTR	pConfig,
 	FTM_UINT32		ulFieldFlags
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_SET_CCTV_PROPERTIES_PARAMS	xReq;
-	FTM_RESP_SET_CCTV_PROPERTIES_PARAMS	xResp;
+	FTM_REQ_CCTV_SET_PROPERTIES_PARAMS	xReq;
+	FTM_RESP_CCTV_SET_PROPERTIES_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -480,8 +487,9 @@ FTM_RET	FTM_CLIENT_setCCTVProperties
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_SET_CCTV_PROPERTIES;
+	xReq.xCommon.xCmd	=	FTM_CMD_CCTV_SET_PROPERTIES;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
 	xReq.ulFieldFlags = ulFieldFlags;
@@ -496,16 +504,17 @@ FTM_RET	FTM_CLIENT_setCCTVProperties
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_getCCTVProperties
+FTM_RET	FTM_CLIENT_CCTV_getProperties
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pID,
 	FTM_CCTV_CONFIG_PTR	pConfig
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_CCTV_PROPERTIES_PARAMS	xReq;
-	FTM_RESP_GET_CCTV_PROPERTIES_PARAMS	xResp;
+	FTM_REQ_CCTV_GET_PROPERTIES_PARAMS	xReq;
+	FTM_RESP_CCTV_GET_PROPERTIES_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -521,8 +530,9 @@ FTM_RET	FTM_CLIENT_getCCTVProperties
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_CCTV_PROPERTIES;
+	xReq.xCommon.xCmd	=	FTM_CMD_CCTV_GET_PROPERTIES;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
 
@@ -537,17 +547,18 @@ FTM_RET	FTM_CLIENT_getCCTVProperties
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_getCCTVIDList
+FTM_RET	FTM_CLIENT_CCTV_getIDList
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32		ulMaxCount,
 	FTM_ID_PTR		pIDList,
 	FTM_UINT32_PTR	pulCount
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_CCTV_ID_LIST_PARAMS	xReq;
-	FTM_RESP_GET_CCTV_ID_LIST_PARAMS_PTR	pResp;
+	FTM_REQ_CCTV_GET_ID_LIST_PARAMS	xReq;
+	FTM_RESP_CCTV_GET_ID_LIST_PARAMS_PTR	pResp;
 	FTM_UINT32	ulRespLen = 0;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
@@ -560,8 +571,8 @@ FTM_RET	FTM_CLIENT_getCCTVIDList
 		return	FTM_RET_INVALID_ARGUMENTS;	
 	}
 
-	ulRespLen = sizeof(FTM_RESP_GET_CCTV_ID_LIST_PARAMS) + sizeof(FTM_ID) * ulMaxCount;
-	pResp = (FTM_RESP_GET_CCTV_ID_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
+	ulRespLen = sizeof(FTM_RESP_CCTV_GET_ID_LIST_PARAMS) + sizeof(FTM_ID) * ulMaxCount;
+	pResp = (FTM_RESP_CCTV_GET_ID_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
 	if (pResp == NULL)
 	{
 		return	FTM_RET_NOT_ENOUGH_MEMORY;	
@@ -569,8 +580,9 @@ FTM_RET	FTM_CLIENT_getCCTVIDList
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_CCTV_ID_LIST;
+	xReq.xCommon.xCmd	=	FTM_CMD_CCTV_GET_ID_LIST;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	xReq.ulCount 		=   ulMaxCount;
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)pResp, ulRespLen);
@@ -589,17 +601,18 @@ FTM_RET	FTM_CLIENT_getCCTVIDList
 }
 
 
-FTM_RET	FTM_CLIENT_getCCTVList
+FTM_RET	FTM_CLIENT_CCTV_getList
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32		ulMaxCount,
 	FTM_CCTV_CONFIG_PTR	pCCTVList,
 	FTM_UINT32_PTR	pulCount
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_CCTV_LIST_PARAMS	xReq;
-	FTM_RESP_GET_CCTV_LIST_PARAMS_PTR	pResp;
+	FTM_REQ_CCTV_GET_LIST_PARAMS	xReq;
+	FTM_RESP_CCTV_GET_LIST_PARAMS_PTR	pResp;
 	FTM_UINT32	ulRespLen = 0;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
@@ -612,13 +625,13 @@ FTM_RET	FTM_CLIENT_getCCTVList
 		return	FTM_RET_INVALID_ARGUMENTS;	
 	}
 
-	if ( ulMaxCount > (MAX_FRAME_SIZE - sizeof(FTM_RESP_GET_CCTV_LIST_PARAMS)) / sizeof(FTM_CCTV_CONFIG))
+	if ( ulMaxCount > (MAX_FRAME_SIZE - sizeof(FTM_RESP_CCTV_GET_LIST_PARAMS)) / sizeof(FTM_CCTV_CONFIG))
 	{
-		ulMaxCount = (MAX_FRAME_SIZE - sizeof(FTM_RESP_GET_CCTV_LIST_PARAMS)) / sizeof(FTM_CCTV_CONFIG);
+		ulMaxCount = (MAX_FRAME_SIZE - sizeof(FTM_RESP_CCTV_GET_LIST_PARAMS)) / sizeof(FTM_CCTV_CONFIG);
 	}
 
-	ulRespLen = sizeof(FTM_RESP_GET_CCTV_LIST_PARAMS) + sizeof(FTM_CCTV_CONFIG) * ulMaxCount;
-	pResp = (FTM_RESP_GET_CCTV_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
+	ulRespLen = sizeof(FTM_RESP_CCTV_GET_LIST_PARAMS) + sizeof(FTM_CCTV_CONFIG) * ulMaxCount;
+	pResp = (FTM_RESP_CCTV_GET_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
 	if (pResp == NULL)
 	{
 		return	FTM_RET_NOT_ENOUGH_MEMORY;	
@@ -626,8 +639,9 @@ FTM_RET	FTM_CLIENT_getCCTVList
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_CCTV_LIST;
+	xReq.xCommon.xCmd	=	FTM_CMD_CCTV_GET_LIST;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	xReq.ulCount 		=   ulMaxCount;
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)pResp, ulRespLen);
@@ -645,16 +659,17 @@ FTM_RET	FTM_CLIENT_getCCTVList
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_setCCTVPolicy
+FTM_RET	FTM_CLIENT_CCTV_setPolicy
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pID,
 	FTM_SWITCH_AC_POLICY	xPolicy
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_SET_CCTV_POLICY_PARAMS	xReq;
-	FTM_RESP_SET_CCTV_POLICY_PARAMS	xResp;
+	FTM_REQ_CCTV_SET_POLICY_PARAMS	xReq;
+	FTM_RESP_CCTV_SET_POLICY_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -668,8 +683,9 @@ FTM_RET	FTM_CLIENT_setCCTVPolicy
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_SET_CCTV_POLICY;
+	xReq.xCommon.xCmd	=	FTM_CMD_CCTV_SET_POLICY;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
 	xReq.xPolicy = xPolicy;
@@ -683,16 +699,17 @@ FTM_RET	FTM_CLIENT_setCCTVPolicy
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_resetCCTV
+FTM_RET	FTM_CLIENT_CCTV_reset
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pID,
 	FTM_CHAR_PTR	pHash
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_RESET_CCTV_PARAMS		xReq;
-	FTM_RESP_RESET_CCTV_PARAMS	xResp;
+	FTM_REQ_CCTV_RESET_PARAMS		xReq;
+	FTM_RESP_CCTV_RESET_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -706,8 +723,9 @@ FTM_RET	FTM_CLIENT_resetCCTV
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_RESET_CCTV;
+	xReq.xCommon.xCmd	=	FTM_CMD_CCTV_RESET;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
 	strncpy(xReq.pHash, pHash, sizeof(xReq.pHash) - 1);
@@ -724,15 +742,16 @@ FTM_RET	FTM_CLIENT_resetCCTV
 /*****************************************************************
  *
  *****************************************************************/
-FTM_RET FTM_CLIENT_addSwitch
+FTM_RET FTM_CLIENT_SWITCH_add
 (
  	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_SWITCH_CONFIG_PTR	pConfig
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_ADD_SWITCH_PARAMS		xReq;
-	FTM_RESP_ADD_SWITCH_PARAMS	xResp;
+	FTM_REQ_SWITCH_ADD_PARAMS		xReq;
+	FTM_RESP_SWITCH_ADD_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -741,8 +760,9 @@ FTM_RET FTM_CLIENT_addSwitch
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_ADD_SWITCH;
+	xReq.xCommon.xCmd	=	FTM_CMD_SWITCH_ADD;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	memcpy(&xReq.xConfig, pConfig, sizeof(FTM_SWITCH_CONFIG));
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
@@ -754,15 +774,16 @@ FTM_RET FTM_CLIENT_addSwitch
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_delSwitch
+FTM_RET	FTM_CLIENT_SWITCH_del
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pID
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_DEL_SWITCH_PARAMS		xReq;
-	FTM_RESP_DEL_SWITCH_PARAMS	xResp;
+	FTM_REQ_SWITCH_DEL_PARAMS		xReq;
+	FTM_RESP_SWITCH_DEL_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -776,8 +797,9 @@ FTM_RET	FTM_CLIENT_delSwitch
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_DEL_SWITCH;
+	xReq.xCommon.xCmd	=	FTM_CMD_SWITCH_DEL;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
 
@@ -790,15 +812,16 @@ FTM_RET	FTM_CLIENT_delSwitch
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_getSwitchCount
+FTM_RET	FTM_CLIENT_SWITCH_getCount
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32_PTR	pCount
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_SWITCH_COUNT_PARAMS		xReq;
-	FTM_RESP_GET_SWITCH_COUNT_PARAMS	xResp;
+	FTM_REQ_SWITCH_GET_COUNT_PARAMS		xReq;
+	FTM_RESP_SWITCH_GET_COUNT_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -812,8 +835,9 @@ FTM_RET	FTM_CLIENT_getSwitchCount
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_SWITCH_COUNT;
+	xReq.xCommon.xCmd	=	FTM_CMD_SWITCH_GET_COUNT;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
 	if (xRet != FTM_RET_OK)
@@ -826,17 +850,18 @@ FTM_RET	FTM_CLIENT_getSwitchCount
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_setSwitchProperties
+FTM_RET	FTM_CLIENT_SWITCH_setProperties
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pID,
 	FTM_SWITCH_CONFIG_PTR	pConfig,
 	FTM_UINT32		ulFieldFlags
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_SET_SWITCH_PROPERTIES_PARAMS	xReq;
-	FTM_RESP_SET_SWITCH_PROPERTIES_PARAMS	xResp;
+	FTM_REQ_SWITCH_SET_PROPERTIES_PARAMS	xReq;
+	FTM_RESP_SWITCH_SET_PROPERTIES_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -850,8 +875,9 @@ FTM_RET	FTM_CLIENT_setSwitchProperties
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_SET_SWITCH_PROPERTIES;
+	xReq.xCommon.xCmd	=	FTM_CMD_SWITCH_SET_PROPERTIES;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
 	xReq.ulFieldFlags = ulFieldFlags;
@@ -866,16 +892,17 @@ FTM_RET	FTM_CLIENT_setSwitchProperties
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_getSwitchProperties
+FTM_RET	FTM_CLIENT_SWITCH_getProperties
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pID,
 	FTM_SWITCH_CONFIG_PTR	pConfig
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_SWITCH_PROPERTIES_PARAMS	xReq;
-	FTM_RESP_GET_SWITCH_PROPERTIES_PARAMS	xResp;
+	FTM_REQ_SWITCH_GET_PROPERTIES_PARAMS	xReq;
+	FTM_RESP_SWITCH_GET_PROPERTIES_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -889,8 +916,9 @@ FTM_RET	FTM_CLIENT_getSwitchProperties
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_SWITCH_PROPERTIES;
+	xReq.xCommon.xCmd	=	FTM_CMD_SWITCH_GET_PROPERTIES;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
 
@@ -905,17 +933,18 @@ FTM_RET	FTM_CLIENT_getSwitchProperties
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_getSwitchIDList
+FTM_RET	FTM_CLIENT_SWITCH_getIDList
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32		ulMaxCount,
 	FTM_ID_PTR		pIDList,
 	FTM_UINT32_PTR	pulCount
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_SWITCH_ID_LIST_PARAMS	xReq;
-	FTM_RESP_GET_SWITCH_ID_LIST_PARAMS_PTR	pResp;
+	FTM_REQ_SWITCH_GET_ID_LIST_PARAMS	xReq;
+	FTM_RESP_SWITCH_GET_ID_LIST_PARAMS_PTR	pResp;
 	FTM_UINT32	ulRespLen = 0;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
@@ -928,8 +957,8 @@ FTM_RET	FTM_CLIENT_getSwitchIDList
 		return	FTM_RET_INVALID_ARGUMENTS;	
 	}
 
-	ulRespLen = sizeof(FTM_RESP_GET_SWITCH_ID_LIST_PARAMS) + sizeof(FTM_ID) * ulMaxCount;
-	pResp = (FTM_RESP_GET_SWITCH_ID_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
+	ulRespLen = sizeof(FTM_RESP_SWITCH_GET_ID_LIST_PARAMS) + sizeof(FTM_ID) * ulMaxCount;
+	pResp = (FTM_RESP_SWITCH_GET_ID_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
 	if (pResp == NULL)
 	{
 		return	FTM_RET_NOT_ENOUGH_MEMORY;	
@@ -937,8 +966,9 @@ FTM_RET	FTM_CLIENT_getSwitchIDList
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_SWITCH_ID_LIST;
+	xReq.xCommon.xCmd	=	FTM_CMD_SWITCH_GET_ID_LIST;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	xReq.ulCount 		=   ulMaxCount;
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)pResp, ulRespLen);
@@ -956,17 +986,18 @@ FTM_RET	FTM_CLIENT_getSwitchIDList
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_getSwitchList
+FTM_RET	FTM_CLIENT_SWITCH_getList
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32		ulMaxCount,
 	FTM_SWITCH_CONFIG_PTR	pSwitchList,
 	FTM_UINT32_PTR	pulCount
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_SWITCH_LIST_PARAMS	xReq;
-	FTM_RESP_GET_SWITCH_LIST_PARAMS_PTR	pResp;
+	FTM_REQ_SWITCH_GET_LIST_PARAMS	xReq;
+	FTM_RESP_SWITCH_GET_LIST_PARAMS_PTR	pResp;
 	FTM_UINT32	ulRespLen = 0;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
@@ -979,13 +1010,13 @@ FTM_RET	FTM_CLIENT_getSwitchList
 		return	FTM_RET_INVALID_ARGUMENTS;	
 	}
 
-	if ( ulMaxCount > (MAX_FRAME_SIZE - sizeof(FTM_RESP_GET_SWITCH_LIST_PARAMS)) / sizeof(FTM_SWITCH_CONFIG))
+	if ( ulMaxCount > (MAX_FRAME_SIZE - sizeof(FTM_RESP_SWITCH_GET_LIST_PARAMS)) / sizeof(FTM_SWITCH_CONFIG))
 	{
-		ulMaxCount = (MAX_FRAME_SIZE - sizeof(FTM_RESP_GET_SWITCH_LIST_PARAMS)) / sizeof(FTM_SWITCH_CONFIG);
+		ulMaxCount = (MAX_FRAME_SIZE - sizeof(FTM_RESP_SWITCH_GET_LIST_PARAMS)) / sizeof(FTM_SWITCH_CONFIG);
 	}
 
-	ulRespLen = sizeof(FTM_RESP_GET_SWITCH_LIST_PARAMS) + sizeof(FTM_SWITCH_CONFIG) * ulMaxCount;
-	pResp = (FTM_RESP_GET_SWITCH_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
+	ulRespLen = sizeof(FTM_RESP_SWITCH_GET_LIST_PARAMS) + sizeof(FTM_SWITCH_CONFIG) * ulMaxCount;
+	pResp = (FTM_RESP_SWITCH_GET_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
 	if (pResp == NULL)
 	{
 		return	FTM_RET_NOT_ENOUGH_MEMORY;	
@@ -993,8 +1024,9 @@ FTM_RET	FTM_CLIENT_getSwitchList
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_SWITCH_LIST;
+	xReq.xCommon.xCmd	=	FTM_CMD_SWITCH_GET_LIST;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	xReq.ulCount 		=   ulMaxCount;
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)pResp, ulRespLen);
@@ -1012,17 +1044,18 @@ FTM_RET	FTM_CLIENT_getSwitchList
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_getLogInfo
+FTM_RET	FTM_CLIENT_LOG_getInfo
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32_PTR	pulCount,
 	FTM_UINT32_PTR	pulFirstTime,
 	FTM_UINT32_PTR	pulLastTime
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_LOG_INFO_PARAMS	xReq;
-	FTM_RESP_GET_LOG_INFO_PARAMS	xResp;
+	FTM_REQ_LOG_GET_INFO_PARAMS	xReq;
+	FTM_RESP_LOG_GET_INFO_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1031,8 +1064,9 @@ FTM_RET	FTM_CLIENT_getLogInfo
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_LOG_INFO;
+	xReq.xCommon.xCmd	=	FTM_CMD_LOG_GET_INFO;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
 	if (xRet == FTM_RET_OK)
@@ -1044,15 +1078,16 @@ FTM_RET	FTM_CLIENT_getLogInfo
 
 	return	xRet;
 }
-FTM_RET	FTM_CLIENT_getLogCount
+FTM_RET	FTM_CLIENT_LOG_getCount
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32_PTR	pulCount
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_LOG_COUNT_PARAMS	xReq;
-	FTM_RESP_GET_LOG_COUNT_PARAMS	xResp;
+	FTM_REQ_LOG_GET_COUNT_PARAMS	xReq;
+	FTM_RESP_LOG_GET_COUNT_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1061,8 +1096,9 @@ FTM_RET	FTM_CLIENT_getLogCount
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_LOG_COUNT;
+	xReq.xCommon.xCmd	=	FTM_CMD_LOG_GET_COUNT;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
 	if (xRet == FTM_RET_OK)
@@ -1073,9 +1109,10 @@ FTM_RET	FTM_CLIENT_getLogCount
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_delLog
+FTM_RET	FTM_CLIENT_LOG_del
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulCount,
 	FTM_UINT32_PTR	pulRemainCount,
@@ -1084,8 +1121,8 @@ FTM_RET	FTM_CLIENT_delLog
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_DEL_LOG_PARAMS	xReq;
-	FTM_RESP_DEL_LOG_PARAMS	xResp;
+	FTM_REQ_LOG_DEL_PARAMS	xReq;
+	FTM_RESP_LOG_DEL_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1094,8 +1131,9 @@ FTM_RET	FTM_CLIENT_delLog
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_DEL_LOG;
+	xReq.xCommon.xCmd	=	FTM_CMD_LOG_DEL;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	xReq.ulIndex		=	ulIndex;
 	xReq.ulCount 		=   ulCount;
 
@@ -1110,9 +1148,10 @@ FTM_RET	FTM_CLIENT_delLog
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_getLogList
+FTM_RET	FTM_CLIENT_LOG_getList
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_LOG_TYPE	xType,
 	FTM_CHAR_PTR	pID,
 	FTM_CHAR_PTR	pIP,
@@ -1126,8 +1165,8 @@ FTM_RET	FTM_CLIENT_getLogList
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_LOG_LIST_PARAMS	xReq;
-	FTM_RESP_GET_LOG_LIST_PARAMS_PTR	pResp;
+	FTM_REQ_LOG_GET_LIST_PARAMS	xReq;
+	FTM_RESP_LOG_GET_LIST_PARAMS_PTR	pResp;
 	FTM_UINT32	ulRespLen = 0;
 	FTM_UINT32	ulAllowedNumber = 0;
 
@@ -1142,12 +1181,12 @@ FTM_RET	FTM_CLIENT_getLogList
 	}
 
 	INFO("Begin : %u, End : %u", ulBeginTime, ulEndTime);
-	ulAllowedNumber = (FTM_PARAM_MAX_LEN - sizeof(FTM_RESP_GET_LOG_LIST_PARAMS)) / sizeof(FTM_LOG);
+	ulAllowedNumber = (FTM_PARAM_MAX_LEN - sizeof(FTM_RESP_LOG_GET_LIST_PARAMS)) / sizeof(FTM_LOG);
 	
 	if(ulAllowedNumber >= ulMaxCount)
 	{
-		ulRespLen = sizeof(FTM_RESP_GET_LOG_LIST_PARAMS) + sizeof(FTM_LOG) * ulMaxCount;
-		pResp = (FTM_RESP_GET_LOG_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
+		ulRespLen = sizeof(FTM_RESP_LOG_GET_LIST_PARAMS) + sizeof(FTM_LOG) * ulMaxCount;
+		pResp = (FTM_RESP_LOG_GET_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
 		if (pResp == NULL)
 		{
 			return	FTM_RET_NOT_ENOUGH_MEMORY;	
@@ -1155,8 +1194,9 @@ FTM_RET	FTM_CLIENT_getLogList
 
 		memset(&xReq, 0, sizeof(xReq));
 
-		xReq.xCommon.xCmd	=	FTM_CMD_GET_LOG_LIST;
+		xReq.xCommon.xCmd	=	FTM_CMD_LOG_GET_LIST;
 		xReq.xCommon.ulLen	=	sizeof(xReq);
+		strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 		xReq.xType			= 	xType;
 		if (pID != NULL)
 		{
@@ -1199,7 +1239,7 @@ FTM_RET	FTM_CLIENT_getLogList
 
 			ulReqCount = (ulAllowedNumber > ulMaxCount)?ulMaxCount:ulAllowedNumber;
 
-			xRet = FTM_CLIENT_getLogList(pClient, xType, pID, pIP, xStat, ulBeginTime, ulEndTime, ulIndex, ulReqCount, &pLogList[ulTotalCount], &ulRespCount);
+			xRet = FTM_CLIENT_LOG_getList(pClient, pSSID, xType, pID, pIP, xStat, ulBeginTime, ulEndTime, ulIndex, ulReqCount, &pLogList[ulTotalCount], &ulRespCount);
 			if (xRet != FTM_RET_OK)
 			{
 				break;	
@@ -1227,17 +1267,18 @@ FTM_RET	FTM_CLIENT_getLogList
 /*****************************************************************
  *
  *****************************************************************/
-FTM_RET FTM_CLIENT_addAlarm
+FTM_RET FTM_CLIENT_ALARM_add
 (
  	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pName,
 	FTM_CHAR_PTR	pEmail,
 	FTM_CHAR_PTR	pMessage
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_ADD_ALARM_PARAMS		xReq;
-	FTM_RESP_ADD_ALARM_PARAMS	xResp;
+	FTM_REQ_ALARM_ADD_PARAMS		xReq;
+	FTM_RESP_ALARM_ADD_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1246,8 +1287,9 @@ FTM_RET FTM_CLIENT_addAlarm
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_ADD_ALARM;
+	xReq.xCommon.xCmd	=	FTM_CMD_ALARM_ADD;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	if ((pName == NULL) || (pEmail == NULL))
 	{
@@ -1271,15 +1313,16 @@ FTM_RET FTM_CLIENT_addAlarm
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_delAlarm
+FTM_RET	FTM_CLIENT_ALARM_del
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pName
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_DEL_ALARM_PARAMS	xReq;
-	FTM_RESP_DEL_ALARM_PARAMS	xResp;
+	FTM_REQ_ALARM_DEL_PARAMS	xReq;
+	FTM_RESP_ALARM_DEL_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1293,8 +1336,9 @@ FTM_RET	FTM_CLIENT_delAlarm
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_DEL_ALARM;
+	xReq.xCommon.xCmd	=	FTM_CMD_ALARM_DEL;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	strncpy(xReq.pName, pName, sizeof(xReq.pName) - 1);
 
@@ -1307,15 +1351,16 @@ FTM_RET	FTM_CLIENT_delAlarm
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET	FTM_CLIENT_getAlarmCount
+FTM_RET	FTM_CLIENT_ALARM_getCount
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32_PTR	pCount
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_ALARM_COUNT_PARAMS	xReq;
-	FTM_RESP_GET_ALARM_COUNT_PARAMS	xResp;
+	FTM_REQ_ALARM_GET_COUNT_PARAMS	xReq;
+	FTM_RESP_ALARM_GET_COUNT_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1329,8 +1374,9 @@ FTM_RET	FTM_CLIENT_getAlarmCount
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_ALARM_COUNT;
+	xReq.xCommon.xCmd	=	FTM_CMD_ALARM_GET_COUNT;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
 	if (xRet != FTM_RET_OK)
@@ -1343,16 +1389,17 @@ FTM_RET	FTM_CLIENT_getAlarmCount
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET FTM_CLIENT_getAlarm
+FTM_RET FTM_CLIENT_ALARM_get
 (
  	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pName,
 	FTM_ALARM_PTR	pAlarm
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_ALARM_PARAMS	xReq;
-	FTM_RESP_GET_ALARM_PARAMS	xResp;
+	FTM_REQ_ALARM_GET_PARAMS	xReq;
+	FTM_RESP_ALARM_GET_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1361,8 +1408,9 @@ FTM_RET FTM_CLIENT_getAlarm
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_ALARM;
+	xReq.xCommon.xCmd	=	FTM_CMD_ALARM_GET;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	strncpy(xReq.pName, pName, sizeof(xReq.pName) - 1);
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
@@ -1376,17 +1424,18 @@ FTM_RET FTM_CLIENT_getAlarm
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET FTM_CLIENT_setAlarm
+FTM_RET FTM_CLIENT_ALARM_set
 (
  	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_CHAR_PTR	pName,
 	FTM_ALARM_PTR	pAlarm,
 	FTM_UINT32		ulFieldFlags
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_SET_ALARM_PARAMS		xReq;
-	FTM_RESP_SET_ALARM_PARAMS	xResp;
+	FTM_REQ_ALARM_SET_PARAMS		xReq;
+	FTM_RESP_ALARM_SET_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1395,8 +1444,9 @@ FTM_RET FTM_CLIENT_setAlarm
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_SET_ALARM;
+	xReq.xCommon.xCmd	=	FTM_CMD_ALARM_SET;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	strncpy(xReq.pName, pName, sizeof(xReq.pName) - 1);
 	memcpy(&xReq.xAlarm, pAlarm, sizeof(FTM_ALARM));
 	xReq.ulFieldFlags   = ulFieldFlags;
@@ -1410,9 +1460,10 @@ FTM_RET FTM_CLIENT_setAlarm
 	return	xResp.xCommon.xRet;
 }
 
-FTM_RET FTM_CLIENT_getAlarmNameList
+FTM_RET FTM_CLIENT_ALARM_getNameList
 (
  	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulMaxCount,
 	FTM_NAME_PTR	pNameList,
@@ -1420,8 +1471,8 @@ FTM_RET FTM_CLIENT_getAlarmNameList
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_ALARM_NAME_LIST_PARAMS	xReq;
-	FTM_RESP_GET_ALARM_NAME_LIST_PARAMS_PTR	pResp;
+	FTM_REQ_ALARM_GET_NAME_LIST_PARAMS	xReq;
+	FTM_RESP_ALARM_GET_NAME_LIST_PARAMS_PTR	pResp;
 	FTM_UINT32						ulRespLen;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
@@ -1429,8 +1480,8 @@ FTM_RET FTM_CLIENT_getAlarmNameList
 		return	FTM_RET_CLIENT_HANDLE_INVALID;	
 	}
 
-	ulRespLen = sizeof(FTM_RESP_GET_ALARM_NAME_LIST_PARAMS)	+ sizeof(FTM_NAME)*ulMaxCount;
-	pResp = (FTM_RESP_GET_ALARM_NAME_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
+	ulRespLen = sizeof(FTM_RESP_ALARM_GET_NAME_LIST_PARAMS)	+ sizeof(FTM_NAME)*ulMaxCount;
+	pResp = (FTM_RESP_ALARM_GET_NAME_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
 	if (pResp == NULL)
 	{
 		return	FTM_RET_NOT_ENOUGH_MEMORY;	
@@ -1438,8 +1489,9 @@ FTM_RET FTM_CLIENT_getAlarmNameList
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_ALARM_NAME_LIST;
+	xReq.xCommon.xCmd	=	FTM_CMD_ALARM_GET_NAME_LIST;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	xReq.ulIndex		=   ulIndex;
 	xReq.ulCount		=   ulMaxCount;
 
@@ -1455,15 +1507,16 @@ FTM_RET FTM_CLIENT_getAlarmNameList
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_getSMTP
+FTM_RET	FTM_CLIENT_SMTP_get
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_SMTP_PARAMS		xReq;
-	FTM_RESP_GET_SMTP_PARAMS	xResp;
+	FTM_REQ_SMTP_GET_PARAMS		xReq;
+	FTM_RESP_SMTP_GET_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1472,8 +1525,9 @@ FTM_RET	FTM_CLIENT_getSMTP
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_SMTP;
+	xReq.xCommon.xCmd	=	FTM_CMD_SMTP_GET;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
 	if (xRet == FTM_RET_OK)
@@ -1484,16 +1538,17 @@ FTM_RET	FTM_CLIENT_getSMTP
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_setSMTP
+FTM_RET	FTM_CLIENT_SMTP_set
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_NOTIFIER_SMTP_CONFIG_PTR	pConfig,
 	FTM_NOTIFIER_SMTP_CONFIG_PTR	pResultConfig
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_SET_SMTP_PARAMS		xReq;
-	FTM_RESP_SET_SMTP_PARAMS	xResp;
+	FTM_REQ_SMTP_SET_PARAMS		xReq;
+	FTM_RESP_SMTP_SET_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1502,8 +1557,9 @@ FTM_RET	FTM_CLIENT_setSMTP
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_SET_SMTP;
+	xReq.xCommon.xCmd	=	FTM_CMD_SMTP_SET;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	memcpy(&xReq.xSMTP, pConfig, sizeof(FTM_NOTIFIER_SMTP_CONFIG));
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
@@ -1515,16 +1571,17 @@ FTM_RET	FTM_CLIENT_setSMTP
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_setStatInfo
+FTM_RET	FTM_CLIENT_STAT_setInfo
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_SYSTEM_INFO_PTR	pRequestInfo,
 	FTM_SYSTEM_INFO_PTR	pResultInfo
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_SET_STAT_INFO_PARAMS	xReq;
-	FTM_RESP_SET_STAT_INFO_PARAMS	xResp;
+	FTM_REQ_STAT_SET_INFO_PARAMS	xReq;
+	FTM_RESP_STAT_SET_INFO_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1533,8 +1590,9 @@ FTM_RET	FTM_CLIENT_setStatInfo
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_SET_STAT_INFO;
+	xReq.xCommon.xCmd	=	FTM_CMD_STAT_SET_INFO;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	memcpy(&xReq.xInfo, pRequestInfo, sizeof(FTM_SYSTEM_INFO));
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
@@ -1546,15 +1604,16 @@ FTM_RET	FTM_CLIENT_setStatInfo
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_getStatInfo
+FTM_RET	FTM_CLIENT_STAT_getInfo
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_SYSTEM_INFO_PTR	pInfo
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_STAT_INFO_PARAMS	xReq;
-	FTM_RESP_GET_STAT_INFO_PARAMS	xResp;
+	FTM_REQ_STAT_GET_INFO_PARAMS	xReq;
+	FTM_RESP_STAT_GET_INFO_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1563,8 +1622,9 @@ FTM_RET	FTM_CLIENT_getStatInfo
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_STAT_INFO;
+	xReq.xCommon.xCmd	=	FTM_CMD_STAT_GET_INFO;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
 	if (xRet == FTM_RET_OK)
@@ -1574,15 +1634,16 @@ FTM_RET	FTM_CLIENT_getStatInfo
 
 	return	xRet;
 }
-FTM_RET	FTM_CLIENT_getStatCount
+FTM_RET	FTM_CLIENT_STAT_getCount
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32_PTR	pulCount
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_STAT_COUNT_PARAMS	xReq;
-	FTM_RESP_GET_STAT_COUNT_PARAMS	xResp;
+	FTM_REQ_STAT_GET_COUNT_PARAMS	xReq;
+	FTM_RESP_STAT_GET_COUNT_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1591,8 +1652,9 @@ FTM_RET	FTM_CLIENT_getStatCount
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_GET_STAT_COUNT;
+	xReq.xCommon.xCmd	=	FTM_CMD_STAT_GET_COUNT;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 
 	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
 	if (xRet == FTM_RET_OK)
@@ -1603,9 +1665,10 @@ FTM_RET	FTM_CLIENT_getStatCount
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_delStat
+FTM_RET	FTM_CLIENT_STAT_del
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulCount,
 	FTM_UINT32_PTR	pulRemainCount,
@@ -1614,8 +1677,8 @@ FTM_RET	FTM_CLIENT_delStat
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_DEL_STAT_PARAMS	xReq;
-	FTM_RESP_DEL_STAT_PARAMS	xResp;
+	FTM_REQ_STAT_DEL_PARAMS	xReq;
+	FTM_RESP_STAT_DEL_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1624,8 +1687,9 @@ FTM_RET	FTM_CLIENT_delStat
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_DEL_STAT;
+	xReq.xCommon.xCmd	=	FTM_CMD_STAT_DEL;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	xReq.ulIndex		=	ulIndex;
 	xReq.ulCount 		=   ulCount;
 
@@ -1640,9 +1704,10 @@ FTM_RET	FTM_CLIENT_delStat
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_delStat2
+FTM_RET	FTM_CLIENT_STAT_del2
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32		ulBeginTime,
 	FTM_UINT32		ulEndTime,
 	FTM_UINT32_PTR	pulRemainCount,
@@ -1651,8 +1716,8 @@ FTM_RET	FTM_CLIENT_delStat2
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_DEL_STAT2_PARAMS	xReq;
-	FTM_RESP_DEL_STAT2_PARAMS	xResp;
+	FTM_REQ_STAT_DEL2_PARAMS	xReq;
+	FTM_RESP_STAT_DEL2_PARAMS	xResp;
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
@@ -1661,8 +1726,9 @@ FTM_RET	FTM_CLIENT_delStat2
 
 	memset(&xReq, 0, sizeof(xReq));
 
-	xReq.xCommon.xCmd	=	FTM_CMD_DEL_STAT2;
+	xReq.xCommon.xCmd	=	FTM_CMD_STAT_DEL2;
 	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 	xReq.ulBeginTime	=	ulBeginTime;
 	xReq.ulEndTime		=   ulEndTime;
 
@@ -1677,9 +1743,10 @@ FTM_RET	FTM_CLIENT_delStat2
 	return	xRet;
 }
 
-FTM_RET	FTM_CLIENT_getStatList
+FTM_RET	FTM_CLIENT_STAT_getList
 (
 	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
 	FTM_UINT32		ulIndex,
 	FTM_UINT32		ulMaxCount,
 	FTM_STATISTICS_PTR		pStatList,
@@ -1687,8 +1754,8 @@ FTM_RET	FTM_CLIENT_getStatList
 )
 {
 	FTM_RET	xRet;
-	FTM_REQ_GET_STAT_LIST_PARAMS	xReq;
-	FTM_RESP_GET_STAT_LIST_PARAMS_PTR	pResp;
+	FTM_REQ_STAT_GET_LIST_PARAMS	xReq;
+	FTM_RESP_STAT_GET_LIST_PARAMS_PTR	pResp;
 	FTM_UINT32	ulRespLen = 0;
 	FTM_UINT32	ulAllowedNumber = 0;
 
@@ -1702,12 +1769,12 @@ FTM_RET	FTM_CLIENT_getStatList
 		return	FTM_RET_INVALID_ARGUMENTS;	
 	}
 	
-	ulAllowedNumber = (FTM_PARAM_MAX_LEN - sizeof(FTM_RESP_GET_STAT_LIST_PARAMS)) / sizeof(FTM_STATISTICS);
+	ulAllowedNumber = (FTM_PARAM_MAX_LEN - sizeof(FTM_RESP_STAT_GET_LIST_PARAMS)) / sizeof(FTM_STATISTICS);
 	
 	if(ulAllowedNumber >= ulMaxCount)
 	{
-		ulRespLen = sizeof(FTM_RESP_GET_STAT_LIST_PARAMS) + sizeof(FTM_STATISTICS) * ulMaxCount;
-		pResp = (FTM_RESP_GET_STAT_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
+		ulRespLen = sizeof(FTM_RESP_STAT_GET_LIST_PARAMS) + sizeof(FTM_STATISTICS) * ulMaxCount;
+		pResp = (FTM_RESP_STAT_GET_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
 		if (pResp == NULL)
 		{
 			return	FTM_RET_NOT_ENOUGH_MEMORY;	
@@ -1715,8 +1782,9 @@ FTM_RET	FTM_CLIENT_getStatList
 
 		memset(&xReq, 0, sizeof(xReq));
 
-		xReq.xCommon.xCmd	=	FTM_CMD_GET_STAT_LIST;
+		xReq.xCommon.xCmd	=	FTM_CMD_STAT_GET_LIST;
 		xReq.xCommon.ulLen	=	sizeof(xReq);
+		strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
 		xReq.ulIndex		=	ulIndex;
 		xReq.ulCount 		=   ulMaxCount;
 
@@ -1743,7 +1811,7 @@ FTM_RET	FTM_CLIENT_getStatList
 
 			ulReqCount = (ulAllowedNumber > ulMaxCount)?ulMaxCount:ulAllowedNumber;
 
-			xRet = FTM_CLIENT_getStatList(pClient, ulIndex, ulReqCount, &pStatList[ulTotalCount], &ulRespCount);
+			xRet = FTM_CLIENT_STAT_getList(pClient, pSSID, ulIndex, ulReqCount, &pStatList[ulTotalCount], &ulRespCount);
 			if (xRet != FTM_RET_OK)
 			{
 				break;	
@@ -1762,3 +1830,93 @@ FTM_RET	FTM_CLIENT_getStatList
 
 	return	xRet;
 }
+
+FTM_RET	FTM_CLIENT_SSID_create
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pID,
+	FTM_UINT32		ulIDLen,
+	FTM_CHAR_PTR	pPasswd,
+	FTM_UINT32		ulPasswdLen,
+	FTM_CHAR_PTR	pSSID,
+	FTM_UINT32		ulSSIDLen
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_SSID_CREATE_PARAMS	xReq;
+	FTM_RESP_SSID_CREATE_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_SSID_CREATE;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
+	strncpy(xReq.pPasswd, pPasswd, sizeof(xReq.pPasswd) - 1);
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+	if (xRet == FTM_RET_OK)
+	{
+		if (ulSSIDLen < strlen(xResp.pSSID))
+		{
+			return	FTM_RET_BUFFER_TOO_SMALL;	
+		}
+
+		strncpy(pSSID, xResp.pSSID, ulSSIDLen);
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CLIENT_SSID_del
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
+	FTM_UINT32		ulSSIDLen
+)
+{
+	FTM_REQ_SSID_DEL_PARAMS	xReq;
+	FTM_RESP_SSID_DEL_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_STAT_DEL2;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
+
+	return	FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+}
+
+FTM_RET	FTM_CLIENT_SSID_verify
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
+	FTM_UINT32		ulSSIDLen
+)
+{
+	FTM_REQ_SSID_VERIFY_PARAMS	xReq;
+	FTM_RESP_SSID_VERIFY_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_SSID_VERIFY;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SSID_LEN);
+
+	return	FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+}
+

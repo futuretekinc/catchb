@@ -26,4 +26,13 @@ FTM_CHAR_PTR	FTM_LOG_TYPE_print
 	FTM_LOG_TYPE	xType
 );
 
+FTM_RET	FTM_LOG_add
+(
+	FTM_LOG_TYPE	xType,
+	FTM_UINT32		ulTime,
+	FTM_CHAR_PTR	pCCTVID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xStat,
+	FTM_CHAR_PTR	pLog
+);
 #endif

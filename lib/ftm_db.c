@@ -4,6 +4,7 @@
 #include "ftm_mem.h"
 #include "ftm_db.h"
 #include "ftm_trace.h"
+#include "libaes.h"
 
 #undef	__MODULE__
 #define	__MODULE__	"database"
@@ -2077,11 +2078,18 @@ FTM_RET	FTM_DB_addSwitch
 	ASSERT(pID != NULL);
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
+	FTM_CHAR	pEncryptedID[FTM_USER_LEN*2+1];
+	FTM_CHAR	pEncryptedPasswd[FTM_PASSWD_LEN*2+1];
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
+	memset(pEncryptedPasswd, 0, sizeof(pEncryptedPasswd));
+
+	FTM_encryptPasswd(pUser, ((pUser)?strlen(pUser):0), pEncryptedID, sizeof(pEncryptedID));
+	FTM_encryptPasswd(pPasswd, ((pPasswd)?strlen(pPasswd):0), pEncryptedPasswd, sizeof(pEncryptedPasswd));
+
 	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_ID, _MODEL, _IP, _USERID, _PASSWD, _SECURE, _COMMENT) VALUES('%s', %d, '%s', '%s', '%s', %d, '%s');", 
-		pDB->pSwitchTableName, pID, xModel, (pIP)?pIP:"", (pUser)?pUser:"", (pPasswd)?pPasswd:"", bSecure, (pComment)?pComment:"");
+		pDB->pSwitchTableName, pID, xModel, (pIP)?pIP:"", pEncryptedID, pEncryptedPasswd, bSecure, (pComment)?pComment:"");
 
 	INFO("QUERY : %s", pQuery);
 	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
@@ -2159,24 +2167,34 @@ FTM_RET	FTM_DB_setSwitchProperties
 
 	if (ulFieldFlags & FTM_SWITCH_FIELD_USER_ID)
 	{
+		FTM_CHAR	pEncrypted[FTM_USER_LEN*2+1];
+
 		if (!bNew)
 		{
 			ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ",");
 			bNew = FTM_FALSE;
 		}
 
-		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _USERID = '%s'", pConfig->pUserID);
+		memset(pEncrypted, 0, sizeof(pEncrypted));
+		FTM_encryptPasswd(pConfig->pUserID, strlen(pConfig->pUserID), pEncrypted, sizeof(pEncrypted));
+
+		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _USERID = '%s'", pEncrypted);
 	}
 
 	if (ulFieldFlags & FTM_SWITCH_FIELD_PASSWD)
 	{
+		FTM_CHAR	pEncryptedPasswd[FTM_PASSWD_LEN*2+1];
+		
 		if (!bNew)
 		{
 			ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ",");
 			bNew = FTM_FALSE;
 		}
 
-		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _PASSWD = '%s'", pConfig->pPasswd);
+		memset(pEncryptedPasswd, 0, sizeof(pEncryptedPasswd));
+		FTM_encryptPasswd(pConfig->pPasswd, strlen(pConfig->pPasswd), pEncryptedPasswd, sizeof(pEncryptedPasswd));
+
+		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _PASSWD = '%s'", pEncryptedPasswd);
 	}
 
 	if (ulFieldFlags & FTM_SWITCH_FIELD_SECURE)
@@ -2247,11 +2265,11 @@ FTM_INT	FTM_DB_getSwitchListCB
 			}    
 			else if (strcmp(ppColName[i], "_USERID") == 0)
 			{    
-				strcpy(pParams->pElements[pParams->ulCount].pUserID, ppArgv[i]);
+				FTM_decryptPasswd(ppArgv[i], strlen(ppArgv[i]), pParams->pElements[pParams->ulCount].pUserID, FTM_USER_LEN);
 			}    
 			else if (strcmp(ppColName[i], "_PASSWD") == 0)
 			{    
-				strcpy(pParams->pElements[pParams->ulCount].pPasswd, ppArgv[i]);
+				FTM_decryptPasswd(ppArgv[i], strlen(ppArgv[i]), pParams->pElements[pParams->ulCount].pPasswd, FTM_PASSWD_LEN);
 			}    
 			else if (strcmp(ppColName[i], "_SECURE") == 0)
 			{    

@@ -5,23 +5,12 @@
 #include "ftm_cgi.h"
 #include "ftm_cgi_command.h"
 #include "ftm_utils.h"
+#include "ftm_profile.h"
 
 #undef	__MODULE__
 #define	__MODULE__	"cgi"
 
-typedef	struct
-{
-	FTM_CHAR	pLocation[64];
-	FTM_CHAR	pUserID[64];
-	FTM_CHAR	pPasswd[64];
-	FTM_UINT32	ulTimeout;
-}	FTM_PROFILE, _PTR_ FTM_PROFILE_PTR;
-
-FTM_CHAR_PTR	FTM_trim(FTM_CHAR_PTR	pString);
-FTM_RET	FTM_CGI_getProfile(FTM_PROFILE_PTR	pProfile);
-FTM_RET	FTM_CGI_setProfile(FTM_PROFILE_PTR	pProfile);
-
-FTM_RET	FTM_CGI_getSysInfo
+FTM_RET	FTM_CGI_SYS_getInfo
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -31,6 +20,7 @@ FTM_RET	FTM_CGI_getSysInfo
 	ASSERT(pReq != NULL);
 
 	FTM_RET		xRet = FTM_RET_OK;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	cJSON _PTR_	pRoot;
 	FTM_TIME	xBootTime;
 	FTM_FLOAT	fCPUUtilization = 0;
@@ -45,7 +35,22 @@ FTM_RET	FTM_CGI_getSysInfo
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;	
 		ERROR(xRet, "Failed to create json object!");
-		return	xRet;
+		goto finished;
+	}
+
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set time with invalid SSID.!");
+		goto finished;
+	}
+	
+	xRet = FTM_CLIENT_SSID_verify(pClient, pSSID, strlen(pSSID));
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set passwd with invalid SSID.");		
+		goto finished;
 	}
 
 	FTM_getCPUUtilization(&fCPUUtilization);
@@ -124,11 +129,11 @@ FTM_RET	FTM_CGI_getSysInfo
 	INFO("%16s : %s", "Gateway", xNetInfo.pGateway);
 
 	cJSON_AddItemToObject(pRoot, "net", pNet);
-
-	return	FTM_CGI_finish(pReq, pRoot, FTM_RET_OK);
+finished:
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_getSysInfoConfig
+FTM_RET	FTM_CGI_SYS_getInfoConfig
 (
 	FTM_CLIENT_PTR	pClient,
 	qentry_t _PTR_ pReq
@@ -136,6 +141,7 @@ FTM_RET	FTM_CGI_getSysInfoConfig
 {
 	FTM_RET		xRet = FTM_RET_OK;
 	cJSON _PTR_	pRoot;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	cJSON _PTR_	pSection;
 	FTM_SYSTEM_INFO	xInfo;
 	
@@ -147,7 +153,15 @@ FTM_RET	FTM_CGI_getSysInfoConfig
 		return	xRet;
 	}
 
-	xRet = FTM_CLIENT_getStatInfo(pClient, &xInfo);
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log with invalid SSID.");
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_STAT_getInfo(pClient, pSSID, &xInfo);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get system statistics information.");
@@ -168,13 +182,14 @@ finished:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_setSysInfoConfig
+FTM_RET	FTM_CGI_SYS_setInfoConfig
 (
 	FTM_CLIENT_PTR	pClient,
 	qentry_t _PTR_ pReq
 )
 {
 	FTM_RET		xRet = FTM_RET_OK;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	cJSON _PTR_	pRoot;
 	cJSON _PTR_	pSection;
 	FTM_UINT32	ulCount = 0;
@@ -189,7 +204,15 @@ FTM_RET	FTM_CGI_setSysInfoConfig
 		return	xRet;
 	}
 
-	xRet = FTM_CLIENT_getStatInfo(pClient, &xInfo);
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log with invalid SSID.");
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_STAT_getInfo(pClient, pSSID, &xInfo);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get system statistics information.");
@@ -220,7 +243,7 @@ FTM_RET	FTM_CGI_setSysInfoConfig
 
 	if (xInfo.ulFields != 0)
 	{
-		xRet = FTM_CLIENT_setStatInfo(pClient, &xInfo, &xInfo);
+		xRet = FTM_CLIENT_STAT_setInfo(pClient, pSSID, &xInfo, &xInfo);
 		if (xRet != FTM_RET_OK)
 		{
 			ERROR(xRet, "Failed to get system information");
@@ -242,7 +265,7 @@ finished:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_checkPasswd
+FTM_RET	FTM_CGI_SYS_checkPasswd
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -253,7 +276,8 @@ FTM_RET	FTM_CGI_checkPasswd
 
 	FTM_RET		xRet = FTM_RET_OK;
 	cJSON _PTR_	pRoot;
-	FTM_CHAR	pPasswd[64];
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
+	FTM_CHAR	pPasswd[FTM_PASSWD_LEN+1];
 	FTM_PROFILE	xProfile;
 
 	pRoot = cJSON_CreateObject();
@@ -264,7 +288,22 @@ FTM_RET	FTM_CGI_checkPasswd
 		return	xRet;
 	}
 
-	xRet = FTM_CGI_getProfile(&xProfile);
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set time with invalid SSID.!");
+		goto finished;
+	}
+	
+	xRet = FTM_CLIENT_SSID_verify(pClient, pSSID, strlen(pSSID));
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set passwd with invalid SSID.");		
+		goto finished;
+	}
+
+	xRet = FTM_PROFILE_get(&xProfile);
 	if (xRet != FTM_RET_OK)
 	{
 		xRet = FTM_RET_ERROR;
@@ -277,7 +316,7 @@ FTM_RET	FTM_CGI_checkPasswd
 	xRet = FTM_CGI_getPasswd(pReq, pPasswd, sizeof(pPasswd), FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to change passwd because invalid passwd.!");
+		ERROR(xRet, "Failed to change passwd with invalid passwd.!");
 		goto finished;
 	}
 
@@ -296,7 +335,7 @@ finished:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_setPasswd
+FTM_RET	FTM_CGI_SYS_setPasswd
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -307,8 +346,9 @@ FTM_RET	FTM_CGI_setPasswd
 
 	FTM_RET		xRet = FTM_RET_OK;
 	cJSON _PTR_	pRoot;
-	FTM_CHAR	pPasswd[64];
-	FTM_CHAR	pNewPasswd[64];
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
+	FTM_CHAR	pPasswd[FTM_PASSWD_LEN+1];
+	FTM_CHAR	pNewPasswd[FTM_PASSWD_LEN+1];
 	FTM_PROFILE	xProfile;
 
 	pRoot = cJSON_CreateObject();
@@ -319,28 +359,42 @@ FTM_RET	FTM_CGI_setPasswd
 		return	xRet;
 	}
 
-	xRet = FTM_CGI_getProfile(&xProfile);
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set time with invalid SSID.!");
+		goto finished;
+	}
+	
+	memset(pPasswd, 0, sizeof(pPasswd));
+	xRet = FTM_CGI_getPasswd(pReq, pPasswd, sizeof(pPasswd), FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to change passwd with invalid passwd.!");
+		goto finished;
+	}
+
+	memset(pNewPasswd, 0, sizeof(pNewPasswd));
+	xRet = FTM_CGI_getNewPasswd(pReq, pNewPasswd, sizeof(pNewPasswd), FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to change passwd with invalid new passwd.!");
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_SSID_verify(pClient, pSSID, strlen(pSSID));
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set passwd with invalid SSID.");		
+		goto finished;
+	}
+
+	xRet = FTM_PROFILE_get(&xProfile);
 	if (xRet != FTM_RET_OK)
 	{
 		xRet = FTM_RET_ERROR;
 		ERROR(xRet, "Failed to get profile!");
-		goto finished;
-	}
-
-	memset(pPasswd, 0, sizeof(pPasswd));
-	memset(pNewPasswd, 0, sizeof(pNewPasswd));
-
-	xRet = FTM_CGI_getPasswd(pReq, pPasswd, sizeof(pPasswd), FTM_FALSE);
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to change passwd because invalid passwd.!");
-		goto finished;
-	}
-
-	xRet = FTM_CGI_getNewPasswd(pReq, pNewPasswd, sizeof(pNewPasswd), FTM_FALSE);
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to change passwd because invalid new passwd.!");
 		goto finished;
 	}
 
@@ -362,11 +416,10 @@ FTM_RET	FTM_CGI_setPasswd
 
 	strncpy(xProfile.pPasswd, pNewPasswd, sizeof(xProfile.pPasswd) - 1);
 
-	xRet = FTM_CGI_setProfile(&xProfile);
+	xRet = FTM_PROFILE_set(&xProfile);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "There was a problem saving the password.");
-		goto finished;
 	}
 
 finished:
@@ -375,137 +428,52 @@ finished:
 }
 
 
-FTM_RET	FTM_CGI_getProfile
+FTM_RET	FTM_CGI_SYS_setTime
 (
-	FTM_PROFILE_PTR	pProfile
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
 )
 {
+	ASSERT(pClient != NULL);
+	ASSERT(pReq != NULL);
+
 	FTM_RET		xRet = FTM_RET_OK;
-	FTM_PROFILE	xProfile;
-	char		pBuffer[512];
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
+	cJSON _PTR_	pRoot;
+	FTM_UINT32	ulTime = 0;
 
-	memset(&xProfile, 0, sizeof(xProfile));
-
-	FILE *fp = popen("/etc/init.d/webadmin get", "r");
-	if (fp == NULL)
+	pRoot = cJSON_CreateObject();
+	if (pRoot == NULL)
 	{
-		xRet = FTM_RET_ERROR;
-		ERROR(xRet, "Failed to get profile!");
-		return	xRet;	
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;	
+		ERROR(xRet, "Failed to create json object!");
+		return	xRet;
 	}
 
-	while(0 != fgets(pBuffer, sizeof(pBuffer), fp))
+	memset(pSSID, 0, sizeof(pSSID));
+	xRet = FTM_CGI_getSSID(pReq, pSSID, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
 	{
-		char	pTag[32];
-		char	*pPtr = pBuffer;
+		ERROR(xRet, "Failed to set time with invalid SSID.!");
+		goto finished;
+	}
 	
-		if (pBuffer[0] == '#')
-		{	
-			continue;
-		}
-
-		if (1 != sscanf(pPtr, "%s", pTag))
-		{
-			continue;
-		}
-
-		if (0 == strcmp(pTag, "location:"))
-		{
-			pPtr = FTM_trim(pPtr + strlen(pTag));
-
-			strncpy(xProfile.pLocation, pPtr, sizeof(xProfile.pLocation) - 1);
-		}
-		else if (0 == strcmp(pTag, "userid:"))
-		{
-			pPtr = FTM_trim(pPtr + strlen(pTag));
-
-			strncpy(xProfile.pUserID, pPtr, sizeof(xProfile.pUserID) - 1);
-		}
-		else if (0 == strcmp(pTag, "passwd:"))
-		{
-			INFO("PASSWD : %s", pPtr);
-			pPtr = FTM_trim(pPtr + strlen(pTag));
-
-			strncpy(xProfile.pPasswd, pPtr, sizeof(xProfile.pPasswd) - 1);
-		}
-		else if (0 == strcmp(pTag, "timeout:"))
-		{
-			int	nTimeout;
-
-			sscanf(pPtr + strlen(pTag), "%d", &nTimeout);
-			pPtr = FTM_trim(pPtr + strlen(pTag));
-
-			if (nTimeout < 0)
-			{
-				xProfile.ulTimeout = nTimeout;	
-			}
-		}
+	xRet = FTM_CGI_getDate(pReq, &ulTime, FTM_FALSE);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set time with invalid time.!");
+		goto finished;
 	}
 
-	pclose(fp);
+	xRet = FTM_CLIENT_SSID_verify(pClient, pSSID, strlen(pSSID));
+	if (xRet == FTM_RET_OK)
+	{
+		xRet = FTM_setTime((time_t)ulTime);
+	}
 
-	memcpy(pProfile, &xProfile, sizeof(xProfile));
+finished:
 
-	return	FTM_RET_OK;
+	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_setProfile(FTM_PROFILE_PTR	pProfile)
-{
-	FTM_CHAR	pCmdLine[1024];
-	FTM_UINT32	nCmdLen = 0;
 
-	memset(pCmdLine, 0, sizeof(pCmdLine));
-
-	if (strlen(pProfile->pLocation) != 0)
-	{
-		nCmdLen += snprintf(&pCmdLine[nCmdLen], sizeof(pCmdLine) - nCmdLen - 1, "LOCATION=%s ", pProfile->pLocation);
-	}
-
-	if (strlen(pProfile->pUserID) != 0)
-	{
-		nCmdLen += snprintf(&pCmdLine[nCmdLen], sizeof(pCmdLine) - nCmdLen - 1, "USERID=%s ", pProfile->pUserID);
-	}
-
-	if (strlen(pProfile->pPasswd) != 0)
-	{
-		nCmdLen += snprintf(&pCmdLine[nCmdLen], sizeof(pCmdLine) - nCmdLen - 1, "PASSWD=%s ", pProfile->pPasswd);
-	}
-
-	nCmdLen += snprintf(&pCmdLine[nCmdLen], sizeof(pCmdLine) - nCmdLen - 1, "TIMEOUT=%u ", pProfile->ulTimeout);
-
-	nCmdLen += snprintf(&pCmdLine[nCmdLen], sizeof(pCmdLine) - nCmdLen - 1, " /etc/init.d/webadmin update");
-	
-	FILE *fp = popen(pCmdLine, "r");
-	if (fp == NULL)
-	{
-		return	-1;	
-	}
-
-	pclose(fp);
-
-	return	0;
-}
-
-FTM_CHAR_PTR	FTM_trim(FTM_CHAR_PTR	pString)
-{
-	while(0 != (*pString) && isspace(*pString))
-	{
-		pString++;
-	}
-
-	if (0 != (*pString))
-	{
-		int nLen = strlen(pString);
-
-		for(int i = nLen - 1 ; i >= 0 ; i--)
-		{
-			if (!isspace(pString[i]))
-			{
-				break;
-			}
-
-			pString[i] = 0;
-		}
-	}
-	return	pString;
-}

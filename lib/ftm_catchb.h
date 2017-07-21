@@ -401,4 +401,8 @@ FTM_RET	FTM_CATCHB_getStatisticsList
 	FTM_STATISTICS_PTR		pStatisticsList,
 	FTM_UINT32_PTR	pulCount
 );
+
+
+
+extern	FTM_CATCHB_PTR	pCatchB;
 #endif

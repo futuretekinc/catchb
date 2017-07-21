@@ -16,7 +16,7 @@ typedef	struct
 
 extern	FTM_CHAR_PTR	FTM_trim(FTM_CHAR_PTR	pString);
 
-FTM_RET	FTM_CGI_addLogServer
+FTM_RET	FTM_CGI_SYSLOG_add
 (
 	FTM_CLIENT_PTR pClient,
 	qentry_t _PTR_ pReq
@@ -80,7 +80,7 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_delLogServer
+FTM_RET	FTM_CGI_SYSLOG_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -141,7 +141,7 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_getLogServer
+FTM_RET	FTM_CGI_SYSLOG_get
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -234,7 +234,7 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_setLogServer
+FTM_RET	FTM_CGI_SYSLOG_set
 (
 	FTM_CLIENT_PTR	pClient,
 	qentry_t _PTR_ pReq
@@ -360,7 +360,7 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_getLogServerIDList
+FTM_RET	FTM_CGI_SYSLOG_getIDList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq

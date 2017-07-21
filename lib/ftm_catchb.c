@@ -736,7 +736,7 @@ FTM_RET	FTM_CATCHB_initProcess
 							}
 						}
 
-						xRet = FTM_SWITCH_create(&pConfigArray[i], pACs, ulACCount, &pSwitch);
+						xRet = FTM_SWITCH_create(&pConfigArray[i], pCatchB, pACs, ulACCount, &pSwitch);
 						if (xRet != FTM_RET_OK)
 						{
 							ERROR(xRet, "Failed to create SWITCH!");
@@ -2112,7 +2112,7 @@ FTM_RET		FTM_CATCHB_onFoundSwitchInDB
 		}
 	}
 
-	xRet = FTM_SWITCH_create(&pMsg->xConfig, pACs, ulACCount, &pSwitch);
+	xRet = FTM_SWITCH_create(&pMsg->xConfig, pCatchB, pACs, ulACCount, &pSwitch);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to create SWITCH!");
@@ -2232,7 +2232,7 @@ FTM_RET	FTM_CATCHB_addSwitch
 		return xRet;
 	}
 
-	xRet = FTM_SWITCH_create(pConfig, NULL, 0, &pSwitch);
+	xRet = FTM_SWITCH_create(pConfig, pCatchB, NULL, 0, &pSwitch);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to create SWITCH!");

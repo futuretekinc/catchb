@@ -1,6 +1,8 @@
 #ifndef	FTM_DEFAULT_H_
 #define	FTM_DEFAULT_H_
 
+#define	FTM_SESSION_ID_LEN		16
+#define	FTM_SSID_LEN			16
 #define	FTM_ID_LEN				64	
 #define	FTM_IP_LEN				24
 #define	FTM_USER_LEN			32

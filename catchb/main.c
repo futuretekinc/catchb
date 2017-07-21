@@ -22,7 +22,7 @@ FTM_UINT32	ulCatchBShellCmdCount;
 static FTM_BOOL	bDebugMode = FTM_FALSE;
 static FTM_CHAR	pConfigFileName[FTM_PATH_LEN + FTM_FILE_NAME_LEN] = "";
 static	FTM_BOOL	bStop = FTM_FALSE;
-static	FTM_CATCHB_PTR	pCatchB = NULL;
+FTM_CATCHB_PTR	pCatchB = NULL;
 
 FTM_RET	FTM_showUsage();
 void	FTM_signalStop(int signal);

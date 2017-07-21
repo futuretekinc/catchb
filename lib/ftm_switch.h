@@ -7,6 +7,8 @@
 #include "cjson/cJSON.h"
 #include "ftm_trace.h"
 
+struct	FTM_CATCHB_STRUCT;
+
 typedef	enum	FTM_SWITCH_MODEL_ENUM
 {
 	FTM_SWITCH_MODEL_UNKNOWN = 0,
@@ -50,7 +52,7 @@ typedef	struct	FTM_SWITCH_AC_STRUCT
 
 typedef	struct
 {
-	FTM_CHAR_PTR		pPrompt;
+	FTM_CHAR			pPrompt[64];
 	FTM_CHAR			pInput[256];
 	FTM_UINT32			ulSubIndex;
 	FTM_UINT32			pNext[8];
@@ -59,7 +61,17 @@ typedef	struct
 
 typedef	struct
 {
-	FTM_SWS_CMD	pCommands[32];
+	struct
+	{
+		FTM_UINT32	ulCount;
+		FTM_SWS_CMD	pLines[32];
+	}	xAllow;
+
+	struct
+	{
+		FTM_UINT32	ulCount;
+		FTM_SWS_CMD	pLines[32];
+	}	xDeny;
 }	FTM_SWITCH_SCRIPT, _PTR_ FTM_SWITCH_SCRIPT_PTR;
 
 FTM_RET	FTM_SWITCH_CONFIG_create
@@ -95,6 +107,7 @@ typedef	struct	FTM_SWITCH_STRUCT
 {
 	FTM_SWITCH_CONFIG	xConfig;
 
+	struct FTM_CATCHB_STRUCT *pCatchB;
 	FTM_BOOL			bActivated;
 	FTM_LIST_PTR		pACList;
 	FTM_LOCK			xLock;
@@ -103,6 +116,7 @@ typedef	struct	FTM_SWITCH_STRUCT
 FTM_RET	FTM_SWITCH_create
 (
 	FTM_SWITCH_CONFIG_PTR	pConfig,
+	struct FTM_CATCHB_STRUCT* pCatchB,
 	FTM_SWITCH_AC_PTR		pACs,
 	FTM_UINT32				ulACCount,
 	FTM_SWITCH_PTR	_PTR_	ppSwitch
@@ -168,16 +182,27 @@ FTM_RET	FTM_SWITCH_TELNET_setAC
 (
 	FTM_SWITCH_PTR	pSwitch,
 	FTM_CHAR_PTR	pTargetIP,
-	FTM_SWITCH_SCRIPT_PTR	pScript 
+	FTM_SWS_CMD_PTR	pCommands,
+	FTM_UINT32		ulCount
 );
 
 FTM_RET	FTM_SWITCH_SSH_setAC
 (
 	FTM_SWITCH_PTR	pSwitch,
 	FTM_CHAR_PTR	pTargetIP,
-	FTM_SWITCH_SCRIPT_PTR	pScript 
+	FTM_SWS_CMD_PTR	pCommands,
+	FTM_UINT32		ulCount
 );
 
+
+FTM_RET	FTM_SWITCH_loadScript
+(
+	FTM_CHAR_PTR	pFileName,
+	FTM_UINT32		ulIndex,
+	FTM_CHAR_PTR	pLocalIP,
+	FTM_CHAR_PTR	pTargetIP,
+	FTM_SWITCH_SCRIPT_PTR pScript
+);
 
 #include "ftm_switch_nst.h"
 #include "ftm_switch_dasan.h"

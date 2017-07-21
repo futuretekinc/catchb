@@ -285,6 +285,47 @@ FTM_RET	FTM_SHELL_CMD_switch
 			printf("Error : Failed to set access control!\n");	
 		}
 	}
+	else if (strcasecmp(pArgv[1], "script") == 0)
+	{
+		FTM_SWITCH_SCRIPT	xScript;
+
+		if (nArgc < 6)
+		{
+			xRet = FTM_RET_INVALID_ARGUMENTS;
+			goto finished;	
+		}
+
+		memset(&xScript, 0, sizeof(xScript));
+
+		xRet = FTM_SWITCH_loadScript(pArgv[2], 0, pArgv[4], pArgv[5], &xScript);
+		if (xRet != FTM_RET_OK)
+		{
+			printf("Error : Invalid script!\n");	
+		}
+		else
+		{
+			FTM_UINT32	i = 0;
+			FTM_SWS_CMD_PTR	pCmd = xScript.xAllow.pLines;
+
+			printf("[ Allow ]\n");
+			while(strlen(pCmd->pPrompt))
+			{
+				printf("%d : %32s - %s\n", ++i, pCmd->pPrompt, pCmd->pInput);
+				pCmd++;
+			}
+
+			pCmd = xScript.xDeny.pLines;
+
+			i = 0;
+			printf("[ Deny ]\n");
+			while(strlen(pCmd->pPrompt))
+			{
+				printf("%d : %32s - %s\n", ++i, pCmd->pPrompt, pCmd->pInput);
+				pCmd++;
+			}
+		}
+
+	}
 	else
 	{
 		xRet = FTM_RET_INVALID_ARGUMENTS;

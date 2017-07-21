@@ -164,4 +164,27 @@ FTM_RET	FTM_getBootTime
 	FTM_TIME_PTR	pTime
 );
 
+FTM_RET	FTM_setTime
+(
+	time_t			xTime
+);
+
+FTM_RET	FTM_encryptPasswd
+(
+	FTM_CHAR_PTR	pPasswd,
+	FTM_UINT32		ulPasswdLen,
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen
+);
+
+FTM_RET	FTM_decryptPasswd
+(
+	FTM_CHAR_PTR	pEncryptedPasswd,
+	FTM_UINT32		ulEncryptedPasswdLen,
+	FTM_CHAR_PTR	pPasswd,
+	FTM_UINT32		ulPasswdLen
+);
+
+FTM_CHAR_PTR	FTM_trim(FTM_CHAR_PTR	pString);
+
 #endif

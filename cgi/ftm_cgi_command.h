@@ -5,227 +5,250 @@
 #include "ftm_client.h"
 #include "qdecoder.h"
 
-FTM_RET	FTM_CGI_addCCTV
+FTM_RET	FTM_CGI_CCTV_add
 (
 	FTM_CLIENT_PTR pClient,
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_delCCTV
+FTM_RET	FTM_CGI_CCTV_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getCCTV
+FTM_RET	FTM_CGI_CCTV_get
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_setCCTV
+FTM_RET	FTM_CGI_CCTV_set
 (
 	FTM_CLIENT_PTR	pClient,
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getCCTVIDList
+FTM_RET	FTM_CGI_CCTV_getIDList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_setCCTVIDList
+FTM_RET	FTM_CGI_CCTV_setIDList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_setCCTVPolicy
+FTM_RET	FTM_CGI_CCTV_setPolicy
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_resetCCTV
+FTM_RET	FTM_CGI_CCTV_reset
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_addSwitch
+FTM_RET	FTM_CGI_SWITCH_add
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_delSwitch
+FTM_RET	FTM_CGI_SWITCH_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getSwitch
+FTM_RET	FTM_CGI_SWITCH_get
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_setSwitch
+FTM_RET	FTM_CGI_SWITCH_set
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getSwitchIDList
+FTM_RET	FTM_CGI_SWITCH_getIDList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
 
-FTM_RET	FTM_CGI_getLogInfo
+FTM_RET	FTM_CGI_LOG_getInfo
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_delLog
+FTM_RET	FTM_CGI_LOG_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getLogList
+FTM_RET	FTM_CGI_LOG_getList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_addAlarm
+FTM_RET	FTM_CGI_ALARM_add
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_delAlarm
+FTM_RET	FTM_CGI_ALARM_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getAlarm
+FTM_RET	FTM_CGI_ALARM_get
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_setAlarm
+FTM_RET	FTM_CGI_ALARM_set
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getAlarmList
+FTM_RET	FTM_CGI_ALARM_getList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getAlarmInfo
+FTM_RET	FTM_CGI_ALARM_getInfo
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getAlarmConfig
+FTM_RET	FTM_CGI_ALARM_getConfig
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_setAlarmConfig
+FTM_RET	FTM_CGI_ALARM_setConfig
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getSysInfoConfig
+FTM_RET	FTM_CGI_SYS_getInfoConfig
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_setSysInfoConfig
+FTM_RET	FTM_CGI_SYS_setInfoConfig
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getSysInfo
+FTM_RET	FTM_CGI_SYS_getInfo
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getStatusInfo
+FTM_RET	FTM_CGI_STATUS_getInfo
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_delStatus
+FTM_RET	FTM_CGI_STATUS_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getStatusList
+FTM_RET	FTM_CGI_STATUS_getList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_checkPasswd
+FTM_RET	FTM_CGI_SYS_checkPasswd
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_setPasswd
+FTM_RET	FTM_CGI_SYS_setPasswd
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_addLogServer
+FTM_RET	FTM_CGI_SYS_setTime
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_delLogServer
+FTM_RET	FTM_CGI_SYSLOG_add
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getLogServer
+FTM_RET	FTM_CGI_SYSLOG_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_setLogServer
+FTM_RET	FTM_CGI_SYSLOG_get
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
-FTM_RET	FTM_CGI_getLogServerIDList
+FTM_RET	FTM_CGI_SYSLOG_set
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
 );
 
+FTM_RET	FTM_CGI_SYSLOG_getIDList
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_SSID_create
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_SSID_del
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
+FTM_RET	FTM_CGI_SSID_verify
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
 #endif

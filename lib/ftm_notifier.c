@@ -556,7 +556,7 @@ FTM_RET	FTM_NOTIIFER_sendSyslog
 	}
 
 
-	syslog(nLevel | LOG_LOCAL0, pMessage);
+	syslog(nLevel | LOG_LOCAL0, "%s", pMessage);
 	INFO("SYSLOG : %s", pMessage);
 
 	return	FTM_RET_OK;
