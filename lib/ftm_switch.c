@@ -763,13 +763,7 @@ finished:
 	return	xRet;
 }
 
-const FTM_CHAR_PTR	pConvertFormat = "sed "
-									 "-e 's/\\${index}/%d/g' "
-									 "-e 's/\\${index*3}/%d/g' "
-									 "-e 's/\\${index*3+1}/%d/g' "
-									 "-e 's/\\${index*3+2}/%d/g' "
-									 "-e 's/\\${local}/%s/g' "
-									 "-e 's/\\${target}/%s/g' %s";
+const FTM_CHAR_PTR	pConvertFormat = "_IDX=%d _TARGET=%s _LOCAL=%s acl.sh %s";
 
 FTM_RET	FTM_SWITCH_loadScript
 (
@@ -777,18 +771,25 @@ FTM_RET	FTM_SWITCH_loadScript
 	FTM_UINT32		ulIndex,
 	FTM_CHAR_PTR	pLocalIP,
 	FTM_CHAR_PTR	pTargetIP,
-	FTM_SWITCH_SCRIPT_PTR pScript
+	FTM_SWITCH_SCRIPT_PTR _PTR_ ppScript
 )
 {
 	FTM_RET			xRet = FTM_RET_OK;
 	FILE *pFile 	= NULL; 
 	FTM_CHAR_PTR	pData = NULL;
-	FTM_UINT32		ulFileLen;
-	FTM_UINT32		ulReadSize;
+	FTM_UINT32		ulFileLen = 0;
+	FTM_UINT32		ulReadSize = 0;
 	FTM_CHAR		pBuffer[1024];
-
+	FTM_SWITCH_SCRIPT_PTR	pScript = NULL;
+	FTM_UINT32		ulAllowLines = 0;
+	FTM_UINT32		ulDenyLines = 0;
 	cJSON _PTR_		pRoot = NULL;
-	cJSON _PTR_		pSection;
+	cJSON _PTR_		pSection = NULL;
+
+	ASSERT(pFileName != NULL);
+	ASSERT(pLocalIP != NULL);
+	ASSERT(pTargetIP != NULL);
+	ASSERT(ppScript != NULL);
 
 	pFile = fopen(pFileName, "rt");
 	if (pFile == NULL)
@@ -816,7 +817,7 @@ FTM_RET	FTM_SWITCH_loadScript
 		memset(pData, 0, ulFileLen);
 	}
 
-	sprintf(pBuffer, pConvertFormat, ulIndex, ulIndex*3, ulIndex*3+1, ulIndex*3+2, pLocalIP, pTargetIP, pFileName);
+	sprintf(pBuffer, pConvertFormat, ulIndex, pLocalIP, pTargetIP, pFileName);
 	
 	pFile = popen(pBuffer, "r");
 	if (pFile == NULL)
@@ -842,6 +843,7 @@ FTM_RET	FTM_SWITCH_loadScript
 	{    
 		xRet = FTM_RET_INVALID_JSON_FORMAT;
 		ERROR(xRet, "Invalid json format!\n");
+		INFO("%s", pData);
 		goto finished;
 	}    
 
@@ -858,30 +860,8 @@ FTM_RET	FTM_SWITCH_loadScript
 		ERROR(xRet, "Invlalid script!");
 		goto finished;	
 	}
+	ulAllowLines = cJSON_GetArraySize(pSection);
 
-	FTM_UINT32	ulCount = cJSON_GetArraySize(pSection);
-	for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
-	{
-		cJSON _PTR_ pLine = cJSON_GetArrayItem(pSection, i);
-		if (pLine == NULL)
-		{
-			ERROR(xRet, "Invlalid script!");
-			goto finished;	
-		}
-
-		cJSON _PTR_ pPrompt = cJSON_GetObjectItem(pLine, "prompt");
-		cJSON _PTR_ pCommand= cJSON_GetObjectItem(pLine, "command");
-
-		if ((pPrompt == NULL) || (pCommand == NULL) || (pPrompt->type != cJSON_String) || (pCommand->type != cJSON_String))
-		{
-			ERROR(xRet, "Invlalid script!");
-			goto finished;	
-		}
-
-		strncpy(pScript->xAllow.pLines[i].pPrompt, pPrompt->valuestring, sizeof(pScript->xAllow.pLines[i].pPrompt) - 1);
-		strncpy(pScript->xAllow.pLines[i].pInput, pCommand->valuestring, sizeof(pScript->xAllow.pLines[i].pInput) - 1);
-	}
-	
 	pSection = cJSON_GetObjectItem(pRoot, "deny");
 	if (pSection == NULL)
 	{
@@ -894,9 +874,21 @@ FTM_RET	FTM_SWITCH_loadScript
 		ERROR(xRet, "Invlalid script!");
 		goto finished;	
 	}
+	ulDenyLines = cJSON_GetArraySize(pSection);
 
-	ulCount = cJSON_GetArraySize(pSection);
-	for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
+	pScript = (FTM_SWITCH_SCRIPT_PTR)FTM_MEM_malloc(sizeof(FTM_SWITCH_SCRIPT) + sizeof(FTM_SWS_CMD) * (ulAllowLines + ulDenyLines));
+	if (pScript == NULL)
+	{
+		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
+		ERROR(xRet,	"Not enough memory[%d]", sizeof(FTM_SWITCH_SCRIPT) + sizeof(FTM_SWS_CMD) * (ulAllowLines + ulDenyLines));
+		goto finished;
+	}
+
+	pScript->xAllow.pLines = (FTM_SWS_CMD_PTR)((FTM_UINT8_PTR)pScript + sizeof(FTM_SWITCH_SCRIPT));
+	pScript->xDeny.pLines = (FTM_SWS_CMD_PTR)((FTM_UINT8_PTR)pScript + sizeof(FTM_SWITCH_SCRIPT) + sizeof(FTM_SWS_CMD)*ulAllowLines);
+
+	pSection = cJSON_GetObjectItem(pRoot, "allow");
+	for(FTM_UINT32 i = 0 ; i < ulAllowLines ; i++)
 	{
 		cJSON _PTR_ pLine = cJSON_GetArrayItem(pSection, i);
 		if (pLine == NULL)
@@ -914,11 +906,46 @@ FTM_RET	FTM_SWITCH_loadScript
 			goto finished;	
 		}
 
+		pScript->xAllow.ulCount++;
+		strncpy(pScript->xAllow.pLines[i].pPrompt, pPrompt->valuestring, sizeof(pScript->xAllow.pLines[i].pPrompt) - 1);
+		strncpy(pScript->xAllow.pLines[i].pInput, pCommand->valuestring, sizeof(pScript->xAllow.pLines[i].pInput) - 1);
+	}
+	
+	pSection = cJSON_GetObjectItem(pRoot, "deny");
+	for(FTM_UINT32 i = 0 ; i < ulDenyLines ; i++)
+	{
+		cJSON _PTR_ pLine = cJSON_GetArrayItem(pSection, i);
+		if (pLine == NULL)
+		{
+			ERROR(xRet, "Invlalid script!");
+			goto finished;	
+		}
+
+		cJSON _PTR_ pPrompt = cJSON_GetObjectItem(pLine, "prompt");
+		cJSON _PTR_ pCommand= cJSON_GetObjectItem(pLine, "command");
+
+		if ((pPrompt == NULL) || (pCommand == NULL) || (pPrompt->type != cJSON_String) || (pCommand->type != cJSON_String))
+		{
+			ERROR(xRet, "Invlalid script!");
+			goto finished;	
+		}
+
+		pScript->xDeny.ulCount++;
 		strncpy(pScript->xDeny.pLines[i].pPrompt, 	pPrompt->valuestring, 	sizeof(pScript->xDeny.pLines[i].pPrompt) - 1);
 		strncpy(pScript->xDeny.pLines[i].pInput, 	pCommand->valuestring, 	sizeof(pScript->xDeny.pLines[i].pInput) - 1);
 	}
-	
+
+	*ppScript = pScript;
+
 finished:
+	if (xRet != FTM_RET_OK)
+	{
+		if (pScript != NULL)
+		{
+			FTM_MEM_free(pScript);
+		}
+	}
+
 	if (pRoot != NULL)
 	{
 		cJSON_Delete(pRoot);

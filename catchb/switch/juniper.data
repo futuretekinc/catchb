@@ -1,0 +1,58 @@
+s	deny
+b
+p login:
+c $_USER_ID
+p Password:
+c $_PASSWD
+p Jun>
+c configure
+p Jun#
+c set firewall family ethernet-switching filter catchb_filter term 10 from source-address $_LOCAL
+p Jun#
+c set firewall family ethernet-switching filter catchb_filter term 10 from destination-address $_TARGET
+p Jun#
+c set firewall family ethernet-switching filter catchb_filter term 10 then accept
+p Jun#
+c set firewall family ethernet-switching filter catchb_filter term 20 from source-address $_TARGET
+p Jun#
+c set firewall family ethernet-switching filter catchb_filter term 20 from destination-address $_LOCAL
+p Jun#
+c set firewall family ethernet-switching filter catchb_filter term 20 then accept
+p Jun#
+c set firewall family ethernet-switching filter catchb_filter term 30 from source-address $_TARGET
+p Jun#
+c set firewall family ethernet-switching filter catchb_filter term 30 then discard
+p Jun#
+c set firewall family ethernet-switching filter catchb_filter term 40 then accept
+p Jun#
+c set vlans default filter input catchb_filter
+p Jun#
+c commit
+p Jun#
+c exit
+p Jun>
+c exit
+e
+
+s	allow
+b
+p login:
+c $_USER_ID
+p Password:
+c $_PASSWD
+p Jun>
+c configure
+p Jun#
+c delete firewall family ethernet-switching filter catchb_filter term 10 from destination-address $_TARGET
+p Jun#
+c delete firewall family ethernet-switching filter catchb_filter term 20 from source-address $_TARGET
+p Jun#
+c delete firewall family ethernet-switching filter catchb_filter term 30 from source-address $_TARGET
+p Jun#
+c commit
+p Jun#
+c exit
+p Jun>
+c exit
+e
+

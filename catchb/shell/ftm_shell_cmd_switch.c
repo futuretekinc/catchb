@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include "ftm_types.h"
 #include "ftm_trace.h"
@@ -288,16 +289,18 @@ FTM_RET	FTM_SHELL_CMD_switch
 	else if (strcasecmp(pArgv[1], "script") == 0)
 	{
 		FTM_SWITCH_SCRIPT	xScript;
-
+		FTM_UINT32			ulIndex = 0;
 		if (nArgc < 6)
 		{
 			xRet = FTM_RET_INVALID_ARGUMENTS;
 			goto finished;	
 		}
 
+		ulIndex = strtoul(pArgv[3], 0, 10);
+
 		memset(&xScript, 0, sizeof(xScript));
 
-		xRet = FTM_SWITCH_loadScript(pArgv[2], 0, pArgv[4], pArgv[5], &xScript);
+		xRet = FTM_SWITCH_loadScript(pArgv[2], ulIndex, pArgv[4], pArgv[5], &xScript);
 		if (xRet != FTM_RET_OK)
 		{
 			printf("Error : Invalid script!\n");	

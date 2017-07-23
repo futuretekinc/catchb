@@ -8,6 +8,7 @@
 #include "ftm_trace.h"
 
 struct	FTM_CATCHB_STRUCT;
+#define	FTM_SWITCH_SCRIPT_LINE_MAX	64
 
 typedef	enum	FTM_SWITCH_MODEL_ENUM
 {
@@ -63,14 +64,14 @@ typedef	struct
 {
 	struct
 	{
-		FTM_UINT32	ulCount;
-		FTM_SWS_CMD	pLines[32];
+		FTM_UINT32		ulCount;
+		FTM_SWS_CMD_PTR	pLines;
 	}	xAllow;
 
 	struct
 	{
-		FTM_UINT32	ulCount;
-		FTM_SWS_CMD	pLines[32];
+		FTM_UINT32		ulCount;
+		FTM_SWS_CMD_PTR	pLines;
 	}	xDeny;
 }	FTM_SWITCH_SCRIPT, _PTR_ FTM_SWITCH_SCRIPT_PTR;
 
@@ -201,7 +202,7 @@ FTM_RET	FTM_SWITCH_loadScript
 	FTM_UINT32		ulIndex,
 	FTM_CHAR_PTR	pLocalIP,
 	FTM_CHAR_PTR	pTargetIP,
-	FTM_SWITCH_SCRIPT_PTR pScript
+	FTM_SWITCH_SCRIPT_PTR _PTR_ ppScript
 );
 
 #include "ftm_switch_nst.h"

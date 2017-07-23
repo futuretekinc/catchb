@@ -1,0 +1,77 @@
+v _IDX0=$_IDX
+v _IDX1=$_IDX*3+1
+v _IDX2=$_IDX*3+2
+
+s deny
+b
+p Username:
+c $_USER_ID
+p Password:
+c $_PASSWD
+p Switch#
+c configure
+p Switch(config)#
+c interface range GigabitEthernet 1-28
+p Switch(config-if-range)#
+c no ip acl
+p Switch(config-if-range)#
+c exit
+p Switch(config)#
+c ip acl catchb_filter
+p Switch(config-ip-acl)#
+c sequence $_IDX0   permit ip $_TARGET/255.255.255.255 $_LOCAL/255.255.255.255
+p Switch(config-ip-acl)#
+c sequence $_IDX1 permit ip $_TARGET/255.255.255.255 $_LOCAL/255.255.255.255
+p Switch(config-ip-acl)#
+c sequence $_IDX2   permit ip $_TARGET/255.255.255.255 any
+p Switch(config-ip-acl)#
+c sequence 214748360 permit ip any any
+p Switch(config-ip-acl)#
+c exit
+p Switch(config)#
+c interface range GigabitEthernet 1-28
+p Switch(config-if-range)#
+c ip acl catchb_filter
+p Switch(config-if-range)#
+c exit
+p Switch(config)#
+c exit
+p Switch#
+c exit
+e
+
+s allow
+b
+p Username:
+c $_USER_ID
+p Password:
+c $_PASSWD
+p Switch#
+c configure
+p Switch(config)#
+c interface range GigabitEthernet 1-28
+p Switch(config-if-range)#
+c no ip acl
+p Switch(config-if-range)#
+c exit
+p Switch(config)#
+c ip acl catchb_filter
+p Switch(config-ip-acl)#
+c no sequence $_IDX0
+p Switch(config-ip-acl)#
+c no sequence $_IDX1
+p Switch(config-ip-acl)#
+c no sequence $_IDX2
+p Switch(config-ip-acl)#
+c exit
+p Switch(config)#
+c interface range GigabitEthernet 1-28
+p Switch(config-if-range)#
+c ip acl catchb_filter
+p Switch(config-if-range)#
+c exit
+p Switch(config)#
+c exit
+p Switch#
+c exit
+e

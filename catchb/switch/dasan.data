@@ -1,0 +1,74 @@
+s	deny
+b
+p   SWITCH>
+c	enable
+p   SWITCH#
+c	config terminal
+p   SWITCH(config)#
+c	flow catchb_main_$_IDX create
+p   SWITCH(config-flow
+c	ip $_TARGET/32 $_LOCAL/32
+p   SWITCH(config-flow
+c	apply
+p   SWITCH(config-flow
+c	exit
+p   SWITCH(config)#
+c	flow catchb_$_IDX create
+p   SWITCH(config-flow
+c	ip $_TARGET/32 any
+p   SWITCH(config-flow
+c	apply
+p   SWITCH(config-flow
+c	exit
+p   SWITCH(config)#
+c	policy catchb_main_$_IDX create
+p   SWITCH(config-policy
+c	include-flow catchb_main_$_IDX
+p   SWITCH(config-policy
+c	priority highest}
+p   SWITCH(config-policy
+c	interface-binding vlan any
+p   SWITCH(config-policy
+c	action match permit
+p   SWITCH(config-policy
+c	apply
+p   SWITCH(config-policy
+c	exit
+p   SWITCH(config)#
+c	policy catchb_$_IDX create
+p   SWITCH(config-policy
+c	include-flow catchb_$_IDX
+p   SWITCH(config-policy
+c	priority medium
+p   SWITCH(config-policy
+c	interface-binding vlan any
+p   SWITCH(config-policy
+c	action match deny
+p   SWITCH(config-policy
+c	apply
+p   SWITCH(config-policy
+c	end
+p   SWITCH#
+c	exit
+e
+
+s	allow
+b
+p   SWITCH>
+c	enable
+p   SWITCH#
+c	config terminal
+p   SWITCH(config)#
+c	no policy catchb_$_IDX
+p   SWITCH(config)#
+c	no flow catchb_$_IDX
+p   SWITCH(config)#
+c	no policy catchb_main_$_IDX
+p   SWITCH(config)#
+c	no flow catchb_main_$_IDX
+p   SWITCH(config)#
+c	end
+p   SWITCH#
+c	exit
+e
+
