@@ -169,6 +169,27 @@ FTM_RET	FTM_setTime
 	time_t			xTime
 );
 
+FTM_RET	FTM_getTime
+(
+	time_t	*pTime
+);
+
+FTM_RET	FTM_encryptUserID
+(
+	FTM_CHAR_PTR	pUserID,
+	FTM_UINT32		ulUserIDLen,
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen
+);
+
+FTM_RET	FTM_decryptUserID
+(
+	FTM_CHAR_PTR	pEncryptedUserID,
+	FTM_UINT32		ulEncryptedUserIDLen,
+	FTM_CHAR_PTR	pUserID,
+	FTM_UINT32		ulUserIDLen
+);
+
 FTM_RET	FTM_encryptPasswd
 (
 	FTM_CHAR_PTR	pPasswd,

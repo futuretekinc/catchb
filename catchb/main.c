@@ -57,6 +57,11 @@ FTM_INT	main
 		goto finished;
 	}
 
+    if (!bDebugMode)
+	{
+		FTM_TRACE_addModuleName("config");
+	}
+
 	xRet = FTM_ReadPID(program_invocation_short_name, &ulPID);
 	if (xRet == FTM_RET_OK)
 	{
@@ -92,25 +97,27 @@ FTM_INT	main
 		{
 			return	0;
 		}
+
+		FTM_TRACE_addModuleName("config");
 	}
 
 	xRet = FTM_createPIDFile(program_invocation_short_name, getpid());
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to create PID file!.");	
+		printf("Failed to create PID file!.");	
 	}
 
 	xRet = FTM_CATCHB_create(&pCatchB);
 	if(xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to create %s!\n", program_invocation_short_name);
+		printf("Failed to create %s!\n", program_invocation_short_name);
 		goto finished;
 	}
 
 	xRet = FTM_CATCHB_setConfig(pCatchB, pConfig);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to set %s configuration.", program_invocation_short_name);
+		printf("Failed to set %s configuration.", program_invocation_short_name);
 		goto finished;
 	}
 

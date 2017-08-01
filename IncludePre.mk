@@ -1,4 +1,4 @@
-MODEL=i686
+MODEL=ftm-50
 TARGET=$(TOPDIR)/target/$(MODEL)
 EXEC_PREFIX=$(TARGET)/usr/bin
 INC_PREFIX=$(TARGET)/usr/include

@@ -3,6 +3,7 @@
 #include "ftm_mem.h"
 #include "ftm_cgi.h"
 #include "ftm_cgi_command.h"
+#include "ftm_json_utils.h"
 
 #undef	__MODULE__
 #define	__MODULE__	"cgi"
@@ -16,7 +17,7 @@ typedef	struct
 
 extern	FTM_CHAR_PTR	FTM_trim(FTM_CHAR_PTR	pString);
 
-FTM_RET	FTM_CGI_SYSLOG_add
+FTM_RET	FTM_CGI_GET_SYSLOG_add
 (
 	FTM_CLIENT_PTR pClient,
 	qentry_t _PTR_ pReq
@@ -38,7 +39,7 @@ FTM_RET	FTM_CGI_SYSLOG_add
 	xRet |= FTM_CGI_getComment(pReq, xConfig.pComment, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
 	FTM_CHAR	pCommand[256];
@@ -55,7 +56,7 @@ FTM_RET	FTM_CGI_SYSLOG_add
 	{
 		xRet = FTM_RET_ERROR;
 		ERROR(xRet, "Failed to exec server.sh");
-		goto finish;	
+		goto finished;	
 	}
 
 	fscanf(pFP, "%s", pResult);
@@ -65,7 +66,7 @@ FTM_RET	FTM_CGI_SYSLOG_add
 	{
 		xRet = FTM_RET_ERROR;
 		ERROR(xRet, "Failed to exec server.sh");
-		goto finish;
+		goto finished;
 	}
 
 	cJSON _PTR_ pLogServer = cJSON_CreateObject();
@@ -75,12 +76,75 @@ FTM_RET	FTM_CGI_SYSLOG_add
 	cJSON_AddStringToObject(pLogServer, "comment", xConfig.pComment);
 
 	cJSON_AddItemToObject(pRoot, "log server", pLogServer);
-finish:
+finished:
 
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_SYSLOG_del
+FTM_RET	FTM_CGI_POST_SYSLOG_add
+(
+	FTM_CLIENT_PTR pClient,
+	cJSON _PTR_		pReqRoot,
+	cJSON _PTR_		pRespRoot
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReqRoot != NULL);
+	ASSERT(pRespRoot != NULL);
+
+	FTM_RET		xRet;
+	FTM_LOG_SERVER_CONFIG	xConfig;
+
+	memset(&xConfig, 0, sizeof(xConfig));
+
+	xRet = FTM_JSON_getID(pReqRoot, FTM_FALSE, xConfig.pID);
+	xRet |= FTM_JSON_getIP(pReqRoot, FTM_TRUE, xConfig.pIP);
+	xRet |= FTM_JSON_getComment(pReqRoot, FTM_TRUE, xConfig.pComment);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	FTM_CHAR	pCommand[256];
+	FTM_CHAR	pResult[256];
+
+	memset(pResult, 0, sizeof(pResult));
+
+	sprintf(pCommand, "/usr/bin/server.sh add %s %s \"%s\"", xConfig.pID, xConfig.pIP, xConfig.pComment);
+
+	FILE*	pFP;
+
+	pFP = popen(pCommand, "r");
+	if (pFP == NULL)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to exec server.sh");
+		goto finished;	
+	}
+
+	fscanf(pFP, "%s", pResult);
+	pclose(pFP);
+
+	if (strcasecmp(pResult, "ok") != 0)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to exec server.sh");
+		goto finished;
+	}
+
+	cJSON _PTR_ pLogServer = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(pLogServer, "id", xConfig.pID);
+	cJSON_AddStringToObject(pLogServer, "ip", 		xConfig.pIP);
+	cJSON_AddStringToObject(pLogServer, "comment", xConfig.pComment);
+
+	cJSON_AddItemToObject(pRespRoot, "log server", pLogServer);
+finished:
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CGI_GET_SYSLOG_del
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -100,7 +164,7 @@ FTM_RET	FTM_CGI_SYSLOG_del
 	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
 	FTM_CHAR	pCommand[256];
@@ -117,7 +181,7 @@ FTM_RET	FTM_CGI_SYSLOG_del
 	{
 		xRet = FTM_RET_ERROR;
 		ERROR(xRet, "Failed to exec server.sh");
-		goto finish;	
+		goto finished;	
 	}
 
 	fscanf(pFP, "%s", pResult);
@@ -128,7 +192,7 @@ FTM_RET	FTM_CGI_SYSLOG_del
 	{
 		xRet = FTM_RET_ERROR;
 		ERROR(xRet, "Failed to exec server.sh");
-		goto finish;
+		goto finished;
 	}
 
 	cJSON _PTR_ pLogServer = cJSON_CreateObject();
@@ -136,12 +200,72 @@ FTM_RET	FTM_CGI_SYSLOG_del
 	cJSON_AddStringToObject(pLogServer, "id", pID);
 
 	cJSON_AddItemToObject(pRoot, "log server", pLogServer);
-finish:
+finished:
 
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_SYSLOG_get
+FTM_RET	FTM_CGI_POST_SYSLOG_del
+(
+	FTM_CLIENT_PTR pClient, 
+	cJSON _PTR_		pReqRoot,
+	cJSON _PTR_		pRespRoot
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReqRoot != NULL);
+	ASSERT(pRespRoot != NULL);
+
+	FTM_RET		xRet;
+	FTM_CHAR	pID[FTM_ID_LEN+1];
+
+	memset(pID, 0, sizeof(pID));
+
+	xRet = FTM_JSON_getID(pReqRoot, FTM_FALSE, pID);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	FTM_CHAR	pCommand[256];
+	FTM_CHAR	pResult[256];
+
+	memset(pResult, 0, sizeof(pResult));
+
+	sprintf(pCommand, "/usr/bin/server.sh del %s", pID);
+
+	FILE*	pFP;
+
+	pFP = popen(pCommand, "r");
+	if (pFP == NULL)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to exec server.sh");
+		goto finished;	
+	}
+
+	fscanf(pFP, "%s", pResult);
+	pclose(pFP);
+
+
+	if (strcasecmp(pResult, "ok") != 0)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to exec server.sh");
+		goto finished;
+	}
+
+	cJSON _PTR_ pLogServer = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(pLogServer, "id", pID);
+
+	cJSON_AddItemToObject(pRespRoot, "log server", pLogServer);
+finished:
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CGI_GET_SYSLOG_get
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -165,7 +289,7 @@ FTM_RET	FTM_CGI_SYSLOG_get
 	xRet = FTM_CGI_getID(pReq, pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
 	FTM_CHAR	pCommand[256];
@@ -179,7 +303,7 @@ FTM_RET	FTM_CGI_SYSLOG_get
 	{
 		xRet = FTM_RET_ERROR;
 		ERROR(xRet, "Failed to exec server.sh");
-		goto finish;	
+		goto finished;	
 	}
 
 	while(fgets(pBuffer, sizeof(pBuffer), pFP) != 0)
@@ -224,7 +348,7 @@ FTM_RET	FTM_CGI_SYSLOG_get
 
 	cJSON_AddItemToObject(pRoot, "log server", pLogServer);
 
-finish:
+finished:
 
 	if (pFP != NULL)
 	{
@@ -234,7 +358,99 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_SYSLOG_set
+FTM_RET	FTM_CGI_POST_SYSLOG_get
+(
+	FTM_CLIENT_PTR pClient, 
+	cJSON _PTR_		pReqRoot,
+	cJSON _PTR_		pRespRoot
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReqRoot != NULL);
+	ASSERT(pRespRoot != NULL);
+
+	FTM_RET		xRet;
+	FTM_CHAR	pID[FTM_ID_LEN+1];
+	FTM_LOG_SERVER_CONFIG	xConfig;
+
+	FILE*	pFP = NULL;
+
+	memset(pID, 0, sizeof(pID));
+	memset(&xConfig, 0, sizeof(xConfig));
+
+	xRet = FTM_JSON_getID(pReqRoot, FTM_FALSE, pID);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	FTM_CHAR	pCommand[256];
+	FTM_CHAR	pBuffer[256];
+
+	sprintf(pCommand, "/usr/bin/server.sh get");
+
+
+	pFP = popen(pCommand, "r");
+	if (pFP == NULL)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to exec server.sh");
+		goto finished;	
+	}
+
+	while(fgets(pBuffer, sizeof(pBuffer), pFP) != 0)
+	{
+		FTM_CHAR	pName[128];
+
+		INFO("LINE : %s", pBuffer);
+		if (sscanf(pBuffer, "%s", pName) != 0)
+		{
+			FTM_CHAR_PTR pValue = strstr(pBuffer, pName);
+			if (pValue != NULL)
+			{
+				pValue += strlen(pName) + 1;
+				INFO("pValue : %s", pValue);
+				pValue  = FTM_trim(pValue);	
+
+				if (strcasecmp(pName, "id") == 0)
+				{
+					strncpy(xConfig.pID, pValue, sizeof(xConfig.pID) - 1);	
+				}
+				if (strcasecmp(pName, "ip") == 0)
+				{
+					strncpy(xConfig.pIP, pValue, sizeof(xConfig.pIP) - 1);	
+				}
+				if (strcasecmp(pName, "comment") == 0)
+				{
+					strncpy(xConfig.pComment, pValue, sizeof(xConfig.pComment) - 1);	
+				}
+			}
+		}
+	}
+
+
+	pclose(pFP);
+	pFP = NULL;
+
+	cJSON _PTR_ pLogServer = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(pLogServer, "id", xConfig.pID);
+	cJSON_AddStringToObject(pLogServer, "ip", xConfig.pIP);
+	cJSON_AddStringToObject(pLogServer, "comment", xConfig.pComment);
+
+	cJSON_AddItemToObject(pRespRoot, "log server", pLogServer);
+
+finished:
+
+	if (pFP != NULL)
+	{
+		pclose(pFP);
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CGI_GET_SYSLOG_set
 (
 	FTM_CLIENT_PTR	pClient,
 	qentry_t _PTR_ pReq
@@ -256,7 +472,7 @@ FTM_RET	FTM_CGI_SYSLOG_set
 	xRet = FTM_CGI_getID(pReq, xConfig.pID, FTM_FALSE);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
 	FTM_CHAR	pCommand[256];
@@ -270,7 +486,7 @@ FTM_RET	FTM_CGI_SYSLOG_set
 	{
 		xRet = FTM_RET_ERROR;
 		ERROR(xRet, "Failed to exec server.sh");
-		goto finish;	
+		goto finished;	
 	}
 
 	while(fgets(pBuffer, sizeof(pBuffer), pFP) != 0)
@@ -326,7 +542,7 @@ FTM_RET	FTM_CGI_SYSLOG_set
 	{
 		xRet = FTM_RET_ERROR;
 		ERROR(xRet, "Failed to exec server.sh");
-		goto finish;	
+		goto finished;	
 	}
 
 	FTM_CHAR	pResult[64];
@@ -340,7 +556,7 @@ FTM_RET	FTM_CGI_SYSLOG_set
 	{
 		xRet = FTM_RET_ERROR;
 		ERROR(xRet, "Failed to exec server.sh");
-		goto finish;
+		goto finished;
 	}
 
 	cJSON _PTR_ pLogServer = cJSON_CreateObject();
@@ -350,7 +566,7 @@ FTM_RET	FTM_CGI_SYSLOG_set
 	cJSON_AddStringToObject(pLogServer, "comment", xConfig.pComment);
 
 	cJSON_AddItemToObject(pRoot, "log server", pLogServer);
-finish:
+finished:
 
 	if (pFP != NULL)
 	{
@@ -360,7 +576,132 @@ finish:
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
 }
 
-FTM_RET	FTM_CGI_SYSLOG_getIDList
+FTM_RET	FTM_CGI_POST_SYSLOG_set
+(
+	FTM_CLIENT_PTR	pClient,
+	cJSON _PTR_		pReqRoot,
+	cJSON _PTR_		pRespRoot
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReqRoot != NULL);
+	ASSERT(pRespRoot != NULL);
+
+	FTM_RET		xRet;
+	FTM_UINT32	ulFieldFlags = 0;
+	FTM_LOG_SERVER_CONFIG	xConfig;
+	FILE*	pFP = NULL;
+
+	memset(&xConfig, 0, sizeof(xConfig));
+
+	xRet = FTM_JSON_getID(pReqRoot, FTM_FALSE, xConfig.pID);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	FTM_CHAR	pCommand[256];
+	FTM_CHAR	pBuffer[256];
+
+	sprintf(pCommand, "/usr/bin/server.sh get");
+
+
+	pFP = popen(pCommand, "r");
+	if (pFP == NULL)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to exec server.sh");
+		goto finished;	
+	}
+
+	while(fgets(pBuffer, sizeof(pBuffer), pFP) != 0)
+	{
+		FTM_CHAR	pName[128];
+
+		if (sscanf(pBuffer, "%s", pName) != 0)
+		{
+			FTM_CHAR_PTR pValue = strstr(pBuffer, pName);
+			if (pValue != NULL)
+			{
+				pValue += strlen(pName) + 1;
+				pValue  = FTM_trim(pValue);	
+
+				if (strcasecmp(pName, "id") == 0)
+				{
+					strncpy(xConfig.pID, pValue, sizeof(xConfig.pID) - 1);	
+				}
+				if (strcasecmp(pName, "ip") == 0)
+				{
+					strncpy(xConfig.pIP, pValue, sizeof(xConfig.pIP) - 1);	
+				}
+				if (strcasecmp(pName, "comment") == 0)
+				{
+					strncpy(xConfig.pComment, pValue, sizeof(xConfig.pComment) - 1);	
+				}
+			}
+		}
+	}
+
+
+	pclose(pFP);
+	pFP = NULL;
+
+	xRet = FTM_JSON_getIP(pReqRoot, FTM_FALSE, xConfig.pIP);
+	if (xRet == FTM_RET_OK)
+	{
+		ulFieldFlags |= FTM_SWITCH_FIELD_IP;
+	}
+
+	xRet = FTM_JSON_getComment(pReqRoot, FTM_FALSE, xConfig.pComment);
+	if (xRet == FTM_RET_OK)
+	{
+		ulFieldFlags |= FTM_SWITCH_FIELD_COMMENT;
+	}
+
+	xRet = FTM_RET_OK;
+	sprintf(pCommand, "/usr/bin/server.sh add %s %s %s", xConfig.pID, xConfig.pIP, xConfig.pComment);
+
+
+	pFP = popen(pCommand, "r");
+	if (pFP == NULL)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to exec server.sh");
+		goto finished;	
+	}
+
+	FTM_CHAR	pResult[64];
+
+	memset(pResult, 0, sizeof(pResult));
+	fscanf(pFP, "%s", pResult);
+	pclose(pFP);
+	pFP = NULL;
+
+	if (strcasecmp(pResult, "ok") != 0)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to exec server.sh");
+		goto finished;
+	}
+
+	cJSON _PTR_ pLogServer = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(pLogServer, "id", xConfig.pID);
+	cJSON_AddStringToObject(pLogServer, "ip", xConfig.pIP);
+	cJSON_AddStringToObject(pLogServer, "comment", xConfig.pComment);
+
+	cJSON_AddItemToObject(pRespRoot, "log server", pLogServer);
+finished:
+
+	if (pFP != NULL)
+	{
+		pclose(pFP);
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CGI_GET_SYSLOG_getIDList
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t _PTR_ pReq
@@ -384,14 +725,14 @@ FTM_RET	FTM_CGI_SYSLOG_getIDList
 	pIDList = (FTM_ID_PTR)FTM_MEM_malloc(sizeof(FTM_ID) * ulCount);
 	if (pIDList == NULL)
 	{
-		goto finish;			
+		goto finished;			
 	}
 
 	xRet = FTM_CGI_getIndex(pReq, &ulIndex, FTM_TRUE);
 	xRet |= FTM_CGI_getCount(pReq, &ulCount, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
-		goto finish;
+		goto finished;
 	}
 
 	FTM_CHAR	pCommand[256];
@@ -405,7 +746,7 @@ FTM_RET	FTM_CGI_SYSLOG_getIDList
 	{
 		xRet = FTM_RET_ERROR;
 		ERROR(xRet, "Failed to exec server.sh");
-		goto finish;	
+		goto finished;	
 	}
 
 	while(fgets(pBuffer, sizeof(pBuffer), pFP) != 0)
@@ -444,7 +785,7 @@ FTM_RET	FTM_CGI_SYSLOG_getIDList
 
 	cJSON_AddItemToObject(pRoot, "id list", pIDArray);
 
-finish:
+finished:
 
 	if (pIDList != NULL)
 	{
@@ -452,5 +793,98 @@ finish:
 	}
 
 	return	FTM_CGI_finish(pReq, pRoot, xRet);
+}
+
+FTM_RET	FTM_CGI_POST_SYSLOG_getIDList
+(
+	FTM_CLIENT_PTR pClient, 
+	cJSON _PTR_		pReqRoot,
+	cJSON _PTR_		pRespRoot
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReqRoot != NULL);
+	ASSERT(pRespRoot != NULL);
+
+	FTM_RET		xRet;
+	FTM_UINT32	ulIndex = 0;
+	FTM_UINT32	ulCount = 20;
+	FTM_ID_PTR	pIDList = NULL;
+	FTM_LOG_SERVER_CONFIG	xConfig;
+	FILE *pFP = NULL;
+
+	memset(&xConfig, 0, sizeof(xConfig));
+
+	pIDList = (FTM_ID_PTR)FTM_MEM_malloc(sizeof(FTM_ID) * ulCount);
+	if (pIDList == NULL)
+	{
+		goto finished;			
+	}
+
+	xRet = FTM_JSON_getIndex(pReqRoot, FTM_TRUE, &ulIndex);
+	xRet |= FTM_JSON_getCount(pReqRoot, FTM_FALSE, &ulCount);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	FTM_CHAR	pCommand[256];
+	FTM_CHAR	pBuffer[256];
+
+	sprintf(pCommand, "/usr/bin/server.sh get");
+
+
+	pFP = popen(pCommand, "r");
+	if (pFP == NULL)
+	{
+		xRet = FTM_RET_ERROR;
+		ERROR(xRet, "Failed to exec server.sh");
+		goto finished;	
+	}
+
+	while(fgets(pBuffer, sizeof(pBuffer), pFP) != 0)
+	{
+		FTM_CHAR	pName[128];
+
+		if (sscanf(pBuffer, "%s", pName) != 0)
+		{
+			FTM_CHAR_PTR pValue = strstr(pBuffer, pName);
+			if (pValue != NULL)
+			{
+				pValue += strlen(pName) + 1;
+				pValue  = FTM_trim(pValue);	
+
+				if (strcasecmp(pName, "id") == 0)
+				{
+					strncpy(xConfig.pID, pValue, sizeof(xConfig.pID) - 1);	
+				}
+			}
+		}
+	}
+
+
+	pclose(pFP);
+	pFP = NULL;
+
+
+	cJSON _PTR_ pIDArray;
+
+	pIDArray = cJSON_CreateArray();
+
+	if (strlen(xConfig.pID) != 0)
+	{
+		cJSON_AddItemToArray(pIDArray, cJSON_CreateString(xConfig.pID));
+	}
+
+	cJSON_AddItemToObject(pRespRoot, "id list", pIDArray);
+
+finished:
+
+	if (pIDList != NULL)
+	{
+		FTM_MEM_free(pIDList);
+	}
+
+	return	xRet;
 }
 

@@ -13,6 +13,12 @@ typedef	struct FTM_CGI_COMMAND_STRUCT
 	FTM_RET			(*fService)(FTM_CLIENT_PTR pClient, qentry_t *req);
 } FTM_CGI_COMMAND, _PTR_ FTM_CGI_COMMAND_PTR;
 
+typedef	struct FTM_CGI_POST_COMMAND_STRUCT
+{
+	FTM_CHAR_PTR	pName;
+	FTM_RET			(*fService)(FTM_CLIENT_PTR pClient, cJSON _PTR_ pReq, cJSON _PTR_ pResp);
+} FTM_CGI_POST_COMMAND, _PTR_ FTM_CGI_POST_COMMAND_PTR;
+
 FTM_RET	FTM_CGI_finish
 (
 	qentry_t _PTR_ pReq,
@@ -63,6 +69,66 @@ FTM_RET	FTM_CGI_status
 );
 
 FTM_RET	FTM_CGI_syslog
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
+FTM_RET	FTM_CGI_POST_cctv
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
+FTM_RET	FTM_CGI_POST_switch
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
+FTM_RET	FTM_CGI_POST_log
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
+FTM_RET	FTM_CGI_POST_alarm
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
+FTM_RET	FTM_CGI_POST_ssid
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
+FTM_RET	FTM_CGI_POST_sys
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
+FTM_RET	FTM_CGI_POST_upload
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
+FTM_RET	FTM_CGI_POST_status
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
+FTM_RET	FTM_CGI_POST_syslog
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t *pReq
+);
+
+FTM_RET	FTM_CGI_POST_net
 (
 	FTM_CLIENT_PTR pClient, 
 	qentry_t *pReq
@@ -211,7 +277,7 @@ FTM_RET	FTM_CGI_getPort
 FTM_RET	FTM_CGI_getSwitchModel
 (
 	qentry_t *pReq, 
-	FTM_SWITCH_MODEL_PTR pModel,
+	FTM_CHAR_PTR pModel,
 	FTM_BOOL	bAllowEmpty
 );
 

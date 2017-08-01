@@ -17,6 +17,7 @@ FTM_RET	FTM_SHELL_CMD_trace(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pA
 FTM_RET	FTM_SHELL_CMD_config(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_net(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 FTM_RET	FTM_SHELL_CMD_catchb(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
+FTM_RET	FTM_SHELL_CMD_test(FTM_SHELL_PTR pShell, FTM_INT nArgc, FTM_CHAR_PTR pArgv[], FTM_VOID_PTR pData);
 
 FTM_SHELL_CMD	pCatchBShellCmdList[] = 
 {
@@ -188,6 +189,13 @@ FTM_SHELL_CMD	pCatchBShellCmdList[] =
 		.function	= FTM_SHELL_CMD_trace,
 		.pShortHelp	= "trace",
 		.pHelp		= "trace",
+		.pData		= NULL
+	},
+	{
+		.pString	= "test",
+		.function	= FTM_SHELL_CMD_test,
+		.pShortHelp	= "test",
+		.pHelp		= "test",
 		.pData		= NULL
 	},
 };

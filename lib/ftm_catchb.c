@@ -165,7 +165,14 @@ FTM_RET	FTM_CATCHB_create
 
 	strcpy(pCatchB->pName, __MODULE__);
 
-	xRet = FTM_SYSTEM_CONFIG_setDefault(&pCatchB->xConfig.xSystem);
+	xRet = FTM_CONFIG_create(&pCatchB->pConfig);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to init config!");
+		goto error;
+	}
+
+	xRet = FTM_SYSTEM_CONFIG_setDefault(&pCatchB->pConfig->xSystem);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to init config!");
@@ -332,6 +339,11 @@ error:
 		{
 			FTM_LIST_destroy(&pCatchB->pAlarmList);	
 		}
+	
+		if (pCatchB->pConfig != NULL)
+		{
+			FTM_CONFIG_destroy(&pCatchB->pConfig);	
+		}
 	}
 
 	return	xRet;
@@ -465,6 +477,10 @@ FTM_RET	FTM_CATCHB_destroy
 		FTM_LOGGER_destroy(&(*ppCatchB)->pLogger);	
 	}
 
+	if ((*ppCatchB)->pConfig != NULL)
+	{
+		FTM_CONFIG_destroy(&(*ppCatchB)->pConfig);	
+	}
 
 	FTM_MEM_free(*ppCatchB);
 
@@ -484,9 +500,34 @@ FTM_RET	FTM_CATCHB_setConfig
 
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_RET	xRet1;
+	FTM_UINT32	ulCount = 0;
 
+	strncpy(pCatchB->pConfig->pFileName, pConfig->pFileName, sizeof(pCatchB->pConfig->pFileName) - 1);
+	memcpy(&pCatchB->pConfig->xSystem, &pConfig->xSystem, sizeof(pConfig->xSystem));
 
-	memcpy(&pCatchB->xConfig, pConfig, sizeof(pCatchB->xConfig));
+	strcpy(pCatchB->pConfig->xSwitchModels.pPath, pConfig->xSwitchModels.pPath);
+	xRet = FTM_LIST_count(pConfig->xSwitchModels.pList, &ulCount);
+	if (xRet == FTM_RET_OK)
+	{
+		for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
+		{
+			FTM_SWITCH_MODEL_INFO_PTR	pInfo;
+			
+			xRet = FTM_LIST_getAt(pConfig->xSwitchModels.pList, i, (FTM_VOID_PTR _PTR_)&pInfo);
+			if (xRet == FTM_RET_OK)
+			{
+				FTM_SWITCH_MODEL_INFO_PTR	pNewInfo;
+			
+				pNewInfo = (FTM_SWITCH_MODEL_INFO_PTR)FTM_MEM_malloc(sizeof(FTM_SWITCH_MODEL_INFO));
+				if (pNewInfo != NULL)
+				{
+					memcpy(pNewInfo, pInfo, sizeof(FTM_SWITCH_MODEL_INFO));
+
+					FTM_LIST_append(pCatchB->pConfig->xSwitchModels.pList, pNewInfo);
+				}
+			}
+		}
+	}
 
 	if (pCatchB->pDB != NULL)
 	{
@@ -528,6 +569,16 @@ FTM_RET	FTM_CATCHB_setConfig
 		}
 	}
 
+	if (pCatchB->pServer!= NULL)
+	{
+		xRet1 = FTM_SERVER_setConfig(pCatchB->pServer, &pConfig->xServer);
+		if (xRet1 != FTM_RET_OK)
+		{
+			xRet = xRet1;
+			ERROR(xRet, "Failed to set Server configuration!");
+		}
+	}
+
 	FTM_TRACE_setConfig(&pConfig->xTrace);
 
 	return	xRet;
@@ -545,7 +596,39 @@ FTM_RET	FTM_CATCHB_getConfig
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_RET	xRet1;
 
-	memcpy(pConfig, &pCatchB->xConfig, sizeof(pCatchB->xConfig));
+	strncpy(pConfig->pFileName, pCatchB->pConfig->pFileName, sizeof(pCatchB->pConfig->pFileName) - 1);
+	memcpy(&pConfig->xSystem, &pCatchB->pConfig->xSystem, sizeof(pConfig->xSystem));
+
+	strcpy(pConfig->xSwitchModels.pPath, pCatchB->pConfig->xSwitchModels.pPath);
+	FTM_UINT32	ulCount = 0;
+	xRet = FTM_LIST_count(pCatchB->pConfig->xSwitchModels.pList, &ulCount);
+	if (xRet == FTM_RET_OK)
+	{
+		if (pConfig->xSwitchModels.pList == NULL)
+		{
+			FTM_LIST_create(&pConfig->xSwitchModels.pList);
+		}
+
+		for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
+		{
+			FTM_SWITCH_MODEL_INFO_PTR	pInfo;
+			
+			xRet = FTM_LIST_getAt(pCatchB->pConfig->xSwitchModels.pList, i, (FTM_VOID_PTR _PTR_)&pInfo);
+			if (xRet == FTM_RET_OK)
+			{
+				FTM_SWITCH_MODEL_INFO_PTR	pNewInfo;
+			
+				pNewInfo = (FTM_SWITCH_MODEL_INFO_PTR)FTM_MEM_malloc(sizeof(FTM_SWITCH_MODEL_INFO));
+				if (pNewInfo != NULL)
+				{
+					memcpy(pNewInfo, pInfo, sizeof(FTM_SWITCH_MODEL_INFO));
+
+					FTM_LIST_append(pConfig->xSwitchModels.pList, pNewInfo);
+				}
+			}
+		}
+	}
+
 
 	if (pCatchB->pDB != NULL)
 	{
@@ -574,6 +657,16 @@ FTM_RET	FTM_CATCHB_getConfig
 		{
 			xRet1 = xRet1;
 			ERROR(xRet, "Failed to get notifier configuration!");
+		}
+	}
+
+	if (pCatchB->pServer != NULL)
+	{
+		xRet1 = FTM_SERVER_getConfig(pCatchB->pServer, &pConfig->xServer);
+		if (xRet1 != FTM_RET_OK)
+		{
+			xRet = xRet1;
+			ERROR(xRet, "Failed to get server configuration!");
 		}
 	}
 
@@ -957,13 +1050,13 @@ FTM_VOID_PTR	FTM_CATCHB_process
 		ERROR(xRet, "Failed to start server!");
 	}
 #if 0
-	xRet = FTM_EVENT_TIMER_MANAGER_add(pCatchB->pEventManager, FTM_EVENT_TIMER_TYPE_REPEAT, pCatchB->xConfig.xCCTV.ulUpdateInterval, FTM_CATCHB_EVENT_checkNewCCTV, pCatchB, NULL);
+	xRet = FTM_EVENT_TIMER_MANAGER_add(pCatchB->pEventManager, FTM_EVENT_TIMER_TYPE_REPEAT, pCatchB->pConfig->xCCTV.ulUpdateInterval, FTM_CATCHB_EVENT_checkNewCCTV, pCatchB, NULL);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to add event!");
 	}
 #endif
-	FTM_TIMER_initMS(&xTimer, pCatchB->xConfig.xSystem.xStatistics.ulInterval);
+	FTM_TIMER_initMS(&xTimer, pCatchB->pConfig->xSystem.xStatistics.ulInterval);
 
 	pCatchB->bStop = FTM_FALSE;
 	while(!pCatchB->bStop)
@@ -1069,7 +1162,7 @@ FTM_VOID_PTR	FTM_CATCHB_process
 				xStatistics.xNet.ulRxBytes, xStatistics.xNet.ulTxBytes);
 			FTM_CATCHB_addStatistics(pCatchB, &xStatistics);
 
-			FTM_TIMER_addMS(&xTimer, pCatchB->xConfig.xSystem.xStatistics.ulInterval);
+			FTM_TIMER_addMS(&xTimer, pCatchB->pConfig->xSystem.xStatistics.ulInterval);
 		}	
 	}
 
@@ -2246,7 +2339,7 @@ FTM_RET	FTM_CATCHB_addSwitch
 		goto error;
 	}
 
-	xRet = FTM_DB_addSwitch(pCatchB->pDB, pConfig->pID, pConfig->xModel, pConfig->pUserID, pConfig->pPasswd, pConfig->pIP, pConfig->bSecure, pConfig->pComment);
+	xRet = FTM_DB_addSwitch(pCatchB->pDB, pConfig->pID, pConfig->pModel, pConfig->pUserID, pConfig->pPasswd, pConfig->pIP, pConfig->bSecure, pConfig->pComment);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to add switch to DB!");	
@@ -2609,6 +2702,86 @@ FTM_RET	FTM_CATCHB_onCheckNewSwitch
 	return	xRet;
 }
 
+
+FTM_CHAR_PTR	FTM_CATCHB_getSwitchModelPath
+(
+	FTM_CATCHB_PTR	pCatchB
+)
+{
+	ASSERT(pCatchB != NULL);
+
+	return	pCatchB->pConfig->xSwitchModels.pPath;
+}
+
+FTM_SWITCH_MODEL	FTM_CATCHB_getSwitchModelID
+(	
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pModel
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pModel != NULL);
+	
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_UINT32	ulCount = 0;
+
+	xRet = FTM_LIST_count(pCatchB->pConfig->xSwitchModels.pList, &ulCount);
+	if (xRet == FTM_RET_OK)
+	{
+		for(FTM_UINT32	i = 0 ; i < ulCount ; i++)
+		{
+			FTM_SWITCH_MODEL_INFO_PTR	pInfo = NULL;
+
+			xRet = FTM_LIST_getAt(pCatchB->pConfig->xSwitchModels.pList, i, (FTM_VOID_PTR _PTR_)&pInfo);
+			if (xRet == FTM_RET_OK)
+			{
+				if (strcmp(pModel, pInfo->pName) == 0)
+				{
+					return	pInfo->xModel;	
+				}
+			}
+		}
+	}
+
+	return	0;
+}
+
+FTM_CHAR_PTR	FTM_CATCHB_getSwitchModelName
+(
+	FTM_CATCHB_PTR		pCatchB,
+	FTM_SWITCH_MODEL	xModel
+)
+{
+	ASSERT(pCatchB != NULL);
+	
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_UINT32	ulCount = 0;
+
+	xRet = FTM_LIST_count(pCatchB->pConfig->xSwitchModels.pList, &ulCount);
+	if (xRet == FTM_RET_OK)
+	{
+		for(FTM_UINT32	i = 0 ; i < ulCount ; i++)
+		{
+			FTM_SWITCH_MODEL_INFO_PTR	pInfo = NULL;
+
+			xRet = FTM_LIST_getAt(pCatchB->pConfig->xSwitchModels.pList, i, (FTM_VOID_PTR _PTR_)&pInfo);
+			if (xRet == FTM_RET_OK)
+			{
+				if (xModel == pInfo->xModel)
+				{
+					return	pInfo->pName;	
+				}
+			}
+		}
+	}
+
+	return	"unknown";
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Alarm
+///////////////////////////////////////////////////////////////////////////////
 FTM_RET	FTM_CATCHB_addAlarm
 (
 	FTM_CATCHB_PTR	pCatchB,
@@ -2991,7 +3164,7 @@ FTM_RET	FTM_CATCHB_addStatistics
 
 		FTM_LIST_count(pCatchB->pStatisticsList, &ulCount);
 
-		if (ulCount < pCatchB->xConfig.xSystem.xStatistics.ulCount)
+		if (ulCount < pCatchB->pConfig->xSystem.xStatistics.ulCount)
 		{
 			pNewStatistics = (FTM_STATISTICS_PTR)FTM_MEM_malloc(sizeof(FTM_STATISTICS));
 		}
@@ -3264,7 +3437,7 @@ FTM_RET	FTM_CATCHB_setStatisticsUpdateInterval
 
 	if ((ulInterval >= FTM_CATCHB_STATISTICS_UPDATE_INTERVAL_MIN	) && (ulInterval <= FTM_CATCHB_STATISTICS_UPDATE_INTERVAL_MAX))
 	{
-		pCatchB->xConfig.xSystem.xStatistics.ulInterval = ulInterval;	
+		pCatchB->pConfig->xSystem.xStatistics.ulInterval = ulInterval;	
 	}
 
 	return	FTM_RET_OK;

@@ -10,10 +10,11 @@
 #define	FTM_COMMENT_LEN			64
 #define	FTM_NAME_LEN			32
 #define	FTM_TIME_LEN			32
+#define	FTM_MODEL_LEN			32
 #define	FTM_HASH_LEN			48
 #define	FTM_HOST_NAME_LEN		256
 #define	FTM_LOG_LEN				256
-#define	FTM_PATH_LEN			1024
+#define	FTM_PATH_LEN			512
 #define	FTM_FILE_NAME_LEN		256
 #define	FTM_EMAIL_LEN			128
 #define	FTM_ALARM_MESSAGE_LEN	1024
@@ -52,4 +53,6 @@
 #define FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN		4
 
 #define	FTM_CATCHB_TRACE_LOG_SIZE				(1024*1024)
+
+#define	FTM_CATCHB_CLIENT_TMP_PATH				"/mnt/"
 #endif

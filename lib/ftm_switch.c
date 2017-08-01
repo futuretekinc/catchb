@@ -16,29 +16,6 @@
 #undef	__MODULE__ 
 #define	__MODULE__ "switch"
 
-FTM_SWITCH_INFO	pSwitchInfos[] = 
-{
-	{
-		.xModel	= FTM_SWITCH_MODEL_NST,
-		.pName  = "nst",
-		.fSetAC	= FTM_SWITCH_NST_setAC
-	},
-	{
-		.xModel	= FTM_SWITCH_MODEL_DASAN,
-		.pName  = "dasan",
-		.fSetAC	= FTM_SWITCH_DASAN_setAC
-	},
-	{
-		.xModel	= FTM_SWITCH_MODEL_JUNIPER,
-		.pName  = "juniper",
-		.fSetAC	= FTM_SWITCH_JUNIPER_setAC
-	},
-	{
-		.xModel	= FTM_SWITCH_MODEL_UNKNOWN,
-		.pName  = "unknown"
-	}
-};
-
 FTM_BOOL	FTM_SWITCH_AC_seeker
 (
 	const FTM_VOID_PTR pElement, 
@@ -86,60 +63,6 @@ FTM_RET	FTM_SWITCH_CONFIG_destroy
 	return	xRet;
 }
 
-FTM_RET	FTM_SWITCH_CONFIG_loadList
-(	
-	FTM_LIST_PTR	pList,
-	cJSON _PTR_		pRoot
-)
-{
-	ASSERT(pList != NULL);
-	ASSERT(pRoot != NULL);
-
-	FTM_RET		xRet = FTM_RET_OK;
-	FTM_UINT32	i, ulCount = 0;
-
-	if(pRoot->type != cJSON_Array)
-	{
-		xRet = FTM_RET_CONFIG_INVALID_OBJECT;	
-		ERROR(xRet, "Invalid json object!\n");
-		return	xRet;
-	}
-
-	ulCount = cJSON_GetArraySize(pRoot);
-	for(i = 0 ; i < ulCount ; i++)
-	{
-		cJSON _PTR_ pObject;
-
-		pObject = cJSON_GetArrayItem(pRoot, i);
-		if (pObject != NULL)
-		{
-			FTM_SWITCH_CONFIG_PTR	pConfig;
-
-			pConfig = FTM_MEM_malloc(sizeof(FTM_SWITCH_CONFIG));
-			if (pConfig != NULL)
-			{
-				xRet = FTM_SWITCH_CONFIG_load(pConfig, pObject);
-				if (xRet != FTM_RET_OK)
-				{
-					ERROR(xRet, "Failed to load switch!");
-					FTM_MEM_free(pConfig);
-				}
-				else
-				{
-					xRet = FTM_LIST_append(pList, pConfig);	
-					if (xRet != FTM_RET_OK)
-					{
-						ERROR(xRet, "Failed to append switch config!");
-						FTM_MEM_free(pConfig);
-					}
-				}
-			}
-		}
-	}
-
-	return	xRet;
-}
-
 FTM_RET	FTM_SWITCH_CONFIG_showList
 (
 	FTM_LIST_PTR	pList,
@@ -152,7 +75,7 @@ FTM_RET	FTM_SWITCH_CONFIG_showList
 	FTM_UINT32	i, ulCount;
 
 	OUTPUT(xLevel, "");
-	OUTPUT(xLevel, "[ Switch List ]");
+	OUTPUT(xLevel, "[ Model ]");
 	OUTPUT(xLevel, "%4s   %24s %24s", "", "ID", "IP Address");
 	FTM_LIST_count(pList, &ulCount);
 	for(i = 0 ; i < ulCount ; i++)
@@ -170,6 +93,7 @@ FTM_RET	FTM_SWITCH_CONFIG_showList
 	return	FTM_RET_OK;
 }
 
+#if 0
 FTM_RET	FTM_SWITCH_CONFIG_load
 (
 	FTM_SWITCH_CONFIG_PTR	pConfig,
@@ -201,6 +125,7 @@ FTM_RET	FTM_SWITCH_CONFIG_load
 
 	return	xRet;
 }
+#endif
 
 //////////////////////////////////////////////////////////////
 //	FTM_SWITCH functions
@@ -208,10 +133,10 @@ FTM_RET	FTM_SWITCH_CONFIG_load
 FTM_RET	FTM_SWITCH_create
 (
 	FTM_SWITCH_CONFIG_PTR	pConfig,
-	struct FTM_CATCHB_STRUCT* pCatchB,
-	FTM_SWITCH_AC_PTR	pACs,
-	FTM_UINT32			ulACCount,
-	FTM_SWITCH_PTR _PTR_ ppSwitch
+	FTM_CATCHB_PTR			pCatchB,
+	FTM_SWITCH_AC_PTR		pACs,
+	FTM_UINT32				ulACCount,
+	FTM_SWITCH_PTR _PTR_ 	ppSwitch
 )
 {
 	ASSERT(ppSwitch != NULL);
@@ -347,21 +272,6 @@ FTM_RET	FTM_SWITCH_addAC
 	
 	FTM_RET				xRet = FTM_RET_OK;
 	FTM_SWITCH_AC_PTR	pAC;
-	FTM_SWITCH_INFO_PTR	pInfo;
-
-	xRet = FTM_SWITCH_getInfo(pSwitch, &pInfo);
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to get switch info!");
-		return	xRet;
-	}
-
-	if (pInfo->fSetAC == NULL)
-	{
-		xRet = FTM_RET_NOT_SUPPORTED_FUNCTION;
-		ERROR(xRet, "Failed to add AC!");
-		return	xRet;
-	}
 
 	pAC = (FTM_SWITCH_AC_PTR)FTM_MEM_malloc(sizeof(FTM_SWITCH_AC));
 	if (pAC == NULL)
@@ -382,7 +292,7 @@ FTM_RET	FTM_SWITCH_addAC
 		return	xRet;
 	}
 
-	xRet = pInfo->fSetAC(pSwitch, pIP, xPolicy);
+	xRet =FTM_SWITCH_setAC(pSwitch, pIP, xPolicy);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR("Failed to deny IP[%s] from switch[%s].", pIP, pSwitch->xConfig.pID);
@@ -404,48 +314,29 @@ FTM_RET	FTM_SWITCH_deleteAC
 	
 	FTM_RET				xRet = FTM_RET_OK;
 	FTM_SWITCH_AC_PTR	pAC;
-	FTM_SWITCH_INFO_PTR	pInfo;
 
-	INFO("Delete switch access control entry");
-	xRet = FTM_SWITCH_getInfo(pSwitch, &pInfo);
-	if (xRet != FTM_RET_OK)
-	{
-		ERROR(xRet, "Failed to get switch info!");
-		return	xRet;
-	}
-
-	if (pInfo->fSetAC == NULL)
-	{
-		xRet = FTM_RET_NOT_SUPPORTED_FUNCTION;
-		ERROR(xRet, "Failed to add AC!");
-		return	xRet;
-	}
-
-	xRet = FTM_LIST_get(pSwitch->pACList, pIP, (FTM_VOID_PTR _PTR_)&pAC);
+	xRet = FTM_SWITCH_getAC(pSwitch, pIP, &pAC);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get AC");
 		return	xRet;
 	}
 
-	xRet = pInfo->fSetAC(pSwitch, pIP, FTM_SWITCH_AC_POLICY_ALLOW);
+	xRet =FTM_SWITCH_setAC(pSwitch, pIP, FTM_SWITCH_AC_POLICY_ALLOW);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR("Failed to allow IP[%s] from switch[%s].", pIP, pSwitch->xConfig.pID);	
+		return	xRet;
 	}
-	else
+
+	xRet = FTM_LIST_remove(pSwitch->pACList, pAC);
+	if (xRet != FTM_RET_OK)
 	{
-		xRet = FTM_LIST_remove(pSwitch->pACList, pAC);
-		if (xRet != FTM_RET_OK)
-		{
-			ERROR(xRet, "Failed to remove AC");
-			return	xRet;
-		}
-
-		FTM_MEM_free(pAC);
+		ERROR(xRet, "Failed to remove AC");
+		return	xRet;
 	}
 
-	INFO("Delete switch access control exit");
+	FTM_MEM_free(pAC);
 
 	return	xRet;
 }
@@ -464,71 +355,49 @@ FTM_RET	FTM_SWITCH_getAC
 	return	FTM_LIST_get(pSwitch->pACList, pIP, (FTM_VOID_PTR _PTR_)ppAC);
 }
 
-FTM_RET	FTM_SWITCH_getInfo
+FTM_RET	FTM_SWITCH_setAC
 (
 	FTM_SWITCH_PTR	pSwitch,
-	FTM_SWITCH_INFO_PTR _PTR_ ppInfo
+	FTM_CHAR_PTR	pTargetIP,
+	FTM_SWITCH_AC_POLICY	xPolicy
 )
 {
 	ASSERT(pSwitch != NULL);
-	ASSERT(ppInfo != NULL);
+	ASSERT(pTargetIP != NULL);
+	
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_CHAR	pFileName[1024];
+	FTM_CHAR	pLocalIP[FTM_IP_LEN+1];
+	FTM_UINT32	ulIndex = 0;
+	FTM_UINT32	ulCount = 0;
+	FTM_SWS_CMD_PTR pLines = 0;
 
-	FTM_SWITCH_INFO_PTR	pInfo = pSwitchInfos;
+	snprintf(pFileName, sizeof(pFileName), "%s/%s", FTM_CATCHB_getSwitchModelPath(pSwitch->pCatchB), pSwitch->xConfig.pModel);
 
-	while(pInfo->xModel != FTM_SWITCH_MODEL_UNKNOWN)
+	FTM_getLocalIP(pLocalIP, sizeof(pLocalIP));
+	ulIndex = ntohl(inet_addr(pTargetIP)) & 0xFFFFFF;
+
+	xRet = FTM_SWITCH_SCRIPT_load(pFileName, xPolicy, pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd, ulIndex, pLocalIP, pTargetIP, &pLines, &ulCount);
+	if (xRet != FTM_RET_OK)
 	{
-		if (pInfo->xModel == pSwitch->xConfig.xModel)
-		{
-			*ppInfo = pInfo;
-
-			return	FTM_RET_OK;
-		}
-
-		pInfo++;
+		return	xRet;	
 	}
 
-	return	FTM_RET_OBJECT_NOT_FOUND;
-
-}
-
-FTM_SWITCH_MODEL	FTM_getSwitchModelID
-(	
-	FTM_CHAR_PTR	pModel
-)
-{
-	ASSERT(pModel != NULL);
-
-	FTM_SWITCH_INFO_PTR	pInfo = pSwitchInfos;
-
-	while(pInfo->xModel != FTM_SWITCH_MODEL_UNKNOWN)
+	if (pSwitch->xConfig.bSecure)
 	{
-		if (strcasecmp(pModel, pInfo->pName) == 0)
-		{
-			break;
-		}
-		pInfo++;
+		xRet = FTM_SWITCH_SSH_setAC(pSwitch, pTargetIP, pLines, ulCount);
+	}
+	else
+	{
+		xRet = FTM_SWITCH_TELNET_setAC(pSwitch, pTargetIP, pLines, ulCount);
 	}
 
-	return	pInfo->xModel;
-}
-
-FTM_CHAR_PTR	FTM_getSwitchModelName
-(
-	FTM_SWITCH_MODEL	xModel
-)
-{
-	FTM_SWITCH_INFO_PTR	pInfo = pSwitchInfos;
-
-	while(pInfo->xModel != FTM_SWITCH_MODEL_UNKNOWN)
+	if (pLines != NULL)
 	{
-		if (pInfo->xModel == xModel)
-		{
-			return	pInfo->pName;
-		}
-		pInfo++;
+		FTM_MEM_free(pLines);
 	}
 
-	return	pInfo->pName;
+	return	xRet;
 }
 
 FTM_RET	FTM_SWITCH_TELNET_setAC
@@ -641,6 +510,11 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 	FTM_TIMER	xTimer;
 	FTM_UINT32	ulTimeout = 3000;
 	FTM_BOOL	bSuccess = FTM_TRUE;
+
+	for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
+	{
+		INFO("%s %s", pLines[i].pPrompt, pLines[i].pInput);
+	}
 
 	xRet = FTM_SSH_create(&pSSH);
 	if (xRet != FTM_RET_OK)
@@ -763,15 +637,18 @@ finished:
 	return	xRet;
 }
 
-const FTM_CHAR_PTR	pConvertFormat = "_IDX=%d _TARGET=%s _LOCAL=%s acl.sh %s";
 
-FTM_RET	FTM_SWITCH_loadScript
+FTM_RET	FTM_SWITCH_SCRIPT_load
 (
 	FTM_CHAR_PTR	pFileName,
+	FTM_SWITCH_AC_POLICY	xPolicy,
+	FTM_CHAR_PTR	pUserID,
+	FTM_CHAR_PTR	pPasswd,
 	FTM_UINT32		ulIndex,
 	FTM_CHAR_PTR	pLocalIP,
 	FTM_CHAR_PTR	pTargetIP,
-	FTM_SWITCH_SCRIPT_PTR _PTR_ ppScript
+	FTM_SWS_CMD_PTR _PTR_	ppLines,
+	FTM_UINT32 _PTR_ pulLines
 )
 {
 	FTM_RET			xRet = FTM_RET_OK;
@@ -779,17 +656,25 @@ FTM_RET	FTM_SWITCH_loadScript
 	FTM_CHAR_PTR	pData = NULL;
 	FTM_UINT32		ulFileLen = 0;
 	FTM_UINT32		ulReadSize = 0;
-	FTM_CHAR		pBuffer[1024];
-	FTM_SWITCH_SCRIPT_PTR	pScript = NULL;
-	FTM_UINT32		ulAllowLines = 0;
-	FTM_UINT32		ulDenyLines = 0;
+	FTM_SWS_CMD_PTR pLines = NULL;
+	FTM_UINT32		ulLines = 0;
 	cJSON _PTR_		pRoot = NULL;
 	cJSON _PTR_		pSection = NULL;
+	FTM_CHAR		pSectionName[128];
 
 	ASSERT(pFileName != NULL);
 	ASSERT(pLocalIP != NULL);
 	ASSERT(pTargetIP != NULL);
-	ASSERT(ppScript != NULL);
+	ASSERT(ppLines != NULL);
+
+	if (xPolicy == FTM_SWITCH_AC_POLICY_ALLOW)
+	{
+		strcpy(pSectionName, "allow");
+	}
+	else
+	{
+		strcpy(pSectionName, "deny");
+	}
 
 	pFile = fopen(pFileName, "rt");
 	if (pFile == NULL)
@@ -817,9 +702,28 @@ FTM_RET	FTM_SWITCH_loadScript
 		memset(pData, 0, ulFileLen);
 	}
 
-	sprintf(pBuffer, pConvertFormat, ulIndex, pLocalIP, pTargetIP, pFileName);
+
+	FTM_CHAR		pFormat[256];
+	FTM_UINT32		ulFormatLen = 0;
+
+	memset(pFormat, 0, sizeof(pFormat));
+
+	if (pUserID != NULL)
+	{
+		ulFormatLen += snprintf(&pFormat[ulFormatLen], sizeof(pFormat) - ulFormatLen - 1, "_USER_ID=%s ", pUserID);
+	}
+
+	if (pPasswd != NULL)
+	{
+		ulFormatLen += snprintf(&pFormat[ulFormatLen], sizeof(pFormat) - ulFormatLen - 1, "_PASSWD=%s ", pUserID);
+	}
+
 	
-	pFile = popen(pBuffer, "r");
+	ulFormatLen += snprintf(&pFormat[ulFormatLen], sizeof(pFormat) - ulFormatLen - 1, "_IDX=%d _TARGET=%s _LOCAL=%s acl.sh %s", ulIndex, pLocalIP, pTargetIP, pFileName);
+	
+	INFO("Script Convert : %s", pFormat);
+
+	pFile = popen(pFormat, "r");
 	if (pFile == NULL)
 	{
 		xRet = FTM_RET_ERROR;
@@ -848,7 +752,7 @@ FTM_RET	FTM_SWITCH_loadScript
 	}    
 
 
-	pSection = cJSON_GetObjectItem(pRoot, "allow");
+	pSection = cJSON_GetObjectItem(pRoot, pSectionName);
 	if (pSection == NULL)
 	{
 		ERROR(xRet, "Invlalid script!");
@@ -860,35 +764,18 @@ FTM_RET	FTM_SWITCH_loadScript
 		ERROR(xRet, "Invlalid script!");
 		goto finished;	
 	}
-	ulAllowLines = cJSON_GetArraySize(pSection);
+	ulLines = cJSON_GetArraySize(pSection);
 
-	pSection = cJSON_GetObjectItem(pRoot, "deny");
-	if (pSection == NULL)
-	{
-		ERROR(xRet, "Invlalid script!");
-		goto finished;	
-	}
-
-	if (pSection->type != cJSON_Array)
-	{
-		ERROR(xRet, "Invlalid script!");
-		goto finished;	
-	}
-	ulDenyLines = cJSON_GetArraySize(pSection);
-
-	pScript = (FTM_SWITCH_SCRIPT_PTR)FTM_MEM_malloc(sizeof(FTM_SWITCH_SCRIPT) + sizeof(FTM_SWS_CMD) * (ulAllowLines + ulDenyLines));
-	if (pScript == NULL)
+	pLines = (FTM_SWS_CMD_PTR)FTM_MEM_malloc(sizeof(FTM_SWS_CMD) * ulLines);
+	if (pLines == NULL)
 	{
 		xRet = FTM_RET_NOT_ENOUGH_MEMORY;
-		ERROR(xRet,	"Not enough memory[%d]", sizeof(FTM_SWITCH_SCRIPT) + sizeof(FTM_SWS_CMD) * (ulAllowLines + ulDenyLines));
+		ERROR(xRet,	"Not enough memory[%d]", sizeof(FTM_SWS_CMD) * ulLines);
 		goto finished;
 	}
 
-	pScript->xAllow.pLines = (FTM_SWS_CMD_PTR)((FTM_UINT8_PTR)pScript + sizeof(FTM_SWITCH_SCRIPT));
-	pScript->xDeny.pLines = (FTM_SWS_CMD_PTR)((FTM_UINT8_PTR)pScript + sizeof(FTM_SWITCH_SCRIPT) + sizeof(FTM_SWS_CMD)*ulAllowLines);
-
-	pSection = cJSON_GetObjectItem(pRoot, "allow");
-	for(FTM_UINT32 i = 0 ; i < ulAllowLines ; i++)
+	pSection = cJSON_GetObjectItem(pRoot, pSectionName);
+	for(FTM_UINT32 i = 0 ; i < ulLines ; i++)
 	{
 		cJSON _PTR_ pLine = cJSON_GetArrayItem(pSection, i);
 		if (pLine == NULL)
@@ -906,43 +793,20 @@ FTM_RET	FTM_SWITCH_loadScript
 			goto finished;	
 		}
 
-		pScript->xAllow.ulCount++;
-		strncpy(pScript->xAllow.pLines[i].pPrompt, pPrompt->valuestring, sizeof(pScript->xAllow.pLines[i].pPrompt) - 1);
-		strncpy(pScript->xAllow.pLines[i].pInput, pCommand->valuestring, sizeof(pScript->xAllow.pLines[i].pInput) - 1);
+		strncpy(pLines[i].pPrompt, pPrompt->valuestring, sizeof(pLines[i].pPrompt) - 1);
+		strncpy(pLines[i].pInput, pCommand->valuestring, sizeof(pLines[i].pInput) - 1);
 	}
 	
-	pSection = cJSON_GetObjectItem(pRoot, "deny");
-	for(FTM_UINT32 i = 0 ; i < ulDenyLines ; i++)
-	{
-		cJSON _PTR_ pLine = cJSON_GetArrayItem(pSection, i);
-		if (pLine == NULL)
-		{
-			ERROR(xRet, "Invlalid script!");
-			goto finished;	
-		}
 
-		cJSON _PTR_ pPrompt = cJSON_GetObjectItem(pLine, "prompt");
-		cJSON _PTR_ pCommand= cJSON_GetObjectItem(pLine, "command");
-
-		if ((pPrompt == NULL) || (pCommand == NULL) || (pPrompt->type != cJSON_String) || (pCommand->type != cJSON_String))
-		{
-			ERROR(xRet, "Invlalid script!");
-			goto finished;	
-		}
-
-		pScript->xDeny.ulCount++;
-		strncpy(pScript->xDeny.pLines[i].pPrompt, 	pPrompt->valuestring, 	sizeof(pScript->xDeny.pLines[i].pPrompt) - 1);
-		strncpy(pScript->xDeny.pLines[i].pInput, 	pCommand->valuestring, 	sizeof(pScript->xDeny.pLines[i].pInput) - 1);
-	}
-
-	*ppScript = pScript;
+	*ppLines = pLines;
+	*pulLines  = ulLines;
 
 finished:
 	if (xRet != FTM_RET_OK)
 	{
-		if (pScript != NULL)
+		if (pLines != NULL)
 		{
-			FTM_MEM_free(pScript);
+			FTM_MEM_free(pLines);
 		}
 	}
 
@@ -966,3 +830,4 @@ finished:
 
 	return	xRet;
 }
+

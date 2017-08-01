@@ -15,15 +15,6 @@
 
 #define	MAX_FRAME_SIZE					(FTM_PARAM_MAX_LEN)	
 
-typedef struct FTM_CLIENT_STRUCT
-{
-	FTM_CLIENT_CONFIG	xConfig;
-
-	FTM_INT		hSock;
-	FTM_INT		nTimeout;
-	FTM_LOCK	xLock;
-}	FTM_CLIENT, _PTR_ FTM_CLIENT_PTR;
-
 static FTM_RET FTM_CLIENT_request
 (
 	FTM_CLIENT_PTR			pClient, 
@@ -43,6 +34,7 @@ FTM_RET	FTM_CLIENT_CONFIG_setDefault
 	strncpy(pConfig->pIP, "127.0.0.1", sizeof(pConfig->pIP));
 	pConfig->usPort = 8800;
 	pConfig->bAutoConnect = FTM_FALSE;
+	strncpy(pConfig->pTmpPath, FTM_CATCHB_CLIENT_TMP_PATH, sizeof(pConfig->pTmpPath) - 1);
 
 	return	FTM_RET_OK;
 }
@@ -92,10 +84,125 @@ FTM_RET	FTM_CLIENT_CONFIG_load
 		}
 	}
 
+	pItem = cJSON_GetObjectItem(pRoot, "tmp_path");
+	if (pItem != NULL)
+	{
+		strncpy(pConfig->pTmpPath, pItem->valuestring, sizeof(pConfig->pTmpPath) - 1);
+	}
 	return	xRet;
 }
 
+FTM_RET	FTM_CLIENT_CONFIG_loadFromFile
+(
+	FTM_CLIENT_CONFIG_PTR	pConfig,
+	FTM_CHAR_PTR			pFileName
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pFileName != NULL);
 
+	FILE *pFile; 
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_CHAR_PTR	pData = NULL;
+	FTM_UINT32	ulFileLen;
+	FTM_UINT32	ulReadSize;
+	cJSON _PTR_		pRoot = NULL;
+
+	pFile = fopen(pFileName, "rt");
+	if (pFile == NULL)
+	{         
+		xRet = FTM_RET_CONFIG_LOAD_FAILED; 
+		ERROR(xRet, "Can't open file[%s]\n", pFileName);
+		return  xRet; 
+	}    
+
+	fseek(pFile, 0L, SEEK_END);
+	ulFileLen = ftell(pFile);
+	fseek(pFile, 0L, SEEK_SET);
+
+	if (ulFileLen > 0)
+	{
+		pData = (FTM_CHAR_PTR)FTM_MEM_malloc(ulFileLen);
+		if (pData != NULL)
+		{
+			memset(pData, 0, ulFileLen);
+			ulReadSize = fread(pData, 1, ulFileLen, pFile); 
+			if (ulReadSize != ulFileLen)
+			{    
+				xRet = FTM_RET_FAILED_TO_READ_FILE;
+				ERROR(xRet, "Failed to read configuration file[%u:%u]\n", ulFileLen, ulReadSize);
+				goto finished;
+			}    
+		}
+		else
+		{    
+			xRet = FTM_RET_NOT_ENOUGH_MEMORY;  
+			ERROR(xRet, "Failed to alloc buffer[size = %u]\n", ulFileLen);
+			goto finished;
+		}    
+
+	}
+	fclose(pFile);
+	pFile = NULL;
+
+	pRoot = cJSON_Parse(pData);
+	if (pRoot == NULL)
+	{    
+		xRet = FTM_RET_INVALID_JSON_FORMAT;
+		ERROR(xRet, "Invalid json format!\n");
+		goto finished;
+	}    
+
+	xRet = FTM_CLIENT_CONFIG_load(pConfig, pRoot);
+
+finished:
+	if (pRoot != NULL)
+	{
+		cJSON_Delete(pRoot);
+		pRoot = NULL;
+	}
+
+	if (pData != NULL)
+	{
+		FTM_MEM_free(pData);
+		pData = NULL;
+	}
+
+	if (pFile != NULL)
+	{
+		fclose(pFile);	
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_CLIENT_CONFIG_save
+(
+	FTM_CLIENT_CONFIG_PTR	pConfig,
+	cJSON _PTR_ pRoot
+)
+{
+	cJSON_AddStringToObject(pRoot, "ip", 	pConfig->pIP);
+	cJSON_AddNumberToObject(pRoot, "port", 	pConfig->usPort);
+	cJSON_AddNumberToObject(pRoot, "auto", 	pConfig->bAutoConnect);
+	cJSON_AddStringToObject(pRoot, "tmp_path", 	pConfig->pTmpPath);
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_CLIENT_CONFIG_show
+(
+	FTM_CLIENT_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL			xLevel
+)
+{
+	printf("%16s : %s\n", "ip", 	pConfig->pIP);
+	printf("%16s : %d\n", "port", 	pConfig->usPort);
+	printf("%16s : %s\n", "auto", 	(pConfig->bAutoConnect)?"on":"off");
+	printf("%16s : %s\n", "Tmp Path",pConfig->pTmpPath);
+
+	return	FTM_RET_OK;
+}
 /*****************************************************************
  *
  *****************************************************************/
@@ -287,7 +394,9 @@ FTM_RET FTM_CLIENT_request
 
 	if ((pClient == NULL) || (pClient->hSock == 0))
 	{
-		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+		xRet = FTM_RET_CLIENT_HANDLE_INVALID;	
+		ERROR(xRet, "Failed to request!");
+		return	xRet;
 	}
 
 	FTM_LOCK_set(&pClient->xLock);

@@ -16,7 +16,7 @@
 
 typedef	struct	FTM_CATCHB_STRUCT
 {
-	FTM_CONFIG			xConfig;
+	FTM_CONFIG_PTR		pConfig;
 
 	FTM_CHAR			pName[FTM_NAME_LEN+1];
 
@@ -217,6 +217,29 @@ FTM_RET	FTM_CATCHB_getSwitchList
 	FTM_SWITCH_PTR	_PTR_ ppSwitches,
 	FTM_UINT32		ulMaxCount,
 	FTM_UINT32_PTR	pCount
+);
+
+FTM_CHAR_PTR	FTM_CATCHB_getSwitchModelPath
+(
+	FTM_CATCHB_PTR	pCatchB
+);
+
+FTM_RET	FTM_CATCHB_getSwitchModelInfo
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_SWITCH_MODEL_INFO_PTR	_PTR_	ppModelInfo
+);
+
+FTM_SWITCH_MODEL	FTM_CATCHB_getSwitchModelID
+(	
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_CHAR_PTR	pModel
+);
+
+FTM_CHAR_PTR	FTM_CATCHB_getSwitchModelName
+(
+	FTM_CATCHB_PTR		pCatchB,
+	FTM_SWITCH_MODEL	xModel
 );
 
 FTM_RET	FTM_CATCHB_addAlarm

@@ -66,6 +66,12 @@ FTM_RET		FTM_TRACE_CONFIG_save
 	cJSON _PTR_				pRoot
 );
 
+FTM_RET		FTM_TRACE_CONFIG_show
+(
+	FTM_TRACE_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL			xLevel
+);
+
 FTM_RET		FTM_TRACE_setConfig
 (
 	FTM_TRACE_CONFIG_PTR	pConfig
@@ -105,6 +111,10 @@ FTM_CHAR_PTR	FTM_TRACE_getModuleName
 	FTM_UINT32	ulIndex
 );
 
+FTM_RET	FTM_TRACE_addModuleName
+(
+	FTM_CHAR_PTR	pModuleName
+);
 #define	__MODULE__				NULL
 
 #define	OUTPUT(level, format, ...)	FTM_TRACE_Out(level, 				FTM_TRUE, __func__, __LINE__, __MODULE__, format, ## __VA_ARGS__)

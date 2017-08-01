@@ -617,8 +617,6 @@ finished:
 	return	0;
 }
 
-
-
 FTM_RET	FTM_ANALYZER_process
 (
 	FTM_ANALYZER_PTR	pAnalyzer
@@ -749,7 +747,7 @@ FTM_RET	FTM_ANALYZER_process
 				pCCTV->ulPortCount++;
 
 				ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, "%d - %s", pAnalyzer->xConfig.pPortList[j], (bOpened)?"open":"close"); 
-			usleep(100000);	
+				usleep(100000);	
 			}
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, "]");
 

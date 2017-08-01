@@ -48,7 +48,7 @@ FTM_RET	FTM_SHELL_CMD_switch
 				if (xRet == FTM_RET_OK)
 				{
 					printf("%16s %16s %16s %16s %16s %8s %s\n", pSwitch->xConfig.pID, 
-						FTM_getSwitchModelName(pSwitch->xConfig.xModel), 
+						pSwitch->xConfig.pModel, 
 						pSwitch->xConfig.pIP, 
 						pSwitch->xConfig.pUserID, pSwitch->xConfig.pPasswd, 
 						(pSwitch->xConfig.bSecure?"secure":"normal"), pSwitch->xConfig.pComment);
@@ -74,14 +74,7 @@ FTM_RET	FTM_SHELL_CMD_switch
 		memset(&xConfig, 0, sizeof(xConfig));
 
 		strncpy(xConfig.pID, pArgv[2], sizeof(xConfig.pID) - 1);
-
-		xConfig.xModel = FTM_getSwitchModelID(pArgv[3]);
-		if (xConfig.xModel == FTM_SWITCH_MODEL_UNKNOWN)
-		{
-			xRet = FTM_RET_INVALID_ARGUMENTS;
-			printf("The switch model %s is not supported!\n", pArgv[3]);
-			goto finished;
-		}
+		strncpy(xConfig.pModel, pArgv[3], sizeof(xConfig.pModel) - 1);
 
 		FTM_UINT32	i;
 		for(i = 4 ; i < nArgc ; i+=2)
@@ -170,7 +163,7 @@ FTM_RET	FTM_SHELL_CMD_switch
 		}
 
 		printf("%8s : %s\n", "ID", 		xConfig.pID);
-		printf("%8s : %s\n", "Model", 	FTM_getSwitchModelName(xConfig.xModel));
+		printf("%8s : %s\n", "Model", 	xConfig.pModel);
 		printf("%8s : %s\n", "IP", 		xConfig.pIP);
 		printf("%8s : %s\n", "UserID",  xConfig.pUserID);
 		printf("%8s : %s\n", "Passwd", 	xConfig.pPasswd);
@@ -288,44 +281,118 @@ FTM_RET	FTM_SHELL_CMD_switch
 	}
 	else if (strcasecmp(pArgv[1], "script") == 0)
 	{
-		FTM_SWITCH_SCRIPT	xScript;
+		FTM_SWS_CMD_PTR		pLines;
+		FTM_UINT32			ulLines;;
 		FTM_UINT32			ulIndex = 0;
-		if (nArgc < 6)
+		FTM_CHAR_PTR		pFileName = NULL;
+		FTM_CHAR_PTR		pUserID = NULL;
+		FTM_CHAR_PTR		pPasswd = NULL;
+		FTM_CHAR_PTR		pTargetIP="";
+		FTM_CHAR			pLocalIP[FTM_IP_LEN+1];
+
+		if (nArgc < 4)
 		{
 			xRet = FTM_RET_INVALID_ARGUMENTS;
 			goto finished;	
 		}
 
-		ulIndex = strtoul(pArgv[3], 0, 10);
+		if ((nArgc - 4) > 0)
+		{ 
+			if (((nArgc - 4) % 2) != 0)
+			{
+				xRet = FTM_RET_INVALID_ARGUMENTS;
+				goto finished;	
+			}
 
-		memset(&xScript, 0, sizeof(xScript));
+			for(FTM_UINT32 i = 4 ; i + 1 < nArgc ;  i+= 2)
+			{
+				if (strcasecmp(pArgv[i], "--userid") == 0)
+				{
+					pUserID = pArgv[i+1];	
+				}
+				else if (strcasecmp(pArgv[i], "--passwd") == 0)
+				{
+					pPasswd= pArgv[i+1];	
+				}
+			}
+		}
 
-		xRet = FTM_SWITCH_loadScript(pArgv[2], ulIndex, pArgv[4], pArgv[5], &xScript);
-		if (xRet != FTM_RET_OK)
+		pFileName = pArgv[2];
+		FTM_getLocalIP(pLocalIP, sizeof(pLocalIP));
+		pTargetIP = pArgv[3];
+
+		ulIndex = ntohl(inet_addr(pTargetIP)) & 0xFFFFFF;
+
+		printf("[ Switch Configuration Script Test ]\n");
+		printf("%16s : %s\n", "File Name", 	pFileName);
+		printf("%16s : %s\n", "Local IP", 	pLocalIP);
+		printf("%16s : %s\n", "Target IP", 	pTargetIP);
+		printf("%16s : %d\n", "Index", 	  	ulIndex);
+		if (pUserID != NULL)
 		{
-			printf("Error : Invalid script!\n");	
+			printf("%16s : %s\n", "User ID",	pUserID);
+		}
+
+		if (pPasswd != NULL)
+		{
+			printf("%16s : %s\n", "Passwd",	pPasswd);
+		}
+
+		printf("\n-- Deny --\n");	
+		xRet = FTM_SWITCH_SCRIPT_load(pFileName, FTM_SWITCH_AC_POLICY_DENY, pUserID, pPasswd, ulIndex, pLocalIP, pTargetIP, &pLines, &ulLines);
+		if (xRet == FTM_RET_OK)
+		{
+			FTM_CHAR	pFormat[256];
+			FTM_UINT32	ulPromptLen = 16;
+
+			for( FTM_UINT32	i = 0; i < ulLines ; i++)
+			{
+				if (ulPromptLen < strlen(pLines[i].pPrompt))
+				{
+					ulPromptLen = strlen(pLines[i].pPrompt);
+				}
+			}
+
+			sprintf(pFormat, "%%2d : %%%ds - %%s\n", ulPromptLen);
+
+			for( FTM_UINT32	i = 0; i < ulLines ; i++)
+			{
+				printf(pFormat, i+1, pLines[i].pPrompt, pLines[i].pInput);
+			}
+			FTM_MEM_free(pLines);
 		}
 		else
 		{
-			FTM_UINT32	i = 0;
-			FTM_SWS_CMD_PTR	pCmd = xScript.xAllow.pLines;
+			printf("Error : Invalid script!\n");	
+		}
 
-			printf("[ Allow ]\n");
-			while(strlen(pCmd->pPrompt))
+
+		printf("\n-- Allow --\n");	
+		xRet = FTM_SWITCH_SCRIPT_load(pFileName, FTM_SWITCH_AC_POLICY_ALLOW, pUserID, pPasswd, ulIndex, pLocalIP, pTargetIP, &pLines, &ulLines);
+		if (xRet == FTM_RET_OK)
+		{
+			FTM_CHAR	pFormat[256];
+			FTM_UINT32	ulPromptLen = 16;
+
+			for( FTM_UINT32	i = 0; i < ulLines ; i++)
 			{
-				printf("%d : %32s - %s\n", ++i, pCmd->pPrompt, pCmd->pInput);
-				pCmd++;
+				if (ulPromptLen < strlen(pLines[i].pPrompt))
+				{
+					ulPromptLen = strlen(pLines[i].pPrompt);
+				}
 			}
 
-			pCmd = xScript.xDeny.pLines;
+			sprintf(pFormat, "%%2d : %%%ds - %%s\n", ulPromptLen);
 
-			i = 0;
-			printf("[ Deny ]\n");
-			while(strlen(pCmd->pPrompt))
+			for( FTM_UINT32	i = 0; i < ulLines ; i++)
 			{
-				printf("%d : %32s - %s\n", ++i, pCmd->pPrompt, pCmd->pInput);
-				pCmd++;
+				printf(pFormat, i+1, pLines[i].pPrompt, pLines[i].pInput);
 			}
+			FTM_MEM_free(pLines);
+		}
+		else
+		{
+			printf("Error : Invalid script!\n");	
 		}
 
 	}

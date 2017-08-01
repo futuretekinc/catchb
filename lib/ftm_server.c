@@ -84,6 +84,96 @@ static FTM_SERVER_CMD_SET	pCmdSet[] =
 	MK_CMD_SET(FTM_CMD_UNKNOWN, 				NULL)
 };
 
+FTM_RET	FTM_SERVER_CONFIG_setDefault
+(
+	FTM_SERVER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pConfig != NULL);
+
+	pConfig->usPort 		= FTM_SERVER_DEFAULT_PORT;
+	pConfig->ulMaxSession 	= FTM_SERVER_DEFAULT_MAX_SESSION;
+	pConfig->ulBufferLen 	= FTM_SERVER_DEFAULT_BUFFER_LEN;
+	pConfig->ulSSIDTimeout	= FTM_SERVER_DEFAULT_SSID_TIMEOUT;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_SERVER_CONFIG_load
+(
+	FTM_SERVER_CONFIG_PTR	pConfig,
+	cJSON _PTR_ pRoot
+)
+{
+	ASSERT(pConfig != NULL);
+	ASSERT(pRoot != NULL);
+	
+	FTM_RET	xRet = FTM_RET_OK;
+	cJSON _PTR_ 	pSection;
+	cJSON _PTR_ 	pItem;
+
+	pItem = cJSON_GetObjectItem(pRoot, "port");
+	if (pItem != NULL)
+	{
+		pConfig->usPort = pItem->valueint;
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "session_count");
+	if (pItem != NULL)
+	{
+		pConfig->ulMaxSession = pItem->valueint;
+	}
+
+	pItem = cJSON_GetObjectItem(pRoot, "buffer_size");
+	if (pItem != NULL)
+	{
+		pConfig->ulBufferLen= pItem->valueint;
+	}
+
+	pSection = cJSON_GetObjectItem(pRoot, "ssid");
+	if (pSection != NULL)
+	{
+		pItem = cJSON_GetObjectItem(pSection, "timeout");
+		if (pItem != NULL)
+		{
+			pConfig->ulSSIDTimeout= pItem->valueint;
+		}
+	}
+
+	return	xRet;
+}
+
+FTM_RET	FTM_SERVER_CONFIG_save
+(
+	FTM_SERVER_CONFIG_PTR	pConfig,
+	cJSON _PTR_ pRoot
+)
+{
+	cJSON_AddNumberToObject(pRoot, "port", 			pConfig->usPort);
+	cJSON_AddNumberToObject(pRoot, "session_count", pConfig->ulMaxSession);
+	cJSON_AddNumberToObject(pRoot, "buffer_size", 	pConfig->ulBufferLen);
+
+	cJSON _PTR_ pSection = cJSON_CreateObject();
+	cJSON_AddNumberToObject(pSection, "timeout", 		pConfig->ulSSIDTimeout);
+	cJSON_AddItemToObject(pRoot, "ssid", 		pSection);
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_SERVER_CONFIG_show
+(
+	FTM_SERVER_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL			xLevel
+)
+{
+	printf("\n[ Server ]\n");
+	printf("%16s : %d\n", "Port", pConfig->usPort);
+	printf("%16s : %d\n",	"Session Count",pConfig->ulMaxSession);
+	printf("%16s : %d\n",	"Buffer Size", 	pConfig->ulBufferLen);
+	printf("%16s : %d\n",	"SSID Timeout",	pConfig->ulSSIDTimeout);
+
+	return	FTM_RET_OK;
+}
 
 FTM_RET	FTM_SERVER_create
 (
@@ -104,9 +194,8 @@ FTM_RET	FTM_SERVER_create
 
 	strcpy(pServer->pName, __MODULE__);
 	pServer->pCatchB = pCatchB;
-	pServer->xConfig.usPort 		= FTM_SERVER_DEFAULT_PORT;
-	pServer->xConfig.ulMaxSession 	= FTM_SERVER_DEFAULT_MAX_SESSION;
-	pServer->xConfig.ulBufferLen 	= FTM_SERVER_DEFAULT_BUFFER_LEN;
+
+	FTM_SERVER_CONFIG_setDefault(&pServer->xConfig);
 
 	FTM_LIST_init(&pServer->xSessionList);
 	FTM_LIST_init(&pServer->xReleaseSessionList);
@@ -134,7 +223,7 @@ FTM_RET	FTM_SERVER_destroy
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_SERVER_loadConfig
+FTM_RET	FTM_SERVER_setConfig
 (
 	FTM_SERVER_PTR			pServer,
 	FTM_SERVER_CONFIG_PTR	pConfig
@@ -142,37 +231,25 @@ FTM_RET	FTM_SERVER_loadConfig
 {
 	ASSERT(pServer != NULL);
 	ASSERT(pConfig != NULL);
-#if 0
-	FTM_RET			xRet;
-	FTM_CONFIG_ITEM	xSection;
 
-	xRet = FTM_CONFIG_getItem(pConfig, "server", &xSection);
-	if (xRet == FTM_RET_OK)
-	{
-		FTM_USHORT	usPort;
-		FTM_UINT32	ulSession;
-		FTM_UINT32	ulBufferLen;
+	INFO("Set Config!");
+	memcpy(&pServer->xConfig, pConfig, sizeof(FTM_SERVER_CONFIG));
 
-		xRet = FTM_CONFIG_ITEM_getItemUSHORT(&xSection, "port", &usPort);
-		if (xRet == FTM_RET_OK)
-		{
-			pServer->xConfig.usPort = usPort;
-		}
+	FTM_SERVER_CONFIG_show(&pServer->xConfig, 0);
+	return	FTM_RET_OK;
+}
 
-		xRet = FTM_CONFIG_ITEM_getItemUINT32(&xSection, "session_count", &ulSession);
-		if (xRet == FTM_RET_OK)
-		{
-			pServer->xConfig.ulMaxSession = ulSession;
-		}
+FTM_RET	FTM_SERVER_getConfig
+(
+	FTM_SERVER_PTR			pServer,
+	FTM_SERVER_CONFIG_PTR	pConfig
+)
+{
+	ASSERT(pServer != NULL);
+	ASSERT(pConfig != NULL);
 
-		xRet = FTM_CONFIG_ITEM_getItemUINT32(&xSection, "buffer_len", &ulBufferLen);
-		if (xRet == FTM_RET_OK)
-		{
-			pServer->xConfig.ulBufferLen = ulBufferLen;
-		}
+	memcpy(pConfig, &pServer->xConfig, sizeof(FTM_SERVER_CONFIG));
 
-	}
-#endif
 	return	FTM_RET_OK;
 }
 
@@ -363,9 +440,9 @@ error:
 FTM_VOID_PTR FTM_SERVER_service(FTM_VOID_PTR pData)
 {
 	FTM_RET					xRet;
-	FTM_SERVER_PTR			pServer;
+	FTM_SERVER_PTR		pServer;
 	FTM_SESSION_PTR		pSession= (FTM_SESSION_PTR)pData;
-	FTM_REQ_PARAMS_PTR		pReq 	= (FTM_REQ_PARAMS_PTR)pSession->pReqBuff;
+	FTM_REQ_PARAMS_PTR	pReq 	= (FTM_REQ_PARAMS_PTR)pSession->pReqBuff;
 	FTM_RESP_PARAMS_PTR	pResp 	= (FTM_RESP_PARAMS_PTR)pSession->pRespBuff;
 	struct timespec			xTimeout;
 
@@ -419,7 +496,6 @@ FTM_VOID_PTR FTM_SERVER_service(FTM_VOID_PTR pData)
 	FTM_LIST_append(&pServer->xReleaseSessionList, pSession);
 	FTM_UINT32	ulCount = 0;	
 	FTM_LIST_count(&pServer->xReleaseSessionList, &ulCount);
-	INFO("Session Count : %d", ulCount);
 //	FTM_SERVER_destroySession(pServer, &pSession);
 
 	sem_post(&pServer->xSemaphore);
@@ -439,22 +515,31 @@ FTM_RET	FTM_SERVER_serviceCall
 	FTM_RET				xRet;
 	FTM_SERVER_CMD_SET_PTR	pSet = pCmdSet;
 
-	if ((pReq->xCmd == FTM_CMD_SSID_CREATE) || (FTM_SSID_isValid(pReq->pSSID) == FTM_RET_OK))
+	if (pReq->xCmd != FTM_CMD_SSID_CREATE)
 	{
-		while(pSet->xCmd != FTM_CMD_UNKNOWN)
+		xRet = FTM_SSID_isValid(pReq->pSSID, pServer->xConfig.ulSSIDTimeout);
+		
+		if (xRet != FTM_RET_OK)
 		{
-			if (pSet->xCmd == pReq->xCmd)
-			{
-				INFO("Servce called : %s", pSet->pCmdString);
-				xRet = pSet->fService(pServer, pReq, pResp);
-				INFO("Servce returned : %d", xRet);
-
-				return	xRet;
-			}
-
-			pSet++;
+			INFO("Invalid SSID[%d]\n", pReq->xCmd);
+			return	xRet;
 		}
 	}
+
+	while(pSet->xCmd != FTM_CMD_UNKNOWN)
+	{
+		if (pSet->xCmd == pReq->xCmd)
+		{
+			INFO("Servce called : %s", pSet->pCmdString);
+			xRet = pSet->fService(pServer, pReq, pResp);
+			INFO("Servce returned : %d", xRet);
+
+			return	xRet;
+		}
+
+		pSet++;
+	}
+
 	ERROR(FTM_RET_FUNCTION_NOT_SUPPORTED, "Function[%d] not supported.\n", pReq->xCmd);
 	return	FTM_RET_FUNCTION_NOT_SUPPORTED;
 }
@@ -1647,8 +1732,8 @@ FTM_RET	FTM_SERVER_STAT_getInfo
 						|	FTM_SYSTEM_FIELD_STATISTICS_COUNT	
 						|	FTM_SYSTEM_FIELD_STATISTICS_FIRST_TIME
 						|	FTM_SYSTEM_FIELD_STATISTICS_LAST_TIME;
-	pResp->xInfo.xStatistics.ulMaxCount	= pCatchB->xConfig.xSystem.xStatistics.ulCount;
-	pResp->xInfo.xStatistics.ulInterval = pCatchB->xConfig.xSystem.xStatistics.ulInterval;
+	pResp->xInfo.xStatistics.ulMaxCount	= pCatchB->pConfig->xSystem.xStatistics.ulCount;
+	pResp->xInfo.xStatistics.ulInterval = pCatchB->pConfig->xSystem.xStatistics.ulInterval;
 	pResp->xInfo.xStatistics.ulCount 	= ulCount;
 	pResp->xInfo.xStatistics.ulFirstTime= ulFirstTime;
 	pResp->xInfo.xStatistics.ulLastTime	= ulLastTime;
@@ -1701,8 +1786,8 @@ FTM_RET	FTM_SERVER_STAT_setInfo
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
 	pResp->xCommon.ulLen = sizeof(FTM_RESP_STAT_SET_INFO_PARAMS);
-	pResp->xInfo.xStatistics.ulMaxCount	= pCatchB->xConfig.xSystem.xStatistics.ulCount;
-	pResp->xInfo.xStatistics.ulInterval 	= pCatchB->xConfig.xSystem.xStatistics.ulInterval;
+	pResp->xInfo.xStatistics.ulMaxCount	= pCatchB->pConfig->xSystem.xStatistics.ulCount;
+	pResp->xInfo.xStatistics.ulInterval 	= pCatchB->pConfig->xSystem.xStatistics.ulInterval;
 	pResp->xInfo.xStatistics.ulCount = ulCount;
 	pResp->xInfo.xStatistics.ulFirstTime= ulFirstTime;
 	pResp->xInfo.xStatistics.ulLastTime= ulLastTime;
@@ -1719,6 +1804,8 @@ FTM_RET	FTM_SERVER_SSID_create
 {
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CHAR	pSSID[FTM_SSID_LEN + 1];
+
+	memset(pSSID, 0, sizeof(pSSID));
 
 	xRet = FTM_SSID_create(pReq->pID, pReq->pPasswd, pSSID);
 
@@ -1757,7 +1844,7 @@ FTM_RET	FTM_SERVER_SSID_verify
 {
 	FTM_RET	xRet;
 
-	xRet = FTM_SSID_isValid(pReq->xCommon.pSSID);
+	xRet = FTM_SSID_isValid(pReq->xCommon.pSSID, pServer->xConfig.ulSSIDTimeout);
 
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet	= xRet;

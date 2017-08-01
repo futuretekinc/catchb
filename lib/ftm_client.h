@@ -15,6 +15,7 @@ typedef	struct	FTM_CLIENT_CONFIG_STRUCT
 	FTM_CHAR		pIP[16];
 	FTM_UINT16 		usPort;
 	FTM_BOOL		bAutoConnect;
+	FTM_CHAR		pTmpPath[FTM_PATH_LEN + 1];
 }	FTM_CLIENT_CONFIG, _PTR_ FTM_CLIENT_CONFIG_PTR;
 
 
@@ -29,7 +30,33 @@ FTM_RET	FTM_CLIENT_CONFIG_load
 	cJSON _PTR_ pRoot
 );
 
-typedef struct FTM_CLIENT_STRUCT _PTR_ FTM_CLIENT_PTR;
+FTM_RET	FTM_CLIENT_CONFIG_save
+(
+	FTM_CLIENT_CONFIG_PTR	pConfig,
+	cJSON _PTR_ pRoot
+);
+
+FTM_RET	FTM_CLIENT_CONFIG_loadFromFile
+(
+	FTM_CLIENT_CONFIG_PTR	pConfig,
+	FTM_CHAR_PTR			pFileName
+);
+
+FTM_RET	FTM_CLIENT_CONFIG_show
+(
+	FTM_CLIENT_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL			xLevel
+);
+
+typedef struct FTM_CLIENT_STRUCT
+{
+	FTM_CLIENT_CONFIG	xConfig;
+
+	FTM_INT		hSock;
+	FTM_INT		nTimeout;
+	FTM_LOCK	xLock;
+}	FTM_CLIENT, _PTR_ FTM_CLIENT_PTR;
+
 
 
 FTM_RET	FTM_CLIENT_create

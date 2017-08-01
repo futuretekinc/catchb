@@ -22,8 +22,6 @@ FTM_CGI_COMMAND	pPostCmds[] =
 	{	"status",	FTM_CGI_POST_status	},
 	{	"sys",		FTM_CGI_POST_sys		},
 	{	"syslog",	FTM_CGI_POST_syslog	},
-	{	"upload",	FTM_CGI_POST_upload	},
-	{	"net",		FTM_CGI_POST_net},
 	{	NULL,		NULL			}
 };
 FTM_CGI_COMMAND	pCmds[] =
@@ -53,7 +51,7 @@ FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 
 	FTM_MEM_init();	
 
-	snprintf(pConfigFileName, sizeof(pConfigFileName) - 1, "/etc/%s.conf", "catchb");
+	snprintf(pConfigFileName, sizeof(pConfigFileName) - 1, "/etc/%s.conf", program_invocation_short_name);
 	
 	xRet = FTM_CONFIG_create(&pConfig);
 	if (xRet != FTM_RET_OK)

@@ -106,7 +106,7 @@ FTM_TRACE_CONFIG	xDefaultConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "catchb.log",
+		.pFileName = "console"
 	},
 	.xInfo =
 	{
@@ -141,7 +141,7 @@ FTM_TRACE_CONFIG	xDefaultConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "catchb.log",
+		.pFileName = "console"
 	},
 	.xWarn =
 	{
@@ -176,7 +176,7 @@ FTM_TRACE_CONFIG	xDefaultConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "catchb.log",
+		.pFileName = "console"
 	},
 	.xError =
 	{
@@ -211,7 +211,7 @@ FTM_TRACE_CONFIG	xDefaultConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "catchb.log",
+		.pFileName = "console"
 	}
 };
 
@@ -252,7 +252,7 @@ FTM_TRACE_CONFIG	xTraceConfig =
 			.bDynamic	= FTM_FALSE,
 			.ulSize 	= FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "coneole",
+		.pFileName = "console",
 	},
 	.xLog =
 	{
@@ -287,7 +287,7 @@ FTM_TRACE_CONFIG	xTraceConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "catchb.log",
+		.pFileName = "console",
 	},
 	.xInfo =
 	{
@@ -322,7 +322,7 @@ FTM_TRACE_CONFIG	xTraceConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "catchb.log",
+		.pFileName = "console",
 	},
 	.xWarn =
 	{
@@ -357,7 +357,7 @@ FTM_TRACE_CONFIG	xTraceConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "catchb.log",
+		.pFileName = "console",
 	},
 	.xError =
 	{
@@ -392,14 +392,16 @@ FTM_TRACE_CONFIG	xTraceConfig =
 			.bDynamic= FTM_FALSE,
 			.ulSize = FTM_CATCHB_TRACE_DEFAULT_LEVEL_FIELD_LEN
 		},
-		.pFileName = "catchb.log",
+		.pFileName = "console",
 	}
 };
 
-static FTM_UINT32	ulModuleCount = 1;
+static FTM_UINT32	ulModuleCount = 3;
 static FTM_CHAR	xModuleName[32][32] =
 {
-	"cgi"
+	"cgi",
+	"server",
+	"config"
 };
 
 FTM_RET		FTM_TRACE_CONFIG_setDefault
@@ -720,6 +722,33 @@ FTM_RET		FTM_TRACE_CONFIG_save
 	}
 
 	return	FTM_RET_OK;
+}
+
+FTM_RET		FTM_TRACE_CONFIG_show
+(
+	FTM_TRACE_CONFIG_PTR	pConfig,
+	FTM_TRACE_LEVEL			xLevel
+)
+{
+	ASSERT(pConfig != NULL);
+	FTM_RET	xRet = FTM_RET_OK;
+
+	printf("\n[ Trace Configuration ]\n");
+	printf("%16s : ", "Modules");
+	for(FTM_UINT32 i = 0 ; i < ulModuleCount ; i++)
+	{
+		if (i == 0)
+		{
+			printf("%s", xModuleName[i]);
+		}
+		else
+		{
+			printf(", %s", xModuleName[i]);
+		}
+	}
+	printf("\n");
+
+	return	xRet;
 }
 
 FTM_RET		FTM_TRACE_setConfig
@@ -1154,4 +1183,25 @@ FTM_CHAR_PTR	FTM_TRACE_getModuleName
 	}
 
 	return	NULL;
+}
+
+FTM_RET	FTM_TRACE_addModuleName
+(
+	FTM_CHAR_PTR	pModuleName
+)
+{
+	for(FTM_UINT32	i = 0 ; i < ulModuleCount ; i++)
+	{
+		if (strcasecmp(xModuleName[i], pModuleName) == 0)
+		{
+			return	FTM_RET_OK;	
+		}
+	}
+
+	if (ulModuleCount < 32)
+	{
+		strncpy(xModuleName[ulModuleCount++], pModuleName,  sizeof(xModuleName[ulModuleCount]) - 1);
+	}
+
+	return	FTM_RET_OK;	
 }

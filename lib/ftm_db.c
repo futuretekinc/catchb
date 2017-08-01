@@ -857,10 +857,10 @@ FTM_RET	FTM_DB_updateCCTV
 		if (!bNew)
 		{
 			ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ",");
-			bNew = FTM_FALSE;
 		}
 
 		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _COMMENT = '%s'", pComment);
+		bNew = FTM_FALSE;
 	}
 
 	if (pHash != NULL)
@@ -868,10 +868,10 @@ FTM_RET	FTM_DB_updateCCTV
 		if (!bNew)
 		{
 			ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ",");
-			bNew = FTM_FALSE;
 		}
 
 		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " HASH = '%s'", pHash);
+		bNew = FTM_FALSE;
 	}
 
 	
@@ -2031,7 +2031,7 @@ FTM_RET	FTM_DB_createSwitchTable
 	FTM_DB_PTR	pDB
 )
 {
-	return FTM_DB_createTable(pDB, FTM_FALSE, pDB->pSwitchTableName, "_ID TEXT PRIMARY KEY, _MODEL INT, _IP TEXT, _USERID TEXT, _PASSWD TEXT, _SECURE INT, _COMMENT TEXT");
+	return FTM_DB_createTable(pDB, FTM_FALSE, pDB->pSwitchTableName, "_ID TEXT PRIMARY KEY, _MODEL TEXT, _IP TEXT, _USERID TEXT, _PASSWD TEXT, _SECURE INT, _COMMENT TEXT");
 }
 
 FTM_RET	FTM_DB_isSwitchTableExist
@@ -2066,7 +2066,7 @@ FTM_RET	FTM_DB_addSwitch
 (
 	FTM_DB_PTR			pDB,
 	FTM_CHAR_PTR		pID,
-	FTM_SWITCH_MODEL	xModel,
+	FTM_CHAR_PTR		pModel,
 	FTM_CHAR_PTR		pUser,
 	FTM_CHAR_PTR		pPasswd,
 	FTM_CHAR_PTR		pIP,
@@ -2083,13 +2083,14 @@ FTM_RET	FTM_DB_addSwitch
 	FTM_CHAR_PTR	pErrorMsg;
 
 	memset(pQuery, 0, sizeof(pQuery));
+	memset(pEncryptedID, 0, sizeof(pEncryptedID));
 	memset(pEncryptedPasswd, 0, sizeof(pEncryptedPasswd));
 
-	FTM_encryptPasswd(pUser, ((pUser)?strlen(pUser):0), pEncryptedID, sizeof(pEncryptedID));
+	FTM_encryptUserID(pUser, ((pUser)?strlen(pUser):0), pEncryptedID, sizeof(pEncryptedID));
 	FTM_encryptPasswd(pPasswd, ((pPasswd)?strlen(pPasswd):0), pEncryptedPasswd, sizeof(pEncryptedPasswd));
 
-	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_ID, _MODEL, _IP, _USERID, _PASSWD, _SECURE, _COMMENT) VALUES('%s', %d, '%s', '%s', '%s', %d, '%s');", 
-		pDB->pSwitchTableName, pID, xModel, (pIP)?pIP:"", pEncryptedID, pEncryptedPasswd, bSecure, (pComment)?pComment:"");
+	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s (_ID, _MODEL, _IP, _USERID, _PASSWD, _SECURE, _COMMENT) VALUES('%s', '%s', '%s', '%s', '%s', %d, '%s');", 
+		pDB->pSwitchTableName, pID, pModel, (pIP)?pIP:"", pEncryptedID, pEncryptedPasswd, bSecure, (pComment)?pComment:"");
 
 	INFO("QUERY : %s", pQuery);
 	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
@@ -2159,10 +2160,10 @@ FTM_RET	FTM_DB_setSwitchProperties
 		if (!bNew)
 		{
 			ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ",");
-			bNew = FTM_FALSE;
 		}
 
 		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _IP = '%s'", pConfig->pIP);
+		bNew = FTM_FALSE;
 	}
 
 	if (ulFieldFlags & FTM_SWITCH_FIELD_USER_ID)
@@ -2172,13 +2173,13 @@ FTM_RET	FTM_DB_setSwitchProperties
 		if (!bNew)
 		{
 			ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ",");
-			bNew = FTM_FALSE;
 		}
 
 		memset(pEncrypted, 0, sizeof(pEncrypted));
 		FTM_encryptPasswd(pConfig->pUserID, strlen(pConfig->pUserID), pEncrypted, sizeof(pEncrypted));
 
 		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _USERID = '%s'", pEncrypted);
+		bNew = FTM_FALSE;
 	}
 
 	if (ulFieldFlags & FTM_SWITCH_FIELD_PASSWD)
@@ -2188,13 +2189,13 @@ FTM_RET	FTM_DB_setSwitchProperties
 		if (!bNew)
 		{
 			ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ",");
-			bNew = FTM_FALSE;
 		}
 
 		memset(pEncryptedPasswd, 0, sizeof(pEncryptedPasswd));
 		FTM_encryptPasswd(pConfig->pPasswd, strlen(pConfig->pPasswd), pEncryptedPasswd, sizeof(pEncryptedPasswd));
 
 		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _PASSWD = '%s'", pEncryptedPasswd);
+		bNew = FTM_FALSE;
 	}
 
 	if (ulFieldFlags & FTM_SWITCH_FIELD_SECURE)
@@ -2202,10 +2203,10 @@ FTM_RET	FTM_DB_setSwitchProperties
 		if (!bNew)
 		{
 			ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ",");
-			bNew = FTM_FALSE;
 		}
 
 		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _SECURE = '%d'", pConfig->bSecure);
+		bNew = FTM_FALSE;
 	}
 
 	if (ulFieldFlags & FTM_SWITCH_FIELD_COMMENT)
@@ -2213,10 +2214,10 @@ FTM_RET	FTM_DB_setSwitchProperties
 		if (!bNew)
 		{
 			ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ",");
-			bNew = FTM_FALSE;
 		}
 
 		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _COMMENT = '%s'", pConfig->pComment);
+		bNew = FTM_FALSE;
 	}
 
 	
@@ -2257,7 +2258,7 @@ FTM_INT	FTM_DB_getSwitchListCB
 			}    
 			else if (strcmp(ppColName[i], "_MODEL") == 0)
 			{
-				pParams->pElements[pParams->ulCount].xModel = atoi(ppArgv[i]);
+				strcpy(pParams->pElements[pParams->ulCount].pModel, ppArgv[i]);
 			}
 			else if (strcmp(ppColName[i], "_IP") == 0)
 			{    
@@ -2265,7 +2266,8 @@ FTM_INT	FTM_DB_getSwitchListCB
 			}    
 			else if (strcmp(ppColName[i], "_USERID") == 0)
 			{    
-				FTM_decryptPasswd(ppArgv[i], strlen(ppArgv[i]), pParams->pElements[pParams->ulCount].pUserID, FTM_USER_LEN);
+				FTM_decryptUserID(ppArgv[i], strlen(ppArgv[i]), pParams->pElements[pParams->ulCount].pUserID, FTM_USER_LEN);
+				INFO("%s -> %s\n", ppArgv[i], pParams->pElements[pParams->ulCount].pUserID);
 			}    
 			else if (strcmp(ppColName[i], "_PASSWD") == 0)
 			{    

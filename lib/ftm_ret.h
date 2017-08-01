@@ -84,5 +84,8 @@
 #define	FTM_RET_CLIENT_ERROR						170	
 #define	FTM_RET_CLIENT_TIMEOUT						171	
 #define	FTM_RET_CLIENT_HANDLE_INVALID				172	
+
+#define	FTM_RET_INVALID_SSID						173	
+#define	FTM_RET_CLIENT_INVALID_SSID					173	
 #endif
 

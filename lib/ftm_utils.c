@@ -17,6 +17,24 @@
 #undef	__MODULE__
 #define	__MODULE__	"utils"
 
+FTM_RET	FTM_encrypt
+(
+	FTM_UINT8		pIV[16],
+	FTM_CHAR_PTR	pPasswd,
+	FTM_UINT32		ulPasswdLen,
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen
+);
+
+FTM_RET	FTM_decrypt
+(
+	FTM_UINT8		pIV[16],
+	FTM_CHAR_PTR	pPasswd,
+	FTM_UINT32		ulPasswdLen,
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen
+);
+
 FTM_RET	FTM_getLocalIP
 (
 	FTM_CHAR_PTR	pBuff,
@@ -337,7 +355,7 @@ FTM_RET	FTM_HASH_SHA1
 {
     SHA1Context xSHA;
 	FTM_UINT32	i, ulLen = 0;
-
+	FTM_CHAR	pBuff[41];
     /*
      *  Perform test A
      */
@@ -350,27 +368,14 @@ FTM_RET	FTM_HASH_SHA1
     }
     else
     {
+		memset(pBuff, 0, sizeof(pBuff));
+
         for(i = 0; i < 5 ; i++)
         {
-            ulLen += snprintf(&pValue[ulLen], ulBufferSize - ulLen, "%x", xSHA.Message_Digest[i]);
+            ulLen += snprintf(&pBuff[ulLen], sizeof(pBuff) - ulLen - 1, "%08x", ntohl(xSHA.Message_Digest[i]));
         }
 
-        for(i =0 ; i < ulLen; i++)
-		{
-            if(!isdigit(pValue[i]))
-			{
-                if(pValue[i] >= 'a')
-				{
-                    pValue[i] = pValue[i]-32;
-				}
-                else 
-				{
-                    pValue[i] = pValue[i]+32;
-				}
-
-            }
-        }
-
+		strncpy(pValue, pBuff, ulBufferSize);
     }
 
     return FTM_RET_OK;
@@ -842,6 +847,18 @@ FTM_RET	FTM_setTime
 	return	FTM_RET_OK;
 }
 
+FTM_RET	FTM_getTime
+(
+	time_t	*pTime
+)
+{
+	ASSERT(pTime != NULL);
+
+    *pTime = time(NULL);
+
+	return	FTM_RET_OK;
+}
+
 FTM_CHAR_PTR	FTM_trim(FTM_CHAR_PTR	pString)
 {
 	while(0 != (*pString) && isspace(*pString))
@@ -867,9 +884,55 @@ FTM_CHAR_PTR	FTM_trim(FTM_CHAR_PTR	pString)
 }
 
 FTM_UINT8	pEncryptKey[16] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,0x0d, 0x0f};
+FTM_UINT8	pPasswdIV[16] 	= { 'p', 'a', 's', 's', 'w', 'o', 'r', 'd', 'p', 'a', 's', 's', 'w', 'o', 'r', 'd'};
+FTM_UINT8	pUserIDIV[16] 	= { 'u', 's', 'e', 'r', 'i', 'd', '0', '0','u', 's', 'e', 'r', 'i', 'd', '0', '0' };
 
 FTM_RET	FTM_encryptPasswd
 (
+	FTM_CHAR_PTR	pPasswd,
+	FTM_UINT32		ulPasswdLen,
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen
+)
+{
+	return	FTM_encrypt(pPasswdIV, pPasswd, ulPasswdLen, pBuffer, ulBufferLen);
+}
+
+FTM_RET	FTM_decryptPasswd
+(
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen,
+	FTM_CHAR_PTR	pPasswd,
+	FTM_UINT32		ulPasswdLen
+)
+{
+	return	FTM_decrypt(pPasswdIV, pBuffer, ulBufferLen, pPasswd, ulPasswdLen);
+}
+FTM_RET	FTM_encryptUserID
+(
+	FTM_CHAR_PTR	pUserID,
+	FTM_UINT32		ulUserIDLen,
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen
+)
+{
+	return	FTM_encrypt(pUserIDIV, pUserID, ulUserIDLen, pBuffer, ulBufferLen);
+}
+
+FTM_RET	FTM_decryptUserID
+(
+	FTM_CHAR_PTR	pBuffer,
+	FTM_UINT32		ulBufferLen,
+	FTM_CHAR_PTR	pUserID,
+	FTM_UINT32		ulUserIDLen
+)
+{
+	return	FTM_decrypt(pUserIDIV, pBuffer, ulBufferLen, pUserID, ulUserIDLen);
+}
+
+FTM_RET	FTM_encrypt
+(
+	FTM_UINT8		pIV[16],
 	FTM_CHAR_PTR	pPasswd,
 	FTM_UINT32		ulPasswdLen,
 	FTM_CHAR_PTR	pBuffer,
@@ -889,7 +952,7 @@ FTM_RET	FTM_encryptPasswd
 	memset(pEncryptedBlock, 0, ulBlockLen);
 	memcpy(pBlock, pPasswd, ulPasswdLen);
 
-	AES_ECB_encrypt(pBlock, pEncryptKey, pEncryptedBlock, ulBlockLen);
+	AES_CBC_encrypt_buffer(pEncryptedBlock, pBlock, ulBlockLen, pEncryptKey, pIV);
 
 	for(FTM_UINT32	i = 0 ; i < ulBlockLen ; i++)
 	{
@@ -899,8 +962,9 @@ FTM_RET	FTM_encryptPasswd
 	return	FTM_RET_OK;
 }
 
-FTM_RET	FTM_decryptPasswd
+FTM_RET	FTM_decrypt
 (
+	FTM_UINT8		pIV[16],
 	FTM_CHAR_PTR	pBuffer,
 	FTM_UINT32		ulBufferLen,
 	FTM_CHAR_PTR	pPasswd,
@@ -911,8 +975,11 @@ FTM_RET	FTM_decryptPasswd
 	FTM_UINT8	pBlock[128];
 	FTM_UINT8	pDecryptedBlock[128];
 	
-	if (ulBufferLen / 32 != 0)
+	memset(pBlock, 0, ulBlockLen);
+	memset(pDecryptedBlock, 0, ulBlockLen);
+	if (ulBufferLen % 32 != 0)
 	{
+		printf("Invalid block[%d]!\n", ulBufferLen);
 		return	FTM_RET_INVALID_ARGUMENTS;
 	}
 
@@ -928,7 +995,7 @@ FTM_RET	FTM_decryptPasswd
 		}
 		else if ('A' <= pBuffer[i*2] && pBuffer[i*2] <= 'F')
 		{
-			pBlock[i] = (pBuffer[i*2] - '0' + 10) << 4;
+			pBlock[i] = (pBuffer[i*2] - 'A' + 10) << 4;
 		}
 		else
 		{
@@ -945,7 +1012,7 @@ FTM_RET	FTM_decryptPasswd
 		}
 		else if ('A' <= pBuffer[i*2+1] && pBuffer[i*2+1] <= 'F')
 		{
-			pBlock[i] |= (pBuffer[i*2+1] - '0' + 10);
+			pBlock[i] |= (pBuffer[i*2+1] - 'A' + 10);
 		}
 		else
 		{
@@ -953,10 +1020,8 @@ FTM_RET	FTM_decryptPasswd
 		}
 	}
 
-	memset(pBlock, 0, ulBlockLen);
-	memset(pDecryptedBlock, 0, ulBlockLen);
 
-	AES_ECB_decrypt(pBlock, pEncryptKey, pDecryptedBlock, ulBlockLen);
+	AES_CBC_decrypt_buffer(pDecryptedBlock, pBlock, ulBlockLen, pEncryptKey, pIV);
 	
 	strncpy(pPasswd, (FTM_CHAR_PTR)pDecryptedBlock, ulPasswdLen);
 

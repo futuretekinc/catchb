@@ -41,6 +41,13 @@ FTM_RET	FTM_CONFIG_create
 		goto error;
 	}
 
+	xRet = FTM_LIST_create(&pConfig->xSwitchModels.pList);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to create switch model list!\n");
+		goto error;
+	}
+
 	FTM_CONFIG_setDefault(pConfig);
 
 	*ppConfig = pConfig;
@@ -92,6 +99,29 @@ FTM_RET	FTM_CONFIG_destroy
 		ERROR(xRet, "Failed to destroy switch list!\n");	
 	}
 
+	if ((*ppConfig)->xSwitchModels.pList != NULL)
+	{
+		FTM_UINT32	ulCount = 0;
+
+		xRet = FTM_LIST_count((*ppConfig)->xSwitchModels.pList, &ulCount);
+		if (xRet == FTM_RET_OK)
+		{
+		
+			for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
+			{
+				FTM_SWITCH_MODEL_INFO_PTR	pInfo = NULL;
+
+				xRet = FTM_LIST_getAt((*ppConfig)->xSwitchModels.pList, i, (FTM_VOID_PTR _PTR_)&pInfo);
+				if (xRet == FTM_RET_OK)
+				{
+					FTM_MEM_free(pInfo);	
+				}
+			}
+		}
+
+		FTM_LIST_destroy(&(*ppConfig)->xSwitchModels.pList);
+	}
+
 	FTM_MEM_free(*ppConfig);
 
 	*ppConfig = NULL;
@@ -110,8 +140,11 @@ FTM_RET	FTM_CONFIG_setDefault
 	FTM_DB_CONFIG_setDefault(&pConfig->xDB);
 	FTM_ANALYZER_CONFIG_setDefault(&pConfig->xAnalyzer);
 	FTM_NOTIFIER_CONFIG_setDefault(&pConfig->xNotifier);
+	FTM_SERVER_CONFIG_setDefault(&pConfig->xServer);
+	FTM_CLIENT_CONFIG_setDefault(&pConfig->xClient);
 	FTM_LOGGER_CONFIG_setDefault(&pConfig->xLogger);
 	FTM_TRACE_CONFIG_setDefault(&pConfig->xTrace);
+
 
 	return	FTM_RET_OK;
 }
@@ -183,37 +216,105 @@ FTM_RET	FTM_CONFIG_load
 	pSection = cJSON_GetObjectItem(pRoot, "system");
 	if (pSection != NULL)
 	{
+		INFO("Load system config!");
 		FTM_SYSTEM_CONFIG_load(&pConfig->xSystem, pSection);
 	}
 
 	pSection = cJSON_GetObjectItem(pRoot, "database");
 	if (pSection != NULL)
 	{
+		INFO("Load database config!");
 		FTM_DB_CONFIG_load(&pConfig->xDB, pSection);
 	}
 
 	pSection = cJSON_GetObjectItem(pRoot, "analyzer");
 	if (pSection != NULL)
 	{
+		INFO("Load analyzer config!");
 		FTM_ANALYZER_CONFIG_load(&pConfig->xAnalyzer, pSection);
 	}
 
 	pSection = cJSON_GetObjectItem(pRoot, "notifier");
 	if (pSection != NULL)
 	{
+		INFO("Load notifier config!");
 		FTM_NOTIFIER_CONFIG_load(&pConfig->xNotifier, pSection);
 	}
 
 	pSection = cJSON_GetObjectItem(pRoot, "logger");
 	if (pSection != NULL)
 	{
+		INFO("Load logger config!");
 		FTM_LOGGER_CONFIG_load(&pConfig->xLogger, pSection);
+	}
+
+	pSection = cJSON_GetObjectItem(pRoot, "server");
+	if (pSection != NULL)
+	{
+		INFO("Load server config!");
+		FTM_SERVER_CONFIG_load(&pConfig->xServer, pSection);
+	}
+
+	pSection = cJSON_GetObjectItem(pRoot, "client");
+	if (pSection != NULL)
+	{
+		INFO("Load client config!");
+		FTM_CLIENT_CONFIG_load(&pConfig->xClient, pSection);
 	}
 
 	pSection = cJSON_GetObjectItem(pRoot, "trace");
 	if (pSection != NULL)
 	{
+		INFO("Load trace config!");
 		FTM_TRACE_CONFIG_load(&pConfig->xTrace, pSection);
+	}
+
+	pSection = cJSON_GetObjectItem(pRoot, "switch");
+	if (pSection != NULL)
+	{
+		cJSON _PTR_ pSubsection = cJSON_GetObjectItem(pSection, "path");
+		if (pSubsection != NULL)
+		{
+			strcpy(pConfig->xSwitchModels.pPath, pSubsection->valuestring);
+		}
+
+		pSubsection = cJSON_GetObjectItem(pSection, "model");
+		if (pSubsection != NULL)
+		{
+			if (pSubsection->type != cJSON_Array)
+			{
+				xRet = FTM_RET_INVALID_JSON_FORMAT;
+				ERROR(xRet, "Failed to load switch config!");
+			}
+			else
+			{
+				FTM_UINT32	ulCount = cJSON_GetArraySize(pSubsection);
+				for(FTM_UINT32	i = 0 ; i < ulCount ; i++)
+				{
+					cJSON _PTR_ pNode = cJSON_GetArrayItem(pSubsection, i);
+					if (pNode != NULL)
+					{
+						cJSON _PTR_ pIDNode = cJSON_GetObjectItem(pNode, "id");			
+						cJSON _PTR_ pNameNode = cJSON_GetObjectItem(pNode, "name");			
+
+						if ((pIDNode != NULL) && (pNameNode != NULL))
+						{
+							FTM_SWITCH_MODEL_INFO_PTR	pInfo;
+
+							pInfo = (FTM_SWITCH_MODEL_INFO_PTR)FTM_MEM_malloc(sizeof(FTM_SWITCH_MODEL_INFO));
+							if (pInfo != NULL)
+							{
+								pInfo->xModel = pIDNode->valueint;	
+								strncpy(pInfo->pName, pNameNode->valuestring, sizeof(pInfo->pName) - 1);
+
+
+								FTM_LIST_append(pConfig->xSwitchModels.pList, pInfo);
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 finished:
@@ -318,6 +419,33 @@ FTM_RET	FTM_CONFIG_save
 	pSection = cJSON_CreateObject();
 	if (pSection != NULL)
 	{
+		xRet = FTM_SERVER_CONFIG_save(&pConfig->xServer, pSection);
+		if (xRet == FTM_RET_OK)
+		{
+			cJSON_AddItemToObject(pRoot, "server", pSection);	
+		}
+		else
+		{
+			cJSON_Delete(pSection);
+		}
+	}
+
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
+		xRet = FTM_CLIENT_CONFIG_save(&pConfig->xClient, pSection);
+		if (xRet == FTM_RET_OK)
+		{
+			cJSON_AddItemToObject(pRoot, "client", pSection);	
+		}
+		else
+		{
+			cJSON_Delete(pSection);
+		}
+	}
+	pSection = cJSON_CreateObject();
+	if (pSection != NULL)
+	{
 		xRet = FTM_LOGGER_CONFIG_save(&pConfig->xLogger, pSection);
 		if (xRet == FTM_RET_OK)
 		{
@@ -343,7 +471,49 @@ FTM_RET	FTM_CONFIG_save
 		}
 	}
 
-	
+	if (pConfig->xSwitchModels.pList != NULL)
+	{
+		cJSON _PTR_ pSubsection = cJSON_CreateArray();	
+		if (pSubsection != NULL)
+		{
+			FTM_UINT32	ulCount = 0;
+
+			xRet = FTM_LIST_count(pConfig->xSwitchModels.pList, &ulCount);
+			if (xRet == FTM_RET_OK)
+			{
+				for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
+				{
+					FTM_SWITCH_MODEL_INFO_PTR	pInfo;
+
+					xRet = FTM_LIST_getAt(pConfig->xSwitchModels.pList, i, (FTM_VOID_PTR _PTR_)&pInfo);
+					if (xRet == FTM_RET_OK)
+					{
+						cJSON _PTR_ pNode;
+
+						pNode = cJSON_CreateObject();
+						if (pNode != NULL)
+						{
+							cJSON_AddNumberToObject(pNode, "id", pInfo->xModel);
+							cJSON_AddStringToObject(pNode, "name", pInfo->pName);
+
+							cJSON_AddItemToArray(pSubsection, pNode);
+						}	
+					}
+				}
+			}
+
+
+			cJSON _PTR_ pSection = cJSON_CreateObject();
+			if (pSection != NULL)
+			{
+				cJSON_AddStringToObject(pSection, "path", pConfig->xSwitchModels.pPath);
+				cJSON_AddItemToObject(pSection, "model", pSubsection);
+
+				cJSON_AddItemToObject(pRoot, "switch", pSection);	
+			}
+		}
+	}
+
 	if (pFileName != NULL)
 	{
 		INFO("Configuraion save to %s", pFileName);
@@ -384,6 +554,7 @@ FTM_RET	FTM_CONFIG_show
 )
 {
 	ASSERT(pConfig != NULL);
+	FTM_RET	xRet = FTM_RET_OK;
 
 	FTM_SYSTEM_CONFIG_show(&pConfig->xSystem, xLevel);
 
@@ -393,8 +564,41 @@ FTM_RET	FTM_CONFIG_show
 
 	FTM_NOTIFIER_CONFIG_show(&pConfig->xNotifier, xLevel);
 
+	FTM_SERVER_CONFIG_show(&pConfig->xServer, xLevel);
+
+//	FTM_CLIENT_CONFIG_show(&pConfig->xClient, xLevel);
+
 	FTM_LOGGER_CONFIG_show(&pConfig->xLogger, xLevel);
 
+	FTM_TRACE_CONFIG_show(&pConfig->xTrace, xLevel);
+
+	FTM_UINT32	ulCount = 0;
+
+	printf("\n[ Switch Configuration ]\n");
+	printf("%16s : %s\n", "path", pConfig->xSwitchModels.pPath);
+	FTM_LIST_count(pConfig->xSwitchModels.pList, &ulCount);
+	if (ulCount != 0)
+	{
+		printf("%16s : ", "Models");
+		for(FTM_UINT32	i = 0 ; i < ulCount ; i++)
+		{
+			FTM_SWITCH_MODEL_INFO_PTR	pInfo;
+
+			xRet = FTM_LIST_getAt(pConfig->xSwitchModels.pList, i, (FTM_VOID_PTR _PTR_)&pInfo);
+			if (xRet == FTM_RET_OK)
+			{
+				if (i != 0)
+				{
+					printf(", %d[%s]", pInfo->xModel, pInfo->pName);				
+				}
+				else
+				{
+					printf("%d[%s]", pInfo->xModel, pInfo->pName);				
+				}
+			}
+		}
+		printf("\n");
+	}
 
 	return	FTM_RET_OK;
 }
