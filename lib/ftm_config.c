@@ -4,7 +4,7 @@
 #include "ftm_config.h"
 #include "ftm_catchb.h"
 #include "ftm_trace.h"
-#include "cjson/cJSON.h"
+#include "cJSON/cJSON.h"
 #include "ftm_mem.h"
 #include "ftm_switch.h"
 #include "ftm_logger.h"

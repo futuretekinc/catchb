@@ -5,7 +5,7 @@
 #include "ftm_types.h"
 #include "ftm_client.h"
 #include "qdecoder.h"
-#include "cJSON.h"
+#include "cJSON/cJSON.h"
 
 typedef	struct FTM_CGI_COMMAND_STRUCT
 {

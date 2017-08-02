@@ -1,7 +1,7 @@
 #ifndef	JSON_UTILS_H_
 #define	JSON_UTILS_H_
 #include "ftm_types.h"
-#include "cjson/cJSON.h"
+#include "cJSON/cJSON.h"
 #include "ftm_client.h"
 
 FTM_RET	FTM_JSON_getBool

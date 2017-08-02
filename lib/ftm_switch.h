@@ -4,7 +4,7 @@
 #include "ftm_types.h"
 #include "ftm_lock.h"
 #include "ftm_list.h"
-#include "cjson/cJSON.h"
+#include "cJSON/cJSON.h"
 #include "ftm_trace.h"
 
 struct	FTM_CATCHB_STRUCT;

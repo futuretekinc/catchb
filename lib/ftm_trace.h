@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include "ftm_types.h"
-#include "cjson/cJSON.h"
+#include "cJSON/cJSON.h"
 
 typedef	enum	FTM_TRACE_LEVEL_ENUM
 {

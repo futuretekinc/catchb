@@ -7,8 +7,7 @@ include $(TOPDIR)/IncludePre.mk
 EXEC_PREFIX=$(TARGET)/www/cgi-bin
 BIN_TARGET=catchb.cgi
 BIN_CFLAGS:=$(CFLAGS)\
-		-D_GNU_SOURCE\
-		-I/home/xtra/ftm/build/ftm-50s/_root/usr/include/cjson\
+		-D_GNU_SOURCE
 
 BIN_LDFLAGS:=$(LDFLAGS)\
 		-lcatchb\
@@ -16,7 +15,7 @@ BIN_LDFLAGS:=$(LDFLAGS)\
 		-lpcap\
 		-lssh\
 		-ltelnet\
-		-lcjson \
+		-lcJSON \
 		-lqdecoder\
 		-lcurl\
 		-lssl\

@@ -6,7 +6,7 @@
 #include "ftm_msgq.h"
 #include "ftm_message.h"
 #include "ftm_db.h"
-#include "cjson/cJSON.h"
+#include "cJSON/cJSON.h"
 
 /******************************************************************
  *

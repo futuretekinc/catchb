@@ -1,5 +1,5 @@
 #include <string.h>
-#include "cJSON.h"
+#include "cJSON/cJSON.h"
 #include "ftm_mem.h"
 #include "ftm_cgi.h"
 #include "ftm_json_utils.h"

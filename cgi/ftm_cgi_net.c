@@ -1,6 +1,6 @@
 #include <ctype.h>
 #include <string.h>
-#include "cJSON.h"
+#include "cJSON/cJSON.h"
 #include "ftm_mem.h"
 #include "ftm_cgi.h"
 #include "ftm_cgi_command.h"

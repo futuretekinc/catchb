@@ -30,7 +30,6 @@ CC=gcc
 CFLAGS:= $(CFLAGS) \
 		-I/usr/local/ssl/include \
 		-I/usr/local/include \
-		-I/usr/local/include/cjson \
 		-DMODEL=i686
 
 LDFLAGS:= $(LDFLAGS)\
@@ -44,7 +43,6 @@ AR=armv5-linux-ar
 
 CFLAGS:= $(CFLAGS) \
 		-I/home/xtra/ftm/build/ftm-50s/_root/usr/include\
-		-I/home/xtra/ftm/build/ftm-50s/_root/usr/include/cjson\
 		-I/home/xtra/ftm/build/ftm-50s/_root/usr/local/include\
 		-DMODEL=ftm-50
 		

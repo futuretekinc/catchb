@@ -1,7 +1,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "cJSON.h"
+#include "cJSON/cJSON.h"
 #include "ftm_trace.h"
 #include "ftm_mem.h"
 #include "ftm_utils.h"

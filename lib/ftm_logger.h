@@ -2,7 +2,7 @@
 #define	FTM_LOGGER_H_
 
 #include "ftm_types.h"
-#include "cjson/cJSON.h"
+#include "cJSON/cJSON.h"
 #include "ftm_msgq.h"
 #include "ftm_trace.h"
 

@@ -7,7 +7,7 @@
 #include "ftm_db.h"
 #include "ftm_msgq.h"
 #include "ftm_lock.h"
-#include "cjson/cJSON.h"
+#include "cJSON/cJSON.h"
 #include "ftm_trace.h"
 #include "ftm_pcap.h"
 

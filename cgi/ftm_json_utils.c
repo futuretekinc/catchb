@@ -1,6 +1,6 @@
 #include <string.h>
 #include "ftm_json_utils.h"
-#include "cjson/cJSON.h"
+#include "cJSON/cJSON.h"
 
 FTM_RET	FTM_JSON_getSSID
 (
