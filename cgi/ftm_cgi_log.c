@@ -223,39 +223,39 @@ FTM_RET	FTM_CGI_GET_LOG_getList
 	{
 		ERROR(xRet, "Failed to get SSID");
 	}
-	xRet |= FTM_CGI_getLogType(pReq, &xLogType, FTM_TRUE);
+	xRet = FTM_CGI_getLogType(pReq, &xLogType, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get Log type");
 	}
-	xRet |= FTM_CGI_getID(pReq, pID, FTM_TRUE);
+	xRet = FTM_CGI_getID(pReq, pID, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get ID");
 	}
-	xRet |= FTM_CGI_getIPString(pReq, pIP, FTM_IP_LEN, FTM_TRUE);
+	xRet = FTM_CGI_getIPString(pReq, pIP, FTM_IP_LEN, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get IP");
 	}
-	xRet |= FTM_CGI_getBeginTime(pReq, &ulBeginTime, FTM_TRUE);
+	xRet = FTM_CGI_getBeginTime(pReq, &ulBeginTime, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get Begin Time");
 	}
-	xRet |= FTM_CGI_getEndTime(pReq, &ulEndTime, FTM_TRUE);
+	xRet = FTM_CGI_getEndTime(pReq, &ulEndTime, FTM_TRUE);
 	INFO("xRet = %d", xRet);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get End Time");
 	}
-	xRet |= FTM_CGI_getIndex(pReq, &ulIndex, FTM_TRUE);
+	xRet = FTM_CGI_getIndex(pReq, &ulIndex, FTM_TRUE);
 	INFO("xRet = %d", xRet);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get Index");
 	}
-	xRet |= FTM_CGI_getCount(pReq, &ulCount, FTM_TRUE);
+	xRet = FTM_CGI_getCount(pReq, &ulCount, FTM_TRUE);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get log because invalid arguments!");
@@ -341,39 +341,39 @@ FTM_RET	FTM_CGI_POST_LOG_getList
 	{
 		ERROR(xRet, "Failed to get SSID");
 	}
-	xRet |= FTM_JSON_getLogType(pReqRoot, FTM_TRUE, &xLogType);
+	xRet = FTM_JSON_getLogType(pReqRoot, FTM_TRUE, &xLogType);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get Log type");
 	}
-	xRet |= FTM_JSON_getID(pReqRoot, FTM_TRUE, pID);
+	xRet = FTM_JSON_getID(pReqRoot, FTM_TRUE, pID);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get ID");
 	}
-	xRet |= FTM_JSON_getIP(pReqRoot, FTM_TRUE, pIP);
+	xRet = FTM_JSON_getIP(pReqRoot, FTM_TRUE, pIP);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get IP");
 	}
-	xRet |= FTM_JSON_getBeginTime(pReqRoot, FTM_TRUE, &ulBeginTime);
+	xRet = FTM_JSON_getBeginTime(pReqRoot, FTM_TRUE, &ulBeginTime);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get Begin Time");
 	}
-	xRet |= FTM_JSON_getEndTime(pReqRoot, FTM_TRUE, &ulEndTime);
+	xRet = FTM_JSON_getEndTime(pReqRoot, FTM_TRUE, &ulEndTime);
 	INFO("xRet = %d", xRet);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get End Time");
 	}
-	xRet |= FTM_JSON_getIndex(pReqRoot, FTM_TRUE, &ulIndex);
+	xRet = FTM_JSON_getIndex(pReqRoot, FTM_TRUE, &ulIndex);
 	INFO("xRet = %d", xRet);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get Index");
 	}
-	xRet |= FTM_JSON_getCount(pReqRoot, FTM_TRUE, &ulCount);
+	xRet = FTM_JSON_getCount(pReqRoot, FTM_TRUE, &ulCount);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to get log because invalid arguments!");

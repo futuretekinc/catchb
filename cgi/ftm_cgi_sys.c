@@ -992,7 +992,7 @@ FTM_RET	FTM_CGI_POST_SYS_reboot
 		ERROR(xRet, "Failed to reboot with invalid SSID.!");
 		goto finished;
 	}
-	
+#if 0	
 	xRet = FTM_JSON_getUserID(pReqRoot, FTM_FALSE, pID);
 	if (xRet != FTM_RET_OK)
 	{
@@ -1022,6 +1022,8 @@ FTM_RET	FTM_CGI_POST_SYS_reboot
 		cJSON_AddStringToObject(pRespRoot, "message", "Passwd do not match!");
 		goto finished;
 	}
+#endif
+
 	FILE*	fp;
 
 	fp = popen("reboot", "r");
@@ -1071,6 +1073,7 @@ FTM_RET	FTM_CGI_POST_SYS_shutdown
 		goto finished;
 	}
 
+#if 0
 	xRet = FTM_JSON_getUserID(pReqRoot, FTM_FALSE, pID);
 	if (xRet != FTM_RET_OK)
 	{
@@ -1100,7 +1103,7 @@ FTM_RET	FTM_CGI_POST_SYS_shutdown
 		cJSON_AddStringToObject(pRespRoot, "message", "Passwd do not match!");
 		goto finished;
 	}
-
+#endif
 	FILE*	fp;
 
 	fp = popen("shutdown", "r");

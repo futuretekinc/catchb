@@ -270,7 +270,7 @@ FTM_RET	FTM_JSON_getString
 		}
 		else
 		{
-			return	FTM_RET_INVALID_ARGUMENTS;
+			return	FTM_RET_OBJECT_NOT_FOUND;
 		}
 	}
 

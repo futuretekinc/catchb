@@ -94,14 +94,43 @@ FTM_RET	FTM_CGI_POST_SYSLOG_add
 
 	FTM_RET		xRet;
 	FTM_LOG_SERVER_CONFIG	xConfig;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 
 	memset(&xConfig, 0, sizeof(xConfig));
+	memset(pSSID, 0, sizeof(pSSID));
 
-	xRet = FTM_JSON_getID(pReqRoot, FTM_FALSE, xConfig.pID);
-	xRet |= FTM_JSON_getIP(pReqRoot, FTM_TRUE, xConfig.pIP);
-	xRet |= FTM_JSON_getComment(pReqRoot, FTM_TRUE, xConfig.pComment);
+	xRet = FTM_JSON_getSSID(pReqRoot, FTM_FALSE, pSSID);
 	if (xRet != FTM_RET_OK)
 	{
+		ERROR(xRet, "Failed to add syslog with get SSID");
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_SSID_verify(pClient, pSSID, strlen(pSSID));
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set passwd with invalid SSID.");		
+		goto finished;
+	}
+
+	xRet = FTM_JSON_getID(pReqRoot, FTM_FALSE, xConfig.pID);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to add syslog with get ID");
+		goto finished;
+	}
+
+	xRet = FTM_JSON_getIP(pReqRoot, FTM_TRUE, xConfig.pIP);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to add syslog with invalid IP");
+		goto finished;
+	}
+
+	xRet = FTM_JSON_getComment(pReqRoot, FTM_TRUE, xConfig.pComment);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to add syslog with invalid comment");
 		goto finished;
 	}
 
@@ -118,7 +147,7 @@ FTM_RET	FTM_CGI_POST_SYSLOG_add
 	if (pFP == NULL)
 	{
 		xRet = FTM_RET_ERROR;
-		ERROR(xRet, "Failed to exec server.sh");
+		ERROR(xRet, "Failed to exec %s", pCommand);
 		goto finished;	
 	}
 
@@ -218,8 +247,25 @@ FTM_RET	FTM_CGI_POST_SYSLOG_del
 
 	FTM_RET		xRet;
 	FTM_CHAR	pID[FTM_ID_LEN+1];
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 
 	memset(pID, 0, sizeof(pID));
+	memset(pSSID, 0, sizeof(pSSID));
+
+	xRet = FTM_JSON_getSSID(pReqRoot, FTM_FALSE, pSSID);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to add syslog with get SSID");
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_SSID_verify(pClient, pSSID, strlen(pSSID));
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set passwd with invalid SSID.");		
+		goto finished;
+	}
+
 
 	xRet = FTM_JSON_getID(pReqRoot, FTM_FALSE, pID);
 	if (xRet != FTM_RET_OK)
@@ -371,12 +417,29 @@ FTM_RET	FTM_CGI_POST_SYSLOG_get
 
 	FTM_RET		xRet;
 	FTM_CHAR	pID[FTM_ID_LEN+1];
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_LOG_SERVER_CONFIG	xConfig;
-
+	
 	FILE*	pFP = NULL;
 
 	memset(pID, 0, sizeof(pID));
 	memset(&xConfig, 0, sizeof(xConfig));
+	memset(pSSID, 0, sizeof(pSSID));
+
+	xRet = FTM_JSON_getSSID(pReqRoot, FTM_FALSE, pSSID);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to add syslog with get SSID");
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_SSID_verify(pClient, pSSID, strlen(pSSID));
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set passwd with invalid SSID.");		
+		goto finished;
+	}
+
 
 	xRet = FTM_JSON_getID(pReqRoot, FTM_FALSE, pID);
 	if (xRet != FTM_RET_OK)
@@ -589,10 +652,27 @@ FTM_RET	FTM_CGI_POST_SYSLOG_set
 
 	FTM_RET		xRet;
 	FTM_UINT32	ulFieldFlags = 0;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_LOG_SERVER_CONFIG	xConfig;
 	FILE*	pFP = NULL;
 
 	memset(&xConfig, 0, sizeof(xConfig));
+	memset(pSSID, 0, sizeof(pSSID));
+
+	xRet = FTM_JSON_getSSID(pReqRoot, FTM_FALSE, pSSID);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to add syslog with get SSID");
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_SSID_verify(pClient, pSSID, strlen(pSSID));
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set passwd with invalid SSID.");		
+		goto finished;
+	}
+
 
 	xRet = FTM_JSON_getID(pReqRoot, FTM_FALSE, xConfig.pID);
 	if (xRet != FTM_RET_OK)
@@ -810,10 +890,27 @@ FTM_RET	FTM_CGI_POST_SYSLOG_getIDList
 	FTM_UINT32	ulIndex = 0;
 	FTM_UINT32	ulCount = 20;
 	FTM_ID_PTR	pIDList = NULL;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_LOG_SERVER_CONFIG	xConfig;
 	FILE *pFP = NULL;
 
 	memset(&xConfig, 0, sizeof(xConfig));
+	memset(pSSID, 0, sizeof(pSSID));
+
+	xRet = FTM_JSON_getSSID(pReqRoot, FTM_FALSE, pSSID);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to add syslog with get SSID");
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_SSID_verify(pClient, pSSID, strlen(pSSID));
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to set passwd with invalid SSID.");		
+		goto finished;
+	}
+
 
 	pIDList = (FTM_ID_PTR)FTM_MEM_malloc(sizeof(FTM_ID) * ulCount);
 	if (pIDList == NULL)

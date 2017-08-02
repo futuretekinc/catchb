@@ -495,7 +495,7 @@ FTM_RET	FTM_CGI_POST_ALARM_getList
 		goto finished;
 	}
 
-	xRet = FTM_JSON_getUINT32(pReqRoot, "index", FTM_FALSE, &ulIndex);
+	xRet = FTM_JSON_getUINT32(pReqRoot, "index", FTM_TRUE, &ulIndex);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "The index parameter is messing!");
@@ -557,7 +557,7 @@ FTM_RET	FTM_CGI_POST_ALARM_getList
 	}
 
 	cJSON_AddNumberToObject(pRespRoot, "count", ulCount);
-	cJSON_AddItemToObject(pRespRoot, "alarm_list", pAlarmArray);
+	cJSON_AddItemToObject(pRespRoot, "alarm", pAlarmArray);
 
 finished:
 
