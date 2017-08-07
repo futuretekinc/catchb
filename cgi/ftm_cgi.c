@@ -522,6 +522,8 @@ FTM_RET	FTM_CGI_POST_service
 	{
 		FTM_CGI_POST_COMMAND_PTR	pCmd = pCmds;
 
+		xRet = FTM_RET_INVALID_ARGUMENTS;
+
 		while(pCmd->pName != NULL)
 		{
 			if (strcasecmp(pCmdName, pCmd->pName) == 0)
