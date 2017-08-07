@@ -142,6 +142,7 @@ FTM_RET	FTM_CGI_POST_NET_set
 	fprintf(fp, "config interface\n");
 	fprintf(fp, "    option %8s %s\n", "type", 		"wan");
 	fprintf(fp, "    option %8s %s\n", "name", 		"wan");
+	fprintf(fp, "    option %8s %s\n", "proto", 	"static");
 	fprintf(fp, "    option %8s %s\n", "ipaddr",	pIP);
 	fprintf(fp, "    option %8s %s\n", "netmask", 	pNetmask);
 	fprintf(fp, "    option %8s %s\n", "gateway", 	pGateway);
@@ -165,7 +166,7 @@ FTM_RET	FTM_CGI_POST_NET_set
 
 	if (bApply)
 	{
-		fp = popen("/etc/init.d/lan restart", "r");
+		fp = popen("/etc/init.d/wan restart", "r");
 		if (fp == NULL)
 		{
 			xRet = FTM_RET_ERROR;
