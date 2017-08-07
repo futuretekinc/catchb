@@ -18,7 +18,7 @@ make_script()
 			eval echo \"$line\"
 			;;
 		esac
-	done | awk -f ./acl.awk
+	done | awk -f /usr/bin/acl.awk
 }
 
 make_script $1
