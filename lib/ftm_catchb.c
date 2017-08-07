@@ -2506,6 +2506,11 @@ FTM_RET	FTM_CATCHB_setSwitchProperties
 	xRet = FTM_LIST_get(pCatchB->pSwitchList, pID, (FTM_VOID_PTR _PTR_)&pSwitch);
 	if (xRet == FTM_RET_OK)
 	{
+		if (ulFieldFlags & FTM_SWITCH_FIELD_MODEL)
+		{
+			strcpy(pSwitch->xConfig.pModel, pConfig->pModel);
+		}
+
 		if (ulFieldFlags & FTM_SWITCH_FIELD_IP)
 		{
 			strcpy(pSwitch->xConfig.pIP, pConfig->pIP);
@@ -3023,6 +3028,7 @@ FTM_BOOL	FTM_CATCHB_ALARM_seeker
 	FTM_ALARM_PTR	pAlarm = (FTM_ALARM_PTR)pElement;
 	FTM_CHAR_PTR	pName = (FTM_CHAR_PTR)pIndicator;
 
+	INFO("pAlarm->pName = %s, pName = %s", pAlarm->pName, pName);
 	return	(strcmp(pAlarm->pName, pName) == 0);
 }
 

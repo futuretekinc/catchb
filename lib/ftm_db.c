@@ -2155,6 +2155,17 @@ FTM_RET	FTM_DB_setSwitchProperties
 	memset(pQuery, 0, sizeof(pQuery));
 	ulQueryLen = snprintf(pQuery, sizeof(pQuery) - ulQueryLen, "UPDATE %s SET", pDB->pSwitchTableName);
 
+	if (ulFieldFlags & FTM_SWITCH_FIELD_MODEL)
+	{
+		if (!bNew)
+		{
+			ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, ",");
+		}
+
+		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _MODEL = '%s'", pConfig->pModel);
+		bNew = FTM_FALSE;
+	}
+
 	if (ulFieldFlags & FTM_SWITCH_FIELD_IP)
 	{
 		if (!bNew)
