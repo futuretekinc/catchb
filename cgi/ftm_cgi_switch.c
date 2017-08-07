@@ -508,6 +508,12 @@ FTM_RET	FTM_CGI_POST_SWITCH_set
 		goto finished;
 	}
 
+	xRet = FTM_JSON_getModel(pReqRoot, FTM_FALSE, xConfig.pModel);
+	if (xRet == FTM_RET_OK)
+	{
+		ulFieldFlags |= FTM_SWITCH_FIELD_MODEL;
+	}
+
 	xRet = FTM_JSON_getIP(pReqRoot, FTM_FALSE, xConfig.pIP);
 	if (xRet == FTM_RET_OK)
 	{
