@@ -172,7 +172,7 @@ FTM_RET	FTM_CONFIG_load
 	if (pFile == NULL)
 	{         
 		xRet = FTM_RET_CONFIG_LOAD_FAILED; 
-		ERROR(xRet, "Can't open file[%s]\n", pFileName);
+	//	ERROR(xRet, "Can't open file[%s]\n", pFileName);
 		return  xRet; 
 	}    
 
@@ -190,14 +190,14 @@ FTM_RET	FTM_CONFIG_load
 			if (ulReadSize != ulFileLen)
 			{    
 				xRet = FTM_RET_FAILED_TO_READ_FILE;
-				ERROR(xRet, "Failed to read configuration file[%u:%u]\n", ulFileLen, ulReadSize);
+		//		ERROR(xRet, "Failed to read configuration file[%u:%u]\n", ulFileLen, ulReadSize);
 				goto finished;
 			}    
 		}
 		else
 		{    
 			xRet = FTM_RET_NOT_ENOUGH_MEMORY;  
-			ERROR(xRet, "Failed to alloc buffer[size = %u]\n", ulFileLen);
+		//	ERROR(xRet, "Failed to alloc buffer[size = %u]\n", ulFileLen);
 			goto finished;
 		}    
 
@@ -209,7 +209,7 @@ FTM_RET	FTM_CONFIG_load
 	if (pRoot == NULL)
 	{    
 		xRet = FTM_RET_INVALID_JSON_FORMAT;
-		ERROR(xRet, "Invalid json format!\n");
+//		ERROR(xRet, "Invalid json format!\n");
 		goto finished;
 	}    
 
@@ -529,6 +529,7 @@ FTM_RET	FTM_CONFIG_save
 	{
 		fprintf(pFile, "%s", cJSON_Print(pRoot));
 
+		INFO("%s", cJSON_Print(pRoot));
 		fclose(pFile);
 	}
 	else

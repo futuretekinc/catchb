@@ -64,7 +64,7 @@ FTM_RET	FTM_ANALYZER_CONFIG_setDefault
 	pConfig->pPortList[pConfig->ulPortCount++] = 4520; 
 	pConfig->pPortList[pConfig->ulPortCount++] = 49152;
 
-	strcpy(pConfig->pIFName, "lan");
+	strcpy(pConfig->pIFName, "wan");
 	pConfig->ulIPCheckInterval 	= FTM_CATCHB_ANALYZER_DEFAULT_IP_CHECK_INTERVAL;
 
 	pConfig->xTest.bEnable 		= FTM_CATCHB_ANALYZER_DEFAULT_TEST_ENABLE;
@@ -586,7 +586,7 @@ FTM_VOID_PTR FTM_ANALYZER_threadPCAP
 	xRet = FTM_PCAP_open(pAnalyzer->pPCAP, pAnalyzer->xConfig.pIFName);
 	if (xRet != FTM_RET_OK)
 	{
-		ERROR(xRet, "Failed to open pcap!");
+		ERROR(xRet, "Failed to open pcap![%s]", pAnalyzer->xConfig.pIFName);
 		goto finished;
 	}
 

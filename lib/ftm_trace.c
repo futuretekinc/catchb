@@ -420,6 +420,22 @@ FTM_RET		FTM_TRACE_CONFIG_setDefault
 	return	FTM_RET_OK;
 }
 
+FTM_RET		FTM_TRACE_CONFIG_setFileName
+(
+	FTM_TRACE_CONFIG_PTR	pConfig,
+	FTM_CHAR_PTR			pFileName
+)
+{
+	ASSERT(pConfig != NULL);
+
+	sprintf(pConfig->xLog.pFileName, "%s", pFileName);
+	sprintf(pConfig->xInfo.pFileName, "%s", pFileName);
+	sprintf(pConfig->xWarn.pFileName, "%s", pFileName);
+	sprintf(pConfig->xError.pFileName, "%s", pFileName);
+
+	return	FTM_RET_OK;
+}
+
 FTM_RET		FTM_TRACE_FIELD_CONFIG_load
 (
 	FTM_TRACE_FIELD_CONFIG_PTR	pConfig,
@@ -719,6 +735,16 @@ FTM_RET		FTM_TRACE_CONFIG_save
 		FTM_TRACE_TYPE_CONFIG_save(&pConfig->xError, pSection);	
 
 		cJSON_AddItemToObject(pRoot, "error", pSection);
+	}
+
+	pSection = cJSON_CreateArray();
+	if (pSection != NULL)
+	{
+		for(FTM_UINT32 i = 0 ; i < ulModuleCount ; i++)
+		{
+			cJSON_AddItemToArray(pSection, cJSON_CreateString(xModuleName[i]));
+		}
+		cJSON_AddItemToObject(pRoot, "module", pSection);
 	}
 
 	return	FTM_RET_OK;

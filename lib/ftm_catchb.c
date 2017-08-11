@@ -1019,11 +1019,19 @@ FTM_VOID_PTR	FTM_CATCHB_process
 	{
 		ERROR(xRet, "Failed to start logger!");
 	}
+	else
+	{
+		INFO("Logger started");
+	}
 
 	xRet = FTM_ANALYZER_start(pCatchB->pAnalyzer);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to start analyzer!");
+	}
+	else
+	{
+		INFO("Analyzer started");
 	}
 
 	xRet = FTM_DETECTOR_start(pCatchB->pDetector);
@@ -1031,11 +1039,19 @@ FTM_VOID_PTR	FTM_CATCHB_process
 	{
 		ERROR(xRet, "Failed to start detector!");
 	}
+	else
+	{
+		INFO("Detector started");
+	}
 
 	xRet = FTM_NOTIFIER_start(pCatchB->pNotifier);
 	if (xRet != FTM_RET_OK)
 	{
 		ERROR(xRet, "Failed to start notifier!");
+	}
+	else
+	{
+		INFO("Notifier started");
 	}
 
 	xRet = FTM_EVENT_TIMER_MANAGER_start(pCatchB->pEventManager);
@@ -1058,6 +1074,7 @@ FTM_VOID_PTR	FTM_CATCHB_process
 #endif
 	FTM_TIMER_initMS(&xTimer, pCatchB->pConfig->xSystem.xStatistics.ulInterval);
 
+	INFO("Start Timer : %s, Interval : %d", FTM_TIMER_toString(&xTimer,NULL), pCatchB->pConfig->xSystem.xStatistics.ulInterval);
 	pCatchB->bStop = FTM_FALSE;
 	while(!pCatchB->bStop)
 	{
@@ -1162,8 +1179,22 @@ FTM_VOID_PTR	FTM_CATCHB_process
 				xStatistics.xNet.ulRxBytes, xStatistics.xNet.ulTxBytes);
 			FTM_CATCHB_addStatistics(pCatchB, &xStatistics);
 
-			FTM_TIMER_addMS(&xTimer, pCatchB->pConfig->xSystem.xStatistics.ulInterval);
-		}	
+			FTM_TIMER_initMS(&xTimer, pCatchB->pConfig->xSystem.xStatistics.ulInterval);
+		}
+		else
+		{
+			FTM_UINT32	ulTime = 0;
+			FTM_UINT32	ulCurrentTime =0;
+
+			FTM_TIMER_getTime(&xTimer, &ulTime);
+			FTM_TIME_getCurrentSecs(&ulCurrentTime);
+
+			if (ulCurrentTime + pCatchB->pConfig->xSystem.xStatistics.ulInterval / 1000 < ulTime)
+			{
+				FTM_TIMER_initMS(&xTimer, pCatchB->pConfig->xSystem.xStatistics.ulInterval);
+			}
+		}
+
 	}
 
 	FTM_SERVER_stop(pCatchB->pServer);
@@ -3135,6 +3166,22 @@ FTM_RET	FTM_CATCHB_getLogList2
 {
 	INFO("Start : %u, End : %u", ulStartTime, ulEndTime);
 	return	FTM_DB_getLogList(pCatchB->pDB, xType, pCCTVID, pIP, xStat, ulStartTime, ulEndTime, ulIndex, ulMaxCount, pLogList, pulCount);
+}
+
+FTM_RET	FTM_CATCHB_getLogCount2
+(
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_LOG_TYPE	xType,
+	FTM_CHAR_PTR	pCCTVID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xStat,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32_PTR	pulCount
+)
+{
+	INFO("Start : %u, End : %u", ulStartTime, ulEndTime);
+	return	FTM_DB_getLogCount2(pCatchB->pDB, xType, pCCTVID, pIP, xStat, ulStartTime, ulEndTime, pulCount);
 }
 
 FTM_RET	FTM_CATCHB_removeExpiredLog

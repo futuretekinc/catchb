@@ -56,6 +56,7 @@ static FTM_SERVER_CMD_SET	pCmdSet[] =
 	MK_CMD_SET(FTM_CMD_SWITCH_GET_LIST,			FTM_SERVER_SWITCH_getList),
 
 	MK_CMD_SET(FTM_CMD_LOG_GET_COUNT,			FTM_SERVER_LOG_getCount),
+	MK_CMD_SET(FTM_CMD_LOG_GET_COUNT2,			FTM_SERVER_LOG_getCount2),
 	MK_CMD_SET(FTM_CMD_LOG_GET_INFO,			FTM_SERVER_LOG_getInfo),
 	MK_CMD_SET(FTM_CMD_LOG_GET_LIST,			FTM_SERVER_LOG_getList),
 	MK_CMD_SET(FTM_CMD_LOG_DEL,					FTM_SERVER_LOG_del),
@@ -1229,6 +1230,34 @@ FTM_RET	FTM_SERVER_LOG_getList
 	return	FTM_RET_OK;
 }
 
+FTM_RET	FTM_SERVER_LOG_getCount2
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_LOG_GET_COUNT2_PARAMS_PTR	pReq,
+	FTM_RESP_LOG_GET_COUNT2_PARAMS_PTR	pResp
+)
+{
+	FTM_RET			xRet;
+	FTM_CATCHB_PTR	pCatchB;
+	FTM_UINT32		ulCount = 0;
+
+	pCatchB = pServer->pCatchB;
+
+	INFO("Start : %u, End : %u", pReq->ulBeginTime, pReq->ulEndTime);
+	xRet = FTM_CATCHB_getLogCount2(pCatchB, pReq->xType, ((pReq->pID[0] == 0)?NULL:pReq->pID), ((pReq->pIP[0] == 0)?NULL:pReq->pIP), 
+								pReq->xStat, pReq->ulBeginTime, pReq->ulEndTime, &ulCount);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log list!");
+	}
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet = xRet;
+	pResp->ulCount = ulCount;
+
+	return	FTM_RET_OK;
+}
+
 FTM_RET	FTM_SERVER_LOG_del
 (
 	FTM_SERVER_PTR pServer, 
@@ -1530,24 +1559,20 @@ FTM_RET	FTM_SERVER_SMTP_set
 	xRet = FTM_CATCHB_setSMTP(pCatchB, &pReq->xSMTP);
 	if (xRet == FTM_RET_OK)
 	{
-		FTM_CONFIG	xConfig;
-
-		xRet = FTM_CATCHB_getConfig(pCatchB, &xConfig);
-		if (xRet == FTM_RET_OK)
+		xRet = FTM_CATCHB_getSMTP(pCatchB, &pResp->xSMTP);
+		if (xRet != FTM_RET_OK)
 		{
-			xRet = FTM_CATCHB_getSMTP(pCatchB, &pResp->xSMTP);
-			if (xRet != FTM_RET_OK)
-			{
-				ERROR(xRet, "Failed to get alarm list!");
-			}
-			else
-			{
-				FTM_CONFIG_save(&xConfig, NULL);
-			}
+			ERROR(xRet, "Failed to get alarm list!");
 		}
 		else
 		{
-			ERROR(xRet, "Failed to get catchb configuration!");
+			FTM_CONFIG	xConfig;
+
+			memset(&xConfig, 0, sizeof(xConfig));
+
+			FTM_CATCHB_getConfig(pCatchB, &xConfig);
+
+			FTM_CONFIG_save(&xConfig, NULL);
 		}
 	}
 	else

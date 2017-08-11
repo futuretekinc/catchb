@@ -35,7 +35,15 @@ FTM_RET	FTM_TIMER_initMS
 	FTM_UINT32 		ulTimeoutMS
 )
 {
-	return	FTM_TIMER_initUS(pTimer, ulTimeoutMS * 1000);
+	ASSERT(pTimer != NULL);
+
+	pTimer->xTimeout.tv_sec = ulTimeoutMS / 1000;
+	pTimer->xTimeout.tv_usec = (ulTimeoutMS % 1000) * 1000;
+
+	gettimeofday(&pTimer->xBaseTime, NULL);
+	timeradd(&pTimer->xBaseTime, &pTimer->xTimeout, &pTimer->xExpiredTime);
+
+	return	FTM_RET_OK;
 }
 
 FTM_RET	FTM_TIMER_initUS
@@ -45,14 +53,12 @@ FTM_RET	FTM_TIMER_initUS
 )
 {
 	ASSERT(pTimer != NULL);
-	struct timeval	xCurrentTime;
-	struct timeval	xTimeout;
 
-	xTimeout.tv_sec = ulTimeoutUS / 1000000;
-	xTimeout.tv_usec = ulTimeoutUS % 1000000;
+	pTimer->xTimeout.tv_sec = ulTimeoutUS / 1000000;
+	pTimer->xTimeout.tv_usec = ulTimeoutUS % 1000000;
 
-	gettimeofday(&xCurrentTime, NULL);
-	timeradd(&xCurrentTime, &xTimeout, &pTimer->xTime);
+	gettimeofday(&pTimer->xBaseTime, NULL);
+	timeradd(&pTimer->xBaseTime, &pTimer->xTimeout, &pTimer->xExpiredTime);
 
 	return	FTM_RET_OK;
 }
@@ -81,12 +87,31 @@ FTM_RET	FTM_TIMER_addUS
 )
 {
 	ASSERT(pTimer != NULL);
-	struct timeval	xTimeout;
+	struct timeval xCurrentTime;
 
-	xTimeout.tv_sec = ulTimeUS / 1000000;
-	xTimeout.tv_usec = ulTimeUS % 1000000;
+	gettimeofday(&xCurrentTime, NULL);
 
-	timeradd(&pTimer->xTime, &xTimeout, &pTimer->xTime);
+	pTimer->xTimeout.tv_sec = ulTimeUS / 1000000;
+	pTimer->xTimeout.tv_usec = ulTimeUS % 1000000;
+
+	if ( timercmp(&pTimer->xBaseTime, &xCurrentTime, >))
+	{
+		memcpy(&pTimer->xBaseTime, &xCurrentTime, sizeof(struct timeval));
+	}
+	else
+	{
+		FTM_UINT32	ulDiff = (xCurrentTime.tv_sec  - pTimer->xBaseTime.tv_sec);
+		if (ulDiff > ulTimeUS / 1000000)
+		{
+			pTimer->xBaseTime.tv_sec = 	xCurrentTime.tv_sec;
+		}
+		else
+		{
+			memcpy(&pTimer->xBaseTime, &pTimer->xExpiredTime, sizeof(struct timeval));
+		}
+	}
+
+	timeradd(&pTimer->xBaseTime, &pTimer->xTimeout, &pTimer->xExpiredTime);
 
 	return	FTM_RET_OK;
 }
@@ -98,12 +123,31 @@ FTM_RET	FTM_TIMER_addMS
 )
 {
 	ASSERT(pTimer != NULL);
-	struct timeval	xTimeout;
+	struct timeval xCurrentTime;
 
-	xTimeout.tv_sec = ulTimeMS / 1000;
-	xTimeout.tv_usec = ulTimeMS % 1000 * 1000000;
+	gettimeofday(&xCurrentTime, NULL);
 
-	timeradd(&pTimer->xTime, &xTimeout, &pTimer->xTime);
+	pTimer->xTimeout.tv_sec = ulTimeMS / 1000;
+	pTimer->xTimeout.tv_usec = ulTimeMS % 1000 * 1000000;
+
+	if ( timercmp(&pTimer->xBaseTime, &xCurrentTime, >))
+	{
+		memcpy(&pTimer->xBaseTime, &xCurrentTime, sizeof(struct timeval));
+	}
+	else
+	{
+		FTM_UINT32	ulDiff = (xCurrentTime.tv_sec  - pTimer->xBaseTime.tv_sec);
+		if (ulDiff > ulTimeMS / 1000)
+		{
+			pTimer->xBaseTime.tv_sec = 	xCurrentTime.tv_sec;
+		}
+		else
+		{
+			memcpy(&pTimer->xBaseTime, &pTimer->xExpiredTime, sizeof(struct timeval));
+		}
+	}
+
+	timeradd(&pTimer->xExpiredTime, &pTimer->xTimeout, &pTimer->xExpiredTime);
 	
 	return	FTM_RET_OK;
 }
@@ -115,12 +159,31 @@ FTM_RET	FTM_TIMER_addS
 )
 {
 	ASSERT(pTimer != NULL);
-	struct timeval	xTimeout;
+	struct timeval xCurrentTime;
 
-	xTimeout.tv_sec = ulTimeS;
-	xTimeout.tv_usec = 0;
+	gettimeofday(&xCurrentTime, NULL);
 
-	timeradd(&pTimer->xTime, &xTimeout, &pTimer->xTime);
+	pTimer->xTimeout.tv_sec = ulTimeS;
+	pTimer->xTimeout.tv_usec = 0;
+
+	if ( timercmp(&pTimer->xBaseTime, &xCurrentTime, >))
+	{
+		memcpy(&pTimer->xBaseTime, &xCurrentTime, sizeof(struct timeval));
+	}
+	else
+	{
+		FTM_UINT32	ulDiff = (xCurrentTime.tv_sec  - pTimer->xBaseTime.tv_sec);
+		if (ulDiff > ulTimeS)
+		{
+			pTimer->xBaseTime.tv_sec = 	xCurrentTime.tv_sec;
+		}
+		else
+		{
+			memcpy(&pTimer->xBaseTime, &pTimer->xExpiredTime, sizeof(struct timeval));
+		}
+	}
+
+	timeradd(&pTimer->xExpiredTime, &pTimer->xTimeout, &pTimer->xExpiredTime);
 
 	return	FTM_RET_OK;
 }
@@ -134,7 +197,8 @@ FTM_RET		FTM_TIMER_addTime
 	ASSERT(pTimer != NULL);
 	ASSERT(pTimeout != NULL);
 
-	timeradd(&pTimer->xTime, &pTimeout->xTimeval, &pTimer->xTime);
+	memcpy(&pTimer->xTimeout, &pTimeout->xTimeval, sizeof(struct timeval));
+	timeradd(&pTimer->xExpiredTime, &pTimer->xTimeout, &pTimer->xExpiredTime);
 
 	return	FTM_RET_OK;
 }
@@ -149,7 +213,7 @@ FTM_BOOL FTM_TIMER_isExpired
 
 	gettimeofday(&xCurrentTime, NULL);
 
-	return	timercmp(&pTimer->xTime, &xCurrentTime, <);
+	return	(timercmp(&pTimer->xExpiredTime, &xCurrentTime, <) || timercmp(&pTimer->xBaseTime, &xCurrentTime, >));
 }
 
 FTM_RET FTM_TIMER_waitForExpired
@@ -162,12 +226,12 @@ FTM_RET FTM_TIMER_waitForExpired
 
 	gettimeofday(&xCurrentTime, NULL);
 
-	if (timercmp(&pTimer->xTime, &xCurrentTime, >))
+	if (timercmp(&pTimer->xBaseTime, &xCurrentTime, <) && timercmp(&pTimer->xExpiredTime, &xCurrentTime, >))
 	{
 		struct timeval xDiffTime;
 		FTM_UINT32	ulSleepTime;
 
-		timersub(&pTimer->xTime, &xCurrentTime, &xDiffTime);
+		timersub(&pTimer->xExpiredTime, &xCurrentTime, &xDiffTime);
 		
 		ulSleepTime = xDiffTime.tv_sec * 1000000 + xDiffTime.tv_usec;
 
@@ -188,9 +252,9 @@ FTM_RET FTM_TIMER_remainUS
 	struct timeval xDiffTime;
 
 	gettimeofday(&xCurrentTime, NULL);
-	if (timercmp(&pTimer->xTime, &xCurrentTime, >))
+	if (timercmp(&pTimer->xExpiredTime, &xCurrentTime, >))
 	{
-		timersub(&pTimer->xTime, &xCurrentTime, &xDiffTime);
+		timersub(&pTimer->xExpiredTime, &xCurrentTime, &xDiffTime);
 		*pullTimeUS = xDiffTime.tv_sec * (FTM_UINT64)1000000 + xDiffTime.tv_usec;
 	}
 	else
@@ -248,7 +312,7 @@ FTM_CHAR_PTR	FTM_TIMER_toString
 	static	FTM_CHAR	pString[128];
 	struct	tm*			pTM;
 
-	pTM = localtime(&pTimer->xTime.tv_sec);
+	pTM = localtime(&pTimer->xExpiredTime.tv_sec);
 	if (pFormat != NULL)
 	{
 		strftime(pString, sizeof(pString), pFormat, pTM);
@@ -270,7 +334,7 @@ FTM_RET		FTM_TIMER_getTime
 	ASSERT(pTimer != NULL);
 	ASSERT(pulTime != NULL);
 	
-	*pulTime = pTimer->xTime.tv_sec;
+	*pulTime = pTimer->xExpiredTime.tv_sec;
 
 	return	FTM_RET_OK;
 }

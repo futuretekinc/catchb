@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 #include "ftm_json_utils.h"
 #include "cJSON/cJSON.h"
 
@@ -199,7 +200,45 @@ FTM_RET	FTM_JSON_getBeginTime
 	FTM_UINT32_PTR	pValue
 )
 {
-	return	FTM_JSON_getUINT32(pRoot, "begin", bEmptyAllow, pValue);
+	FTM_RET	xRet = FTM_RET_OK;
+
+	cJSON _PTR_ pItem = cJSON_GetObjectItem(pRoot, "begin");
+	if (pItem == NULL)
+	{
+		if (!bEmptyAllow)
+		{
+			xRet = FTM_RET_OBJECT_NOT_FOUND;
+		}
+
+		return	xRet;
+	}
+
+	if (pItem->type == cJSON_Number)
+	{
+		*pValue = pItem->valueint;	
+	}
+	else if (pItem->type == cJSON_String)
+	{
+		FTM_TIME	xTime;
+
+		INFO("Begin Time : %s", pValue);
+		xRet = FTM_TIME_setString(&xTime, pItem->valuestring);
+		if (xRet == FTM_RET_OK)
+		{
+			FTM_TIME_toSecs(&xTime, pValue);	
+		}
+		else
+		{
+			ERROR(xRet, "Failed to set time!");
+		}
+			
+	}
+	else
+	{
+		xRet = FTM_RET_INVALID_ARGUMENTS;
+	}
+
+	return	xRet;
 }
 
 FTM_RET	FTM_JSON_getEndTime
@@ -209,7 +248,45 @@ FTM_RET	FTM_JSON_getEndTime
 	FTM_UINT32_PTR	pValue
 )
 {
-	return	FTM_JSON_getUINT32(pRoot, "end", bEmptyAllow, pValue);
+	FTM_RET	xRet = FTM_RET_OK;
+	cJSON _PTR_ pItem = cJSON_GetObjectItem(pRoot, "end");
+	if (pItem == NULL)
+	{
+		if (!bEmptyAllow)
+		{
+			xRet = FTM_RET_OBJECT_NOT_FOUND;
+		}
+
+		return	xRet;
+	}
+
+	if (pItem->type == cJSON_Number)
+	{
+		*pValue = pItem->valueint;	
+	
+	}
+	else if (pItem->type == cJSON_String)
+	{
+		FTM_TIME	xTime;
+
+		INFO("Begin Time : %s", pValue);
+		xRet = FTM_TIME_setString(&xTime, pItem->valuestring);
+		if (xRet == FTM_RET_OK)
+		{
+			FTM_TIME_toSecs(&xTime, pValue);	
+		}
+		else
+		{
+			ERROR(xRet, "Failed to set time!");
+		}
+			
+	}
+	else
+	{
+		xRet = FTM_RET_INVALID_ARGUMENTS;
+	}
+
+	return	xRet;
 }
 
 FTM_RET	FTM_JSON_getSecure
@@ -354,12 +431,19 @@ FTM_RET	FTM_JSON_getUINT16
 		}
 	}
 
-	if (pItem->type != cJSON_Number)
+	if (pItem->type == cJSON_Number)
+	{
+		*pValue = pItem->valueint;
+	}
+	else if (pItem->type == cJSON_String)
+	{
+		*pValue = (FTM_UINT16)atol(pItem->valuestring);
+	}
+	else
 	{
 		return	FTM_RET_INVALID_ARGUMENTS;
 	}
 
-	*pValue = pItem->valueint;
 
 	return	FTM_RET_OK;
 }

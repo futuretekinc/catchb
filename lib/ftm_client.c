@@ -1218,6 +1218,67 @@ FTM_RET	FTM_CLIENT_LOG_getCount
 	return	xRet;
 }
 
+FTM_RET	FTM_CLIENT_LOG_getCount2
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
+	FTM_LOG_TYPE	xType,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xStat,
+	FTM_UINT32		ulBeginTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32_PTR	pulCount
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_LOG_GET_COUNT2_PARAMS	xReq;
+	FTM_RESP_LOG_GET_COUNT2_PARAMS	xResp;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	if (pulCount == NULL)
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+
+	INFO("Begin : %u, End : %u", ulBeginTime, ulEndTime);
+	
+	memset(&xReq, 0, sizeof(xReq));
+	memset(&xResp, 0, sizeof(xResp));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_LOG_GET_COUNT2;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
+	xReq.xType			= 	xType;
+	if (pID != NULL)
+	{
+		strncpy(xReq.pID, pID, sizeof(xReq.pID) - 1);
+	}
+	if (pIP != NULL)
+	{
+		strncpy(xReq.pIP, pIP, sizeof(xReq.pIP) - 1);
+	}
+	xReq.xStat			=	xStat;
+	xReq.ulBeginTime	=	ulBeginTime;
+	xReq.ulEndTime		=	ulEndTime;
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)&xResp, sizeof(xResp));
+	if (xRet == FTM_RET_OK)
+	{
+		*pulCount = xResp.ulCount;
+	}
+	else
+	{
+		ERROR(xRet, "Failed to get log count!");	
+	}
+
+	return	xRet;
+}
+
 FTM_RET	FTM_CLIENT_LOG_del
 (
 	FTM_CLIENT_PTR	pClient,

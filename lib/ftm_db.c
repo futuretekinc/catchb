@@ -1226,17 +1226,20 @@ FTM_RET	FTM_DB_addAlarm
 
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_CHAR	pQuery[FTM_DB_QUERY_LEN+1];
-	FTM_CHAR_PTR	pErrorMsg;
+	FTM_CHAR_PTR	pErrorMsg = NULL;
 
 	memset(pQuery, 0, sizeof(pQuery));
 	snprintf(pQuery, sizeof(pQuery) - 1, "INSERT INTO %s(_NAME, _EMAIL, _MESSAGE) VALUES('%s', '%s', '%s');", pDB->pAlarmTableName, pAlarm->pName, pAlarm->pEmail, pAlarm->pMessage);
 	
 	INFO("Query : %s", pQuery);
-	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) != 0)
+	if (sqlite3_exec(pDB->pPrimaryDB, pQuery, NULL, 0, &pErrorMsg) < 0)
 	{
 		xRet = FTM_RET_DB_EXEC_ERROR;
 		ERROR(xRet, "Failed to execute query[%s]!", pErrorMsg);
-		sqlite3_free(pErrorMsg);
+		if (pErrorMsg != NULL)
+		{
+			sqlite3_free(pErrorMsg);
+		}
 	}
 
 	return	xRet;
@@ -1662,6 +1665,119 @@ FTM_RET	FTM_DB_getLogList
 	}
 
 	return	xRet;
+}
+
+FTM_RET	FTM_DB_getLogCount2
+(
+	FTM_DB_PTR		pDB,
+	FTM_LOG_TYPE	xType,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xStat,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32_PTR	pCount
+)
+{
+	ASSERT(pDB != NULL);
+	ASSERT(pCount != NULL);
+
+	FTM_CHAR		pCondition[FTM_DB_QUERY_LEN+1];
+	FTM_UINT32		ulConditionLen = 0;
+	FTM_BOOL		bFirstCondition = FTM_TRUE;
+
+
+	if (xType != FTM_LOG_TYPE_UNKNOWN)
+	{
+		if (bFirstCondition)
+		{
+	//		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+			bFirstCondition = FTM_FALSE;
+		}
+
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (_TYPE = %d)", xType);	
+	}
+
+	if (pID != NULL)
+	{
+		if (!bFirstCondition)
+		{
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " AND");	
+		}
+		else
+		{
+	//		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+			bFirstCondition = FTM_FALSE;
+		}
+
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (_ID = \'%s\')", pID);	
+	}
+
+	if (pIP != NULL)
+	{
+		if (!bFirstCondition)
+		{
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " AND");	
+		}
+		else
+		{
+//			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+			bFirstCondition = FTM_FALSE;
+		}
+
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (_IP = \'%s\')", pIP);	
+	}
+	
+	if (xStat != FTM_CCTV_STAT_UNREGISTERED)
+	{
+		if (!bFirstCondition)
+		{
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " AND");	
+		}
+		else
+		{
+//			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+			bFirstCondition = FTM_FALSE;
+		}	
+
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (_STAT = %d)", xStat);	
+	}
+
+	if (ulStartTime != 0)
+	{
+		if (!bFirstCondition)
+		{
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " AND");	
+		}
+		else
+		{
+//			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+			bFirstCondition = FTM_FALSE;
+		}	
+
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (%u <= _TIME)", ulStartTime);	
+	}
+
+	if (ulEndTime != 0)
+	{
+		if (!bFirstCondition)
+		{
+			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " AND");	
+		}
+		else
+		{
+//			ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " WHERE");	
+			bFirstCondition = FTM_FALSE;
+		}	
+
+		ulConditionLen += snprintf(&pCondition[ulConditionLen], sizeof(pCondition) - ulConditionLen, " (_TIME <= %u)", ulEndTime);	
+	}
+
+
+
+
+
+	return	FTM_DB_getElementCount2(pDB, FTM_TRUE, pDB->pLogTableName, pCondition, pCount);
 }
 
 FTM_RET	FTM_DB_getLogInfo
@@ -2187,7 +2303,7 @@ FTM_RET	FTM_DB_setSwitchProperties
 		}
 
 		memset(pEncrypted, 0, sizeof(pEncrypted));
-		FTM_encryptPasswd(pConfig->pUserID, strlen(pConfig->pUserID), pEncrypted, sizeof(pEncrypted));
+		FTM_encryptUserID(pConfig->pUserID, strlen(pConfig->pUserID), pEncrypted, sizeof(pEncrypted));
 
 		ulQueryLen +=snprintf(&pQuery[ulQueryLen], sizeof(pQuery) - ulQueryLen, " _USERID = '%s'", pEncrypted);
 		bNew = FTM_FALSE;

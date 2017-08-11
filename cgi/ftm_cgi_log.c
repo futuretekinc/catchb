@@ -426,3 +426,74 @@ finished:
 }
 
 
+FTM_RET	FTM_CGI_POST_LOG_getCount2
+(
+	FTM_CLIENT_PTR pClient, 
+	cJSON _PTR_		pReqRoot,
+	cJSON _PTR_		pRespRoot
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReqRoot != NULL);
+	ASSERT(pRespRoot != NULL);
+
+	FTM_RET		xRet = FTM_RET_OK;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
+	FTM_CHAR	pID[FTM_ID_LEN+1];
+	FTM_CHAR	pIP[FTM_IP_LEN+1];
+	FTM_LOG_TYPE	xLogType = FTM_LOG_TYPE_UNKNOWN;
+	FTM_CCTV_STAT	xStat = FTM_CCTV_STAT_UNREGISTERED;
+	FTM_UINT32	ulBeginTime = 0;
+	FTM_UINT32	ulEndTime = 0;
+	FTM_UINT32	ulCount = 0;
+
+	memset(pSSID, 0, sizeof(pSSID));
+	memset(pID, 0, sizeof(pID));
+	memset(pIP, 0, sizeof(pIP));
+
+	xRet = FTM_JSON_getSSID(pReqRoot, FTM_FALSE, pSSID);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get SSID");
+	}
+	xRet = FTM_JSON_getLogType(pReqRoot, FTM_TRUE, &xLogType);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get Log type");
+	}
+	xRet = FTM_JSON_getID(pReqRoot, FTM_TRUE, pID);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get ID");
+	}
+	xRet = FTM_JSON_getIP(pReqRoot, FTM_TRUE, pIP);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get IP");
+	}
+	xRet = FTM_JSON_getBeginTime(pReqRoot, FTM_TRUE, &ulBeginTime);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get Begin Time");
+	}
+	xRet = FTM_JSON_getEndTime(pReqRoot, FTM_TRUE, &ulEndTime);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get End Time");
+	}
+
+	xRet = FTM_CLIENT_LOG_getCount2(pClient, pSSID, xLogType, pID, pIP, xStat, ulBeginTime, ulEndTime, &ulCount);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log!");
+		goto finished;
+	}
+
+	cJSON_AddNumberToObject(pRespRoot, "count", ulCount);
+
+finished:
+
+	return	xRet;
+}
+
+

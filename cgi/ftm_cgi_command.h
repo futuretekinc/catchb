@@ -613,6 +613,13 @@ FTM_RET	FTM_CGI_POST_LOG_getList
 	cJSON _PTR_		pRespRoot
 );
 
+FTM_RET	FTM_CGI_POST_LOG_getCount2
+(
+	FTM_CLIENT_PTR pClient, 
+	cJSON _PTR_		pReqRoot,
+	cJSON _PTR_		pRespRoot
+);
+
 FTM_RET	FTM_CGI_POST_ALARM_add
 (
 	FTM_CLIENT_PTR pClient, 

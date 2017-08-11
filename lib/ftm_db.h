@@ -225,6 +225,18 @@ FTM_RET	FTM_DB_getLogCount
 	FTM_UINT32_PTR 	pCount
 );
 
+FTM_RET	FTM_DB_getLogCount2
+(
+	FTM_DB_PTR		pDB,
+	FTM_LOG_TYPE	xType,
+	FTM_CHAR_PTR	pID,
+	FTM_CHAR_PTR	pIP,
+	FTM_CCTV_STAT	xStat,
+	FTM_UINT32		ulStartTime,
+	FTM_UINT32		ulEndTime,
+	FTM_UINT32_PTR	pCount
+);
+
 FTM_RET	FTM_DB_getLogInfo
 (
 	FTM_DB_PTR 		pDB, 

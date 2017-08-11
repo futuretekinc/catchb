@@ -28,7 +28,6 @@ FTM_RET		FTM_SSID_create(FTM_CHAR_PTR	pID, FTM_CHAR_PTR pPasswd, FTM_CHAR_PTR	pK
 	FTM_RET	xRet = FTM_RET_OK;
 	FTM_UINT32	ulTime;
 
-	INFO("ID : %s, Passwd : %s", pID, pPasswd);
 	if (!_initialized)
 	{
 		xRet = FTM_LIST_init(&_id_list) ;
@@ -66,7 +65,17 @@ FTM_RET		FTM_SSID_create(FTM_CHAR_PTR	pID, FTM_CHAR_PTR pPasswd, FTM_CHAR_PTR	pK
 
 
 	FTM_UINT32		ulSeedLen = 0;
-	FTM_UINT32		ulSeedMaxLen = sizeof(pID) + sizeof(pPasswd) + 32;
+	FTM_UINT32		ulSeedMaxLen = 32;
+	if (pID != NULL)
+	{
+		ulSeedMaxLen += strlen(pID);	
+	}
+
+	if (pPasswd != NULL)
+	{
+		ulSeedMaxLen += strlen(pPasswd);	
+	}
+
 	FTM_CHAR_PTR	pSeed = (FTM_CHAR_PTR)FTM_MEM_malloc(ulSeedMaxLen);
 	if (pSeed == NULL)
 	{
@@ -74,8 +83,16 @@ FTM_RET		FTM_SSID_create(FTM_CHAR_PTR	pID, FTM_CHAR_PTR pPasswd, FTM_CHAR_PTR	pK
 		return	FTM_RET_NOT_ENOUGH_MEMORY;	
 	}
 
-	ulSeedLen += snprintf(&pSeed[ulSeedLen], ulSeedMaxLen - ulSeedLen, "%s", pID);
-	ulSeedLen += snprintf(&pSeed[ulSeedLen], ulSeedMaxLen - ulSeedLen, "%s", pPasswd);
+	if (pID != NULL)
+	{
+		ulSeedLen += snprintf(&pSeed[ulSeedLen], ulSeedMaxLen - ulSeedLen, "%s", pID);
+	}
+
+	if (pPasswd != NULL)
+	{
+		ulSeedLen += snprintf(&pSeed[ulSeedLen], ulSeedMaxLen - ulSeedLen, "%s", pPasswd);
+	}
+
 	ulSeedLen += snprintf(&pSeed[ulSeedLen], ulSeedMaxLen - ulSeedLen, "%08x", ulTime);
 	ulSeedLen += snprintf(&pSeed[ulSeedLen], ulSeedMaxLen - ulSeedLen, "%08x", (FTM_UINT32)pNewSSID);
 

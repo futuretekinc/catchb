@@ -142,6 +142,7 @@ static
 FTM_CGI_POST_COMMAND	pLogPostCmds[] =
 {
 	{	"info", 	FTM_CGI_POST_LOG_getInfo			},
+	{	"count",	FTM_CGI_POST_LOG_getCount2		},
 	{	"get",		FTM_CGI_POST_LOG_getList			},
 	{	"del",		FTM_CGI_POST_LOG_del				},
 	{	NULL,		NULL					}

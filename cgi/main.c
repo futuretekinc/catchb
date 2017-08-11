@@ -53,7 +53,7 @@ FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 
 	FTM_MEM_init();	
 
-	snprintf(pConfigFileName, sizeof(pConfigFileName) - 1, "/etc/%s.conf", "catchb");
+	snprintf(pConfigFileName, sizeof(pConfigFileName) - 1, "/etc/%s.conf", "catchb_cgi");
 	
 	xRet = FTM_CONFIG_create(&pConfig);
 	if (xRet != FTM_RET_OK)
@@ -63,6 +63,7 @@ FTM_INT	main(FTM_INT	nArgc, FTM_CHAR_PTR pArgv[])
 
 	FTM_CONFIG_load(pConfig, pConfigFileName);
 
+	FTM_TRACE_CONFIG_setFileName(&pConfig->xTrace, "catchb_cgi.log");
 	FTM_TRACE_setConfig(&pConfig->xTrace);
 
 	INFO("CGI Start!");

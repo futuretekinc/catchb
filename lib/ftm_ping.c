@@ -497,7 +497,7 @@ FTM_VOID	FTM_PING_sender(FTM_VOID)
 	{
         if (i < 0)
 		{
-			INFO("Failed to send ping[%s]", strerror(errno));
+			INFO("Failed to send ping[%d] - %s", sfd, strerror(errno));
 		}
     }
 

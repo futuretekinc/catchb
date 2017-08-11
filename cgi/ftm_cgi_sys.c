@@ -980,7 +980,6 @@ FTM_RET	FTM_CGI_POST_SYS_reboot
 	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pID[FTM_ID_LEN+1];
 	FTM_CHAR	pPasswd[FTM_PASSWD_LEN+1];
-	FTM_PROFILE	xProfile;
 
 	memset(pSSID, 0, sizeof(pSSID));
 	memset(pID, 0, sizeof(pID));
@@ -1007,6 +1006,7 @@ FTM_RET	FTM_CGI_POST_SYS_reboot
 		goto finished;
 	}
 
+	FTM_PROFILE	xProfile;
 	xRet = FTM_PROFILE_get(&xProfile);
 	if (xRet != FTM_RET_OK)
 	{
@@ -1060,7 +1060,6 @@ FTM_RET	FTM_CGI_POST_SYS_shutdown
 	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
 	FTM_CHAR	pID[FTM_ID_LEN+1];
 	FTM_CHAR	pPasswd[FTM_PASSWD_LEN+1];
-	FTM_PROFILE	xProfile;
 
 	memset(pSSID, 0, sizeof(pSSID));
 	memset(pID, 0, sizeof(pID));
@@ -1088,6 +1087,7 @@ FTM_RET	FTM_CGI_POST_SYS_shutdown
 		goto finished;
 	}
 
+	FTM_PROFILE	xProfile;
 	xRet = FTM_PROFILE_get(&xProfile);
 	if (xRet != FTM_RET_OK)
 	{

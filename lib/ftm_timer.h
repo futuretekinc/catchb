@@ -16,7 +16,9 @@ typedef	enum
 typedef	struct
 {
 	FTM_TIMER_TYPE		xType;
-	struct timeval		xTime;
+	struct timeval		xBaseTime;
+	struct timeval		xExpiredTime;
+	struct timeval		xTimeout;
 }	FTM_TIMER, _PTR_ FTM_TIMER_PTR;
 
 FTM_RET		FTM_TIMER_initS(FTM_TIMER_PTR pTimer, FTM_UINT32 ulTimeoutS);
@@ -28,6 +30,7 @@ FTM_RET		FTM_TIMER_addMS(FTM_TIMER_PTR pTimer, FTM_UINT32 ulTimeMS);
 FTM_RET		FTM_TIMER_addUS(FTM_TIMER_PTR pTimer, FTM_UINT32 ulTimeUS);
 FTM_RET		FTM_TIMER_addTime(FTM_TIMER_PTR pTimer, FTM_TIME_PTR pTimeout);
 FTM_BOOL 	FTM_TIMER_isExpired(FTM_TIMER_PTR pTimer);
+FTM_BOOL 	FTM_TIMER_isValid(FTM_TIMER_PTR pTimer);
 FTM_RET 	FTM_TIMER_waitForExpired(FTM_TIMER_PTR pTimer);
 FTM_RET 	FTM_TIMER_remainS(FTM_TIMER_PTR pTimer, FTM_UINT32_PTR pulTimeS);
 FTM_RET 	FTM_TIMER_remainMS(FTM_TIMER_PTR pTimer, FTM_UINT32_PTR pulTimeMS);

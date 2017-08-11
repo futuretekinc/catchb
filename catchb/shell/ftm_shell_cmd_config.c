@@ -27,7 +27,8 @@ FTM_RET	FTM_SHELL_CMD_config
 	case	1:
 		{
 			FTM_CONFIG	xConfig;
-
+		
+			memset(&xConfig, 0, sizeof(xConfig));
 			xRet = FTM_CATCHB_getConfig(pCatchB, &xConfig);	
 			if (xRet != FTM_RET_OK)
 			{
