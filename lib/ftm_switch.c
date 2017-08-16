@@ -392,6 +392,16 @@ FTM_RET	FTM_SWITCH_setAC
 		xRet = FTM_SWITCH_TELNET_setAC(pSwitch, pTargetIP, pLines, ulCount);
 	}
 
+	if (xRet != FTM_RET_OK)
+	{
+		FTM_INT32	i;
+
+		for(i = 0 ; i < ulCount ; i++)
+		{
+			INFO("%s %s", pLines[i].pPrompt, pLines[i].pInput);
+		}
+	}
+
 	if (pLines != NULL)
 	{
 		FTM_MEM_free(pLines);
@@ -414,14 +424,16 @@ FTM_RET	FTM_SWITCH_TELNET_setAC
 	FTM_RET		xRet;
 	FTM_TIMER	xTimer;
 	FTM_UINT32	ulTimeout = 3000;
+	FTM_UINT32	ulTime;
 	FTM_BOOL	bSuccess = FTM_TRUE;
 	FTM_TELNET_CLIENT_PTR	pClient;
 
+	FTM_TIME_getCurrentSecs(&ulTime);
 
 	xRet = FTM_TELNET_CLIENT_create(&pClient);
 	if (xRet != FTM_RET_OK)
 	{
-		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "The telnet connection to switch failed.");
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, ulTime, pSwitch->xConfig.pID, pSwitch->xConfig.pIP, 1, "The telnet connection to switch failed.");
 		goto finished;
 	}
 
@@ -462,12 +474,12 @@ FTM_RET	FTM_SWITCH_TELNET_setAC
 
 		if (bSuccess)
 		{
-			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "Applied the ACL policy to switch.");
+			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, ulTime, pSwitch->xConfig.pID, pSwitch->xConfig.pIP, 2, "Applied the ACL policy to switch.");
 			INFO("Applied the ACL policy to switch.");
 		}
 		else
 		{
-			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "Failed to apply ACL policy.");
+			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, ulTime, pSwitch->xConfig.pID, pSwitch->xConfig.pIP, 1, "Failed to apply ACL policy.");
 			INFO("Failed to apply ACL policy.");
 		}
 
@@ -479,7 +491,7 @@ FTM_RET	FTM_SWITCH_TELNET_setAC
 	}
 	else
 	{
-		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "The telnet connection to switch failed.");
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, ulTime, pSwitch->xConfig.pID, pSwitch->xConfig.pIP, 1, "The telnet connection to switch failed.");
 	}
 
 	xRet = FTM_TELNET_CLIENT_destroy(&pClient);
@@ -508,14 +520,18 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 	FTM_SSH_PTR	pSSH = NULL;
 	FTM_SSH_CHANNEL_PTR	pChannel = NULL;
 	FTM_TIMER	xTimer;
+	FTM_UINT32	ulTime;
 	FTM_UINT32	ulTimeout = 3000;
 	FTM_BOOL	bSuccess = FTM_TRUE;
 
+	FTM_TIME_getCurrentSecs(&ulTime);
+
+#if 0
 	for(FTM_UINT32 i = 0 ; i < ulCount ; i++)
 	{
 		INFO("%s %s", pLines[i].pPrompt, pLines[i].pInput);
 	}
-
+#endif
 	xRet = FTM_SSH_create(&pSSH);
 	if (xRet != FTM_RET_OK)
 	{
@@ -527,7 +543,7 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 	if (xRet != FTM_RET_OK)
 	{
 		
-		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "The ssh connection to switch failed.");
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, ulTime, pSwitch->xConfig.pID, pSwitch->xConfig.pIP, 1, "The ssh connection to switch failed.");
 		ERROR(xRet, "Failed to connect ssh!");	
 		goto finished;
 	}
@@ -535,7 +551,7 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 	xRet = FTM_SSH_CHANNEL_create(pSSH, &pChannel);
 	if (xRet != FTM_RET_OK)
 	{
-		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "The ssh connection to switch failed.");
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, ulTime, pSwitch->xConfig.pID, pSwitch->xConfig.pIP, 1, "The ssh connection to switch failed.");
 		ERROR(xRet, "Failed to create channel!");	
 		goto finished;
 	}
@@ -547,7 +563,7 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 	{
 		FTM_UINT32	ulLine = 0;
 
-		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_NORMAL, 0, "", pTargetIP, 0, "The ssh connected to switch.");
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_NORMAL, ulTime, pSwitch->xConfig.pID, pSwitch->xConfig.pIP, 2, "The ssh connected to switch.");
 
 		while(ulLine < ulCount)
 		{
@@ -586,12 +602,21 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 					FTM_SSH_CHANNEL_writeLine(pChannel, "exit");
 					break;	
 				}
+				else
+				{
+					INFO("[%s][%s]", pLines[ulLine].pPrompt, pReadLine);
+				}
 				FTM_TIMER_initMS(&xTimer, ulTimeout);
 			}
 
 
 			if (FTM_TIMER_isExpired(&xTimer))
 			{
+				for(FTM_UINT32	i ; i < 3 ; i++)
+				{
+					FTM_SSH_CHANNEL_writeLine(pChannel, "exit");
+				}
+					
 				bSuccess = FTM_FALSE;
 				break;
 			}
@@ -601,19 +626,19 @@ FTM_RET	FTM_SWITCH_SSH_setAC
 
 		if (bSuccess)
 		{
-			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "Applied the ACL policy to switch.");
+			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_NORMAL, ulTime, pSwitch->xConfig.pID, pSwitch->xConfig.pIP, 2, "Applied the ACL policy to switch.");
 			INFO("Applied the ACL policy to switch.");
 		}
 		else
 		{
-			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "Failed to apply ACL policy.");
+			FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, ulTime, pSwitch->xConfig.pID, pSwitch->xConfig.pIP, 1, "Failed to apply ACL policy.");
 			INFO("Failed to apply ACL policy.");
 		}
 		FTM_SSH_CHANNEL_close(pChannel);
 	}
 	else
 	{
-		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, 0, "", pTargetIP, 0, "The ssh connection to switch failed.");
+		FTM_CATCHB_addLog(pSwitch->pCatchB, FTM_LOG_TYPE_ERROR, ulTime, pSwitch->xConfig.pID, pSwitch->xConfig.pIP, 1, "The ssh connection to switch failed.");
 		ERROR(xRet, "Failed to open channel.");	
 	}
 
@@ -719,7 +744,7 @@ FTM_RET	FTM_SWITCH_SCRIPT_load
 	}
 
 	
-	ulFormatLen += snprintf(&pFormat[ulFormatLen], sizeof(pFormat) - ulFormatLen - 1, "_IDX=%d _TARGET=%s _LOCAL=%s acl.sh %s", ulIndex, pLocalIP, pTargetIP, pFileName);
+	ulFormatLen += snprintf(&pFormat[ulFormatLen], sizeof(pFormat) - ulFormatLen - 1, "_IDX=%d _TARGET=%s _LOCAL=%s acl.sh %s", ulIndex, pTargetIP, pLocalIP, pFileName);
 	
 	INFO("Script Convert : %s", pFormat);
 

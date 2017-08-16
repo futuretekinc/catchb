@@ -712,7 +712,13 @@ FTM_RET	FTM_ANALYZER_process
 			INFO("CCTV[%s] : No response!", pCCTV->xConfig.pID);
 			if (pCCTV->xConfig.xStat != FTM_CCTV_STAT_UNREGISTERED)
 			{
+#if 0
+				INFO("CCTV[%s] : Unplugged.", pCCTV->xConfig.pID);
+					
+				FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_ABNORMAL, ulTime, pHashValue);
+#else
 				FTM_CATCHB_setCCTVStat(pAnalyzer->pCatchB, pCCTV->xConfig.pID, FTM_CCTV_STAT_UNUSED, ulTime, NULL);
+#endif
 			}
 
 			FTM_ANALYZER_PCAP_stop(pAnalyzer);
