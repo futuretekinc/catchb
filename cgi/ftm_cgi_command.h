@@ -331,6 +331,12 @@ FTM_RET	FTM_CGI_GET_SWITCH_getIDList
 	qentry_t _PTR_ pReq
 );
 
+FTM_RET	FTM_CGI_GET_SWITCH_getModelList
+(
+	FTM_CLIENT_PTR pClient, 
+	qentry_t _PTR_ pReq
+);
+
 
 FTM_RET	FTM_CGI_GET_LOG_getInfo
 (
@@ -591,6 +597,12 @@ FTM_RET	FTM_CGI_POST_SWITCH_getIDList
 	cJSON _PTR_		pRespRoot
 );
 
+FTM_RET	FTM_CGI_POST_SWITCH_getModelList
+(
+	FTM_CLIENT_PTR pClient, 
+	cJSON _PTR_		pReqRoot,
+	cJSON _PTR_		pRespRoot
+);
 
 FTM_RET	FTM_CGI_POST_LOG_getInfo
 (

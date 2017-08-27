@@ -224,10 +224,12 @@ FTM_CHAR_PTR	FTM_CATCHB_getSwitchModelPath
 	FTM_CATCHB_PTR	pCatchB
 );
 
-FTM_RET	FTM_CATCHB_getSwitchModelInfo
-(
+FTM_RET	FTM_CATCHB_getSwitchModelList
+(	
 	FTM_CATCHB_PTR	pCatchB,
-	FTM_SWITCH_MODEL_INFO_PTR	_PTR_	ppModelInfo
+	FTM_SWITCH_MODEL_INFO_PTR	pModelList,
+	FTM_UINT32		ulMaxCount,
+	FTM_UINT32_PTR	pulCount
 );
 
 FTM_SWITCH_MODEL	FTM_CATCHB_getSwitchModelID

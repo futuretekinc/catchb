@@ -1153,6 +1153,72 @@ FTM_RET	FTM_CLIENT_SWITCH_getList
 	return	xRet;
 }
 
+FTM_RET	FTM_CLIENT_SWITCH_getModelList
+(
+	FTM_CLIENT_PTR	pClient,
+	FTM_CHAR_PTR	pSSID,
+	FTM_UINT32		ulMaxCount,
+	FTM_SWITCH_MODEL_INFO_PTR	pModelList,
+	FTM_UINT32_PTR	pulCount
+)
+{
+	FTM_RET	xRet;
+	FTM_REQ_SWITCH_GET_MODEL_LIST_PARAMS	xReq;
+	FTM_RESP_SWITCH_GET_MODEL_LIST_PARAMS_PTR	pResp;
+	FTM_UINT32	ulRespLen = 0;
+
+	if ((pClient == NULL) || (pClient->hSock == 0))
+	{
+		return	FTM_RET_CLIENT_HANDLE_INVALID;	
+	}
+
+	if ((pModelList == NULL) || (pulCount == NULL))
+	{
+		return	FTM_RET_INVALID_ARGUMENTS;	
+	}
+
+	if ( ulMaxCount > (MAX_FRAME_SIZE - sizeof(FTM_RESP_SWITCH_GET_MODEL_LIST_PARAMS)) / sizeof(FTM_SWITCH_MODEL_INFO))
+	{
+		ulMaxCount = (MAX_FRAME_SIZE - sizeof(FTM_RESP_SWITCH_GET_MODEL_LIST_PARAMS)) / sizeof(FTM_SWITCH_MODEL_INFO);
+	}
+
+	ulRespLen = sizeof(FTM_RESP_SWITCH_GET_MODEL_LIST_PARAMS) + sizeof(FTM_SWITCH_MODEL_INFO) * ulMaxCount;
+	pResp = (FTM_RESP_SWITCH_GET_MODEL_LIST_PARAMS_PTR)FTM_MEM_malloc(ulRespLen);
+	if (pResp == NULL)
+	{
+		return	FTM_RET_NOT_ENOUGH_MEMORY;	
+	}
+
+	memset(&xReq, 0, sizeof(xReq));
+
+	xReq.xCommon.xCmd	=	FTM_CMD_SWITCH_GET_MODEL_LIST;
+	xReq.xCommon.ulLen	=	sizeof(xReq);
+	strncpy(xReq.xCommon.pSSID, pSSID, FTM_SESSION_ID_LEN);
+	xReq.ulIndex		=	0;
+	xReq.ulCount 		=   ulMaxCount;
+
+	xRet = FTM_CLIENT_request( pClient, (FTM_VOID_PTR)&xReq, sizeof(xReq), (FTM_VOID_PTR)pResp, ulRespLen);
+	if (xRet == FTM_RET_OK)
+	{
+		if (pResp->ulCount < ulMaxCount)
+		{
+			*pulCount = pResp->ulCount;
+			memcpy(pModelList, pResp->pModelList, sizeof(FTM_SWITCH_MODEL_INFO) * pResp->ulCount);
+		}
+		else
+		{
+			xRet = FTM_RET_INVALID_ARGUMENTS;	
+		}
+	}
+
+	if(pResp != NULL)
+	{
+		FTM_MEM_free(pResp);	
+	}
+
+	return	xRet;
+}
+
 FTM_RET	FTM_CLIENT_LOG_getInfo
 (
 	FTM_CLIENT_PTR	pClient,

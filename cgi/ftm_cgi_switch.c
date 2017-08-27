@@ -707,3 +707,76 @@ finished:
 	return	xRet;
 }
 
+FTM_RET	FTM_CGI_POST_SWITCH_getModelList
+(
+	FTM_CLIENT_PTR pClient, 
+	cJSON _PTR_		pReqRoot,
+	cJSON _PTR_		pRespRoot
+)
+{
+	ASSERT(pClient != NULL);
+	ASSERT(pReqRoot != NULL);
+	ASSERT(pRespRoot != NULL);
+
+	FTM_RET		xRet;
+	FTM_UINT32	i = 0;
+	FTM_CHAR	pSSID[FTM_SSID_LEN+1];
+	FTM_UINT32	ulIndex = 0;
+	FTM_UINT32	ulCount = 20;
+	FTM_SWITCH_MODEL_INFO_PTR	pModelList = NULL;
+
+	memset(pSSID, 0, sizeof(pSSID));
+
+	xRet = FTM_JSON_getSSID(pReqRoot, FTM_FALSE, pSSID);
+	if (xRet != FTM_RET_OK)
+	{
+		ERROR(xRet, "Failed to get log because invalid ssid.");
+		goto finished;
+	}
+
+	pModelList = (FTM_SWITCH_MODEL_INFO_PTR)FTM_MEM_malloc(sizeof(FTM_SWITCH_MODEL_INFO) * ulCount);
+	if (pModelList == NULL)
+	{
+		goto finished;			
+	}
+
+	xRet = FTM_JSON_getIndex(pReqRoot, FTM_TRUE, &ulIndex);
+	xRet |= FTM_JSON_getCount(pReqRoot, FTM_TRUE, &ulCount);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	xRet = FTM_CLIENT_SWITCH_getModelList(pClient, pSSID, ulCount, pModelList, &ulCount);
+	if (xRet != FTM_RET_OK)
+	{
+		goto finished;
+	}
+
+	cJSON _PTR_ pIDArray;
+
+	pIDArray = cJSON_CreateArray();
+
+	for(i = 0 ; i < ulCount ; i++)
+	{
+		cJSON _PTR_ pItem;
+
+		pItem = cJSON_CreateObject();
+		cJSON_AddNumberToObject(pItem, "id", pModelList[i].xModel);
+		cJSON_AddStringToObject(pItem, "name", pModelList[i].pName);
+
+		cJSON_AddItemToArray(pIDArray, pItem);
+	}
+
+	cJSON_AddItemToObject(pRespRoot, "model", pIDArray);
+
+finished:
+
+	if (pModelList != NULL)
+	{
+		FTM_MEM_free(pModelList);
+	}
+
+	return	xRet;
+}
+

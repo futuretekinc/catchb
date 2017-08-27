@@ -2749,6 +2749,47 @@ FTM_CHAR_PTR	FTM_CATCHB_getSwitchModelPath
 	return	pCatchB->pConfig->xSwitchModels.pPath;
 }
 
+FTM_RET	FTM_CATCHB_getSwitchModelList
+(	
+	FTM_CATCHB_PTR	pCatchB,
+	FTM_SWITCH_MODEL_INFO_PTR	pModelList,
+	FTM_UINT32		ulMaxCount,
+	FTM_UINT32_PTR	pulCount
+)
+{
+	ASSERT(pCatchB != NULL);
+	ASSERT(pModelList != NULL);
+	ASSERT(pulCount != NULL);
+	
+	FTM_RET	xRet = FTM_RET_OK;
+	FTM_UINT32	ulTotalCount = 0;
+	FTM_UINT32	ulCount = 0;
+
+	xRet = FTM_LIST_count(pCatchB->pConfig->xSwitchModels.pList, &ulTotalCount);
+	if (xRet == FTM_RET_OK)
+	{
+		for(FTM_UINT32	i = 0 ; (i < ulMaxCount) && (i < ulTotalCount) ; i++)
+		{
+			FTM_SWITCH_MODEL_INFO_PTR	pInfo;
+
+			xRet = FTM_LIST_getAt(pCatchB->pConfig->xSwitchModels.pList, i, (FTM_VOID_PTR _PTR_)&pInfo);
+			if (xRet == FTM_RET_OK)
+			{
+				memcpy(&pModelList[i], pInfo, sizeof(FTM_SWITCH_MODEL_INFO));
+				ulCount++;
+			}
+			else
+			{
+				break;	
+			}
+		}
+	}
+
+	*pulCount = ulCount;
+
+	return	FTM_RET_OK;
+}
+
 FTM_SWITCH_MODEL	FTM_CATCHB_getSwitchModelID
 (	
 	FTM_CATCHB_PTR	pCatchB,

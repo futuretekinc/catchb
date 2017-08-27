@@ -54,6 +54,7 @@ static FTM_SERVER_CMD_SET	pCmdSet[] =
 	MK_CMD_SET(FTM_CMD_SWITCH_SET_PROPERTIES,	FTM_SERVER_SWITCH_setProperties),
 	MK_CMD_SET(FTM_CMD_SWITCH_GET_ID_LIST,		FTM_SERVER_SWITCH_getIDList),
 	MK_CMD_SET(FTM_CMD_SWITCH_GET_LIST,			FTM_SERVER_SWITCH_getList),
+	MK_CMD_SET(FTM_CMD_SWITCH_GET_MODEL_LIST,	FTM_SERVER_SWITCH_getModelList),
 
 	MK_CMD_SET(FTM_CMD_LOG_GET_COUNT,			FTM_SERVER_LOG_getCount),
 	MK_CMD_SET(FTM_CMD_LOG_GET_COUNT2,			FTM_SERVER_LOG_getCount2),
@@ -1187,6 +1188,36 @@ FTM_RET	FTM_SERVER_SWITCH_getList
 	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
 	pResp->xCommon.xRet = xRet;
 	pResp->xCommon.ulLen = sizeof(FTM_RESP_SWITCH_GET_LIST_PARAMS) + sizeof(FTM_SWITCH_CONFIG) * ulCount;	
+	pResp->ulCount = ulCount;
+
+	return	FTM_RET_OK;
+}
+
+FTM_RET	FTM_SERVER_SWITCH_getModelList
+(
+	FTM_SERVER_PTR pServer, 
+	FTM_REQ_SWITCH_GET_MODEL_LIST_PARAMS_PTR	pReq,
+	FTM_RESP_SWITCH_GET_MODEL_LIST_PARAMS_PTR	pResp
+)
+{
+	FTM_RET			xRet;
+	FTM_CATCHB_PTR	pCatchB;
+	FTM_UINT32		ulMaxCount;
+	FTM_UINT32		ulCount = 0;
+
+	pCatchB = pServer->pCatchB;
+
+	ulMaxCount = (pResp->xCommon.ulLen - sizeof(FTM_RESP_SWITCH_GET_MODEL_LIST_PARAMS)) / sizeof(FTM_SWITCH_MODEL_INFO);
+	if (ulMaxCount > pReq->ulCount)
+	{
+		ulMaxCount = pReq->ulCount;
+	}
+
+	xRet = FTM_CATCHB_getSwitchModelList(pCatchB, pResp->pModelList, ulMaxCount ,&ulCount);
+
+	pResp->xCommon.xCmd = pReq->xCommon.xCmd;
+	pResp->xCommon.xRet = xRet;
+	pResp->xCommon.ulLen = sizeof(FTM_RESP_SWITCH_GET_MODEL_LIST_PARAMS) + sizeof(FTM_SWITCH_MODEL_INFO) * ulCount;	
 	pResp->ulCount = ulCount;
 
 	return	FTM_RET_OK;

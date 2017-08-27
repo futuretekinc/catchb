@@ -135,6 +135,7 @@ FTM_CGI_POST_COMMAND	pSwitchPostCmds[] =
 	{	"get",		FTM_CGI_POST_SWITCH_get		},
 	{	"set",		FTM_CGI_POST_SWITCH_set		},
 	{	"list",		FTM_CGI_POST_SWITCH_getIDList},
+	{	"model_list",		FTM_CGI_POST_SWITCH_getModelList},
 	{	NULL,		NULL					}
 };
 
