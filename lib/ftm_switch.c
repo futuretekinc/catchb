@@ -740,7 +740,7 @@ FTM_RET	FTM_SWITCH_SCRIPT_load
 
 	if (pPasswd != NULL)
 	{
-		ulFormatLen += snprintf(&pFormat[ulFormatLen], sizeof(pFormat) - ulFormatLen - 1, "_PASSWD=%s ", pUserID);
+		ulFormatLen += snprintf(&pFormat[ulFormatLen], sizeof(pFormat) - ulFormatLen - 1, "_PASSWD=%s ", pPasswd);
 	}
 
 	
