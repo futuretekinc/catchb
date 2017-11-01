@@ -834,14 +834,20 @@ FTM_RET	FTM_setTime
 
 	gmtime_r(&xTime, &xTM);
 
-	strftime(pTimeString, sizeof(pTimeString), "%Y%m%d%H%M%S", &xTM);
-	sprintf(pBuffer, "date -s %s;hwclock -w", pTimeString);
+	strftime(pTimeString, sizeof(pTimeString), "%Y%m%d%H%M.%S", &xTM);
+	sprintf(pBuffer, "date -s %s;hwclock -w;date", pTimeString);
 
 	pFP = popen(pBuffer, "r");
     if(pFP == NULL) 
 	{
 		return	FTM_RET_ERROR;
 	}
+
+    if (fgets(pBuffer, sizeof(pBuffer) - 1, pFP) != NULL)
+	{
+		INFO("setTime : %s", pBuffer);	
+	}
+
 	pclose(pFP);
 
 	return	FTM_RET_OK;

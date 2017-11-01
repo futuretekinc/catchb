@@ -336,11 +336,24 @@ FTM_VOID_PTR FTM_SERVER_process(FTM_VOID_PTR pData)
 	xServer.sin_addr.s_addr = INADDR_ANY;
 	xServer.sin_port 		= htons( pServer->xConfig.usPort );
 
-	nRet = bind( pServer->hSocket, (struct sockaddr *)&xServer, sizeof(xServer));
-	if (nRet < 0)
+	FTM_UINT32	ulSleep = 50;
+
+	while(!pServer->bStop)
 	{
-		ERROR(FTM_RET_COMM_SOCKET_BIND_FAILED, "bind failed.[nRet = %d]\n", nRet);
-		goto error;
+		if (ulSleep >= 50)
+		{
+			nRet = bind( pServer->hSocket, (struct sockaddr *)&xServer, sizeof(xServer));
+			if (nRet >= 0)
+			{
+				break;
+			}
+
+			ERROR(FTM_RET_COMM_SOCKET_BIND_FAILED, "bind failed.[nRet = %d]\n", nRet);
+			ulSleep = 0;
+		}
+
+		usleep(100000);
+		ulSleep++;
 	}
 
 	listen(pServer->hSocket, 3);

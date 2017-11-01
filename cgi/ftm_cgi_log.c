@@ -400,20 +400,72 @@ FTM_RET	FTM_CGI_POST_LOG_getList
 	{
 		cJSON _PTR_ pLog = cJSON_CreateObject();
 
-		if (pLogList[i].xType == FTM_LOG_TYPE_NORMAL)
+		switch(pLogList[i].xType)
 		{
-			cJSON_AddStringToObject(pLog, "type", "normal");
-		}
-		else
-		{
-			cJSON_AddStringToObject(pLog, "type", "error");
+		case	FTM_LOG_TYPE_NORMAL:
+			{
+				cJSON_AddStringToObject(pLog, "type", "normal");	
+			}
+			break;
+
+		case	FTM_LOG_TYPE_ERROR:
+			{
+				cJSON_AddStringToObject(pLog, "type", "error");
+			}
+			break;
+
+		case	FTM_LOG_TYPE_INFO:
+			{
+				cJSON_AddStringToObject(pLog, "type", "info");
+			}
+			break;
+
+		default:
+			{
+				cJSON_AddStringToObject(pLog, "type", "unknonw");
+			}
+			break;
 		}
 
 		cJSON_AddStringToObject(pLog, "time", FTM_TIME_printf2(pLogList[i].ulTime, NULL));
 		cJSON_AddStringToObject(pLog, "id", pLogList[i].pID);
 		cJSON_AddStringToObject(pLog, "ip", pLogList[i].pIP);
 		cJSON_AddStringToObject(pLog, "hash", pLogList[i].pHash);
-		cJSON_AddStringToObject(pLog, "stat", FTM_CCTV_STAT_print(pLogList[i].xStat));
+		
+		if (pLogList[i].xType == FTM_LOG_TYPE_INFO)
+		{
+			switch((FTM_UINT32)pLogList[i].xStat)
+			{
+			case	FTM_LOG_OBJ_TELNET:
+				{	
+					cJSON_AddStringToObject(pLog, "stat", "TELNET");
+				}
+				break;
+
+			case	FTM_LOG_OBJ_SSH:
+				{
+					cJSON_AddStringToObject(pLog, "stat", "SSH");
+				}
+				break;
+
+			case	FTM_LOG_OBJ_ACL: 
+				{
+					cJSON_AddStringToObject(pLog, "stat", "ACL");
+				}
+				break;
+
+			default:
+				{
+					cJSON_AddStringToObject(pLog, "stat", "");
+				}
+				break;
+			}
+
+		}
+		else
+		{
+			cJSON_AddStringToObject(pLog, "stat", FTM_CCTV_STAT_print(pLogList[i].xStat));
+		}
 
 		cJSON_AddItemToArray(pLogArray, pLog);
 	}

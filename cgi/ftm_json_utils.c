@@ -124,13 +124,17 @@ FTM_RET	FTM_JSON_getLogType
 			return	FTM_RET_OBJECT_NOT_FOUND;	
 		}
 	}
-	else if((strcasecmp(pBuffer , "normal") == 0) || (strcasecmp(pBuffer, "nomal") == 0))
+	else if(strcasecmp(pBuffer , "normal") == 0)
 	{
 		*pType = FTM_LOG_TYPE_NORMAL;	
 	}
 	else if(strcasecmp(pBuffer, "error") == 0)
 	{
 		*pType = FTM_LOG_TYPE_ERROR;	
+	}
+	else if(strcasecmp(pBuffer, "info") == 0)
+	{
+		*pType = FTM_LOG_TYPE_INFO;	
 	}
 	else
 	{
@@ -326,7 +330,39 @@ FTM_RET	FTM_JSON_getDate
 	FTM_UINT32_PTR	pValue
 )
 {
-	return	FTM_JSON_getUINT32(pRoot, "time", bEmptyAllow, pValue);
+	FTM_RET		xRet = FTM_RET_OK;
+
+	cJSON _PTR_ pItem = cJSON_GetObjectItem(pRoot, "time");
+	if (pItem == NULL)
+	{
+		if (!bEmptyAllow)
+		{
+			return	FTM_RET_OBJECT_NOT_FOUND;
+		}
+	}
+	else
+	{
+		if (pItem->type == cJSON_String)
+		{
+			FTM_TIME	xTime;
+
+			xRet = FTM_TIME_setString(&xTime, pItem->valuestring);
+			if (xRet == FTM_RET_OK)
+			{
+				FTM_TIME_toSecs(&xTime, pValue);
+			}
+		}
+		else if (pItem->type == cJSON_Number)
+		{
+			*pValue = pItem->valueint;
+		}
+		else
+		{
+			xRet = FTM_RET_INVALID_ARGUMENTS;
+		}
+	}
+
+	return	xRet;
 }
 
 FTM_RET	FTM_JSON_getString

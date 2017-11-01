@@ -100,6 +100,39 @@ FTM_RET	FTM_TIME_setString
 		memset(&xTM, 0, sizeof(xTM));
 		strptime(pString, "%Y-%m-%d %H:%M:%S", &xTM);
 	}
+	else if (strlen(pString) == 12)
+	{
+		for(i = 0 ; i < 12 ; i++)
+		{
+			if (isdigit(pString[i]) == 0)
+			{
+				return	FTM_RET_INVALID_FORMAT;	
+			}
+		}
+
+		strcpy(pFormattedString, "20");
+		ulLen += 2;
+		memcpy(&pFormattedString[ulLen], &pString[0], 2);
+		ulLen += 2;
+		pFormattedString[ulLen++] = '-';
+		memcpy(&pFormattedString[ulLen], &pString[2], 2);
+		ulLen += 2;
+		pFormattedString[ulLen++] = '-';
+		memcpy(&pFormattedString[ulLen], &pString[4], 2);
+		ulLen += 2;
+		pFormattedString[ulLen++] = ' ';
+		memcpy(&pFormattedString[ulLen], &pString[6], 2);
+		ulLen += 2;
+		pFormattedString[ulLen++] = ':';
+		memcpy(&pFormattedString[ulLen], &pString[8], 2);
+		ulLen += 2;
+		pFormattedString[ulLen++] = ':';
+		memcpy(&pFormattedString[ulLen], &pString[10], 2);
+		ulLen += 2;
+		pFormattedString[ulLen] = '\0';
+
+		strptime(pFormattedString, "%Y-%m-%d %H:%M:%S", &xTM);
+	}
 	else if (strlen(pString) == 14)
 	{
 		for(i = 0 ; i < 14 ; i++)

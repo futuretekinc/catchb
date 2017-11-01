@@ -735,7 +735,7 @@ FTM_RET	FTM_ANALYZER_process
 			ulHashDataLen += snprintf(&pHashData[ulHashDataLen], sizeof(pHashData) - ulHashDataLen, " [port :");
 
 
-			//FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);
+			FTM_PING_check(pCCTV->xConfig.pIP, &ulReplyCount);
 
 			pCCTV->ulPortCount = 0;
 			for(j =0 ;j < pAnalyzer->xConfig.ulPortCount ; j++)

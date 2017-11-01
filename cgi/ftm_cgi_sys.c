@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 #include "cJSON/cJSON.h"
 #include "ftm_mem.h"
 #include "ftm_cgi.h"
@@ -902,10 +903,24 @@ FTM_RET	FTM_CGI_POST_SYS_setTime
 		if (xRet == FTM_RET_OK)
 		{
 			time_t	xTime = 0;
+			FTM_CHAR	pBuff[16];
 
 			FTM_getTime(&xTime);
 
 			cJSON_AddNumberToObject(pRespRoot, "time", (FTM_UINT32)xTime);
+
+			FTM_CLIENT_disconnect(pClient);
+
+			FILE* fp = popen("/etc/init.d/catchb restart", "r");
+			if (fp == NULL)
+			{
+				ERROR(xRet, "Failed to restart catchb!");
+			}
+			else
+			{
+				fread(pBuff, 1, 1, fp);
+			}
+			pclose(fp);
 		}
 	}
 
